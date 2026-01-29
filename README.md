@@ -24,6 +24,16 @@ A native Android news reader app delivering a personalized, privacy-focused news
 - [ ] Knowledge graph visualization (v2.0)
 - [ ] Social intelligence layer (v3.0)
 
+## 📱 Screenshots
+
+### Current Progress (v0.1 - Day 1!)
+
+**News Feed with Live Articles:**
+![NewsWorld Feed](screenshots/feed-v0.1.png)
+*Real-time news from 80,000+ sources with images, headlines, and descriptions*
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
