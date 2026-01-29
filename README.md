@@ -1,4 +1,6 @@
-# 📰 News World
+# 📰 NewsThread
+
+*Follow the thread of every story*
 
 A native Android news reader app delivering a personalized, privacy-focused news experience.
 
@@ -31,7 +33,7 @@ A native Android news reader app delivering a personalized, privacy-focused news
 
 **News Feed with Live Articles:**
 
-<img src="screenshots/feed-v0.1.png" width="300" alt="NewsWorld Feed">
+<img src="screenshots/feed-v0.1.png" width="300" alt="NewsThread Feed">
 *Real-time news from 80,000+ sources with images, headlines, and descriptions*
 
 ---
