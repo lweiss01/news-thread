@@ -8,6 +8,8 @@ NewsWorld is a native Android news reader app built with Kotlin and Jetpack Comp
 
 ## Build Commands
 
+On Windows, use `gradlew` instead of `./gradlew`.
+
 ```bash
 # Build debug APK
 ./gradlew assembleDebug
@@ -19,9 +21,9 @@ NewsWorld is a native Android news reader app built with Kotlin and Jetpack Comp
 ./gradlew test
 
 # Run a single test class
-./gradlew test --tests "com.newsworld.app.SomeTest"
+./gradlew test --tests "com.newsworld.app.ExampleTest"
 
-# Run instrumented tests
+# Run instrumented tests (requires connected device/emulator)
 ./gradlew connectedAndroidTest
 
 # Lint check

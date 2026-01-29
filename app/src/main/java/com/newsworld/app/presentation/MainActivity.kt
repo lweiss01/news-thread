@@ -4,18 +4,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.newsworld.app.presentation.feed.FeedScreen
+import com.newsworld.app.presentation.navigation.NewsWorldBottomBar
+import com.newsworld.app.presentation.navigation.Screen
+import com.newsworld.app.presentation.settings.SettingsScreen
 import com.newsworld.app.presentation.theme.NewsWorldTheme
+import com.newsworld.app.presentation.tracking.TrackingScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -39,31 +43,20 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun NewsWorldApp() {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
+    val navController = rememberNavController()
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = { NewsWorldBottomBar(navController) }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Feed.route,
+            modifier = Modifier.padding(innerPadding)
         ) {
-            WelcomeScreen()
+            composable(Screen.Feed.route) { FeedScreen() }
+            composable(Screen.Tracking.route) { TrackingScreen() }
+            composable(Screen.Settings.route) { SettingsScreen() }
         }
-    }
-}
-
-@Composable
-fun WelcomeScreen() {
-    Text(
-        text = "Welcome to NewsWorld",
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun WelcomeScreenPreview() {
-    NewsWorldTheme {
-        WelcomeScreen()
     }
 }
