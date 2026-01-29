@@ -12,8 +12,8 @@ A native Android news reader app delivering a personalized, privacy-focused news
 ## 🗺️ Roadmap
 
 - [x] Project setup
-- [ ] Basic UI shell
-- [ ] NewsAPI integration
+- [x] Basic UI shell
+- [x] NewsAPI integration
 - [ ] Room database
 - [ ] Article feed
 - [ ] Story tracking
