@@ -29,7 +29,7 @@ A native Android news reader app delivering a personalized, privacy-focused news
 ### Current Progress (v0.1 - Day 1!)
 
 **News Feed with Live Articles:**
-![NewsWorld Feed](screenshots/feed-v0.1.png)
+<img src="screenshots/feed-v0.1.png" width="300" alt="NewsWorld Feed">
 *Real-time news from 80,000+ sources with images, headlines, and descriptions*
 
 ---
