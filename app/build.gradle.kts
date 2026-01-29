@@ -1,9 +1,18 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
+}
+
+// Load secrets from secrets.properties
+val secretsFile = rootProject.file("secrets.properties")
+val secrets = Properties()
+if (secretsFile.exists()) {
+    secrets.load(secretsFile.inputStream())
 }
 
 android {
@@ -22,6 +31,13 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // API Keys from secrets.properties
+        buildConfigField(
+            "String",
+            "NEWS_API_KEY",
+            "\"${secrets.getProperty("NEWS_API_KEY", "")}\""
+        )
     }
 
     buildTypes {
