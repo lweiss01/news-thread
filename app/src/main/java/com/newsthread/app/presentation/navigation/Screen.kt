@@ -1,4 +1,4 @@
-package com.newsworld.app.presentation.navigation
+package com.newsthread.app.presentation.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Article

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NewsWorld"
+rootProject.name = "NewsThread"
 include(":app")

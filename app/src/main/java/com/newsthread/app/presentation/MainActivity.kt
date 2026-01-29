@@ -1,4 +1,4 @@
-package com.newsworld.app.presentation
+package com.newsthread.app.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,12 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.newsworld.app.presentation.feed.FeedScreen
-import com.newsworld.app.presentation.navigation.NewsWorldBottomBar
-import com.newsworld.app.presentation.navigation.Screen
-import com.newsworld.app.presentation.settings.SettingsScreen
-import com.newsworld.app.presentation.theme.NewsWorldTheme
-import com.newsworld.app.presentation.tracking.TrackingScreen
+import com.newsthread.app.presentation.feed.FeedScreen
+import com.newsthread.app.presentation.navigation.NewsThreadBottomBar
+import com.newsthread.app.presentation.navigation.Screen
+import com.newsthread.app.presentation.settings.SettingsScreen
+import com.newsthread.app.presentation.theme.NewsThreadTheme
+import com.newsthread.app.presentation.tracking.TrackingScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -29,12 +29,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NewsWorldTheme {
+            NewsThreadTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NewsWorldApp()
+                    NewsThreadApp()
                 }
             }
         }
@@ -42,12 +42,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NewsWorldApp() {
+fun NewsThreadApp() {
     val navController = rememberNavController()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        bottomBar = { NewsWorldBottomBar(navController) }
+        bottomBar = { NewsThreadBottomBar(navController) }
     ) { innerPadding ->
         NavHost(
             navController = navController,

@@ -3,8 +3,8 @@
 # proguardFiles setting in build.gradle.kts.
 
 # Keep data classes for Gson serialization
--keepclassmembers class com.newsworld.app.domain.model.** { *; }
--keepclassmembers class com.newsworld.app.data.remote.** { *; }
+-keepclassmembers class com.newsthread.app.domain.model.** { *; }
+-keepclassmembers class com.newsthread.app.data.remote.** { *; }
 
 # Retrofit
 -keepattributes Signature

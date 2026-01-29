@@ -16,11 +16,11 @@ if (secretsFile.exists()) {
 }
 
 android {
-    namespace = "com.newsworld.app"
+    namespace = "com.newsthread.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.newsworld.app"
+        applicationId = "com.newsthread.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

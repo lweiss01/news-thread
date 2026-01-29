@@ -1,6 +1,6 @@
-package com.newsworld.app.data.remote.dto
+package com.newsthread.app.data.remote.dto
 
-import com.newsworld.app.domain.model.Article
+import com.newsthread.app.domain.model.Article
 
 data class NewsApiResponse(
     val status: String,
@@ -27,7 +27,7 @@ data class ArticleDto(
 fun ArticleDto.toArticle(): Article? {
     if (title.isNullOrBlank() || url.isNullOrBlank()) return null
     return Article(
-        source = source?.toSource() ?: com.newsworld.app.domain.model.Source(
+        source = source?.toSource() ?: com.newsthread.app.domain.model.Source(
             id = null, name = "Unknown", description = null,
             url = null, category = null, language = null, country = null
         ),

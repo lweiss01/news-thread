@@ -1,4 +1,4 @@
-package com.newsworld.app.presentation.theme
+package com.newsthread.app.presentation.theme
 
 import android.app.Activity
 import android.os.Build
@@ -59,7 +59,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun NewsWorldTheme(
+fun NewsThreadTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit

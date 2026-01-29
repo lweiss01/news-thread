@@ -1,4 +1,4 @@
-package com.newsworld.app.presentation.navigation
+package com.newsthread.app.presentation.navigation
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -10,7 +10,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Composable
-fun NewsWorldBottomBar(navController: NavController) {
+fun NewsThreadBottomBar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 

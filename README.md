@@ -2,7 +2,7 @@
 
 *Follow the thread of every story*
 
-A native Android news reader app delivering a personalized, privacy-focused news experience.
+A native Android news reader that helps you follow the thread of every developing story — with an offline-first, privacy-first design.
 
 ## 🎨 Design Philosophy
 

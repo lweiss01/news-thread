@@ -1,4 +1,4 @@
-package com.newsworld.app.presentation.feed
+package com.newsthread.app.presentation.feed
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,8 +30,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
-import com.newsworld.app.data.repository.NewsRepository
-import com.newsworld.app.domain.model.Article
+import com.newsthread.app.data.repository.NewsRepository
+import com.newsthread.app.domain.model.Article
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

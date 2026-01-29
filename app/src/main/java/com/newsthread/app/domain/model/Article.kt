@@ -1,4 +1,4 @@
-package com.newsworld.app.domain.model
+package com.newsthread.app.domain.model
 
 data class Article(
     val source: Source,

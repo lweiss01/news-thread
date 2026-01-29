@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NewsWorld is a native Android news reader app built with Kotlin and Jetpack Compose. The app follows an offline-first, privacy-first approach where user data is backed up to their own Google Drive.
+NewsThread is a native Android news reader app built with Kotlin and Jetpack Compose. The app follows an offline-first, privacy-first approach where user data is backed up to their own Google Drive.
 
 ## Build Commands
 
@@ -21,7 +21,7 @@ On Windows, use `gradlew` instead of `./gradlew`.
 ./gradlew test
 
 # Run a single test class
-./gradlew test --tests "com.newsworld.app.ExampleTest"
+./gradlew test --tests "com.newsthread.app.ExampleTest"
 
 # Run instrumented tests (requires connected device/emulator)
 ./gradlew connectedAndroidTest
@@ -37,7 +37,7 @@ On Windows, use `gradlew` instead of `./gradlew`.
 
 The app uses **MVVM + Clean Architecture** with the following layer structure:
 
-### Package Structure (`app/src/main/java/com/newsworld/app/`)
+### Package Structure (`app/src/main/java/com/newsthread/app/`)
 
 - **data/** - Data layer
   - `local/` - Room database, DAOs, entities

@@ -1,10 +1,10 @@
-package com.newsworld.app
+package com.newsthread.app
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class NewsWorldApp : Application() {
+class NewsThreadApp : Application() {
 
     override fun onCreate() {
         super.onCreate()

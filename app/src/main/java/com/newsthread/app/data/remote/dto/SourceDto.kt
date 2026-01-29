@@ -1,6 +1,6 @@
-package com.newsworld.app.data.remote.dto
+package com.newsthread.app.data.remote.dto
 
-import com.newsworld.app.domain.model.Source
+import com.newsthread.app.domain.model.Source
 
 data class SourceDto(
     val id: String?,

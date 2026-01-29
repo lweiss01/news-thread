@@ -1,4 +1,4 @@
-package com.newsworld.app.presentation.tracking
+package com.newsthread.app.presentation.tracking
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

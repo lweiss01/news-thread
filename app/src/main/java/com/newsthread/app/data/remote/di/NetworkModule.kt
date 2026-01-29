@@ -1,7 +1,7 @@
-package com.newsworld.app.data.remote.di
+package com.newsthread.app.data.remote.di
 
-import com.newsworld.app.BuildConfig
-import com.newsworld.app.data.remote.NewsApiService
+import com.newsthread.app.BuildConfig
+import com.newsthread.app.data.remote.NewsApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

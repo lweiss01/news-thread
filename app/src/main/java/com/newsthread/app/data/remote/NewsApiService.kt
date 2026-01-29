@@ -1,7 +1,7 @@
-package com.newsworld.app.data.remote
+package com.newsthread.app.data.remote
 
-import com.newsworld.app.data.remote.dto.NewsApiResponse
-import com.newsworld.app.data.remote.dto.SourcesResponse
+import com.newsthread.app.data.remote.dto.NewsApiResponse
+import com.newsthread.app.data.remote.dto.SourcesResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

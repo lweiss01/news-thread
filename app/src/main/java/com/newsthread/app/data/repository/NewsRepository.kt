@@ -1,8 +1,8 @@
-package com.newsworld.app.data.repository
+package com.newsthread.app.data.repository
 
-import com.newsworld.app.data.remote.NewsApiService
-import com.newsworld.app.data.remote.dto.toArticle
-import com.newsworld.app.domain.model.Article
+import com.newsthread.app.data.remote.NewsApiService
+import com.newsthread.app.data.remote.dto.toArticle
+import com.newsthread.app.domain.model.Article
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
