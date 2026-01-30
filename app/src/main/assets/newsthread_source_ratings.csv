@@ -1,0 +1,51 @@
+source_id,display_name,domain,allsides_rating,ad_fontes_bias,ad_fontes_reliability,mbfc_bias,mbfc_factual,final_bias,final_bias_score,final_reliability,final_reliability_score,notes
+reuters,Reuters,reuters.com,Center,0,Very High,Least Biased,Very High,Center,0,Very High,5,Gold standard wire service
+associated-press,Associated Press,apnews.com,Left,-5,Very High,Left-Center,Very High,Center-Left,-1,Very High,5,Wire service; shifted left 2024
+bbc-news,BBC News,bbc.com,Lean Left,-10,High,Least Biased,High,Center,0,High,4,UK public broadcaster
+npr,NPR,npr.org,Lean Left,-10,High,Left-Center,High,Center-Left,-1,High,4,US public radio
+pbs,PBS NewsHour,pbs.org,Lean Left,-3,Very High,Left-Center,Very High,Center-Left,-1,Very High,5,US public television
+cnn,CNN,cnn.com,Left,-19,High,Left-Center,Mixed,Center-Left,-1,High,4,Cable news; shifted left 2020+
+fox-news,Fox News,foxnews.com,Right,19,Mixed,Right,Mixed,Right,2,Mixed,2,Conservative cable news
+msnbc,MSNBC,msnbc.com,Left,-20,Mixed,Left,Mixed,Left,-2,Mixed,2,Progressive cable news
+new-york-times,New York Times,nytimes.com,Left,-12,High,Left-Center,High,Center-Left,-1,High,4,Opinion separate from news
+washington-post,Washington Post,washingtonpost.com,Lean Left,-10,High,Left-Center,High,Center-Left,-1,High,4,Major national newspaper
+wall-street-journal,Wall Street Journal,wsj.com,Center,5,High,Right-Center,High,Center-Right,1,High,4,Opinion pages very different
+usa-today,USA Today,usatoday.com,Lean Left,-8,Mostly Factual,Left-Center,Mostly Factual,Center-Left,-1,Mostly Factual,3,General interest newspaper
+the-guardian,The Guardian,theguardian.com,Left,-15,High,Left-Center,High,Left,-2,High,4,UK progressive newspaper
+cbs-news,CBS News,cbsnews.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Broadcast network
+abc-news,ABC News,abcnews.go.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Broadcast network
+nbc-news,NBC News,nbcnews.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Broadcast network
+bloomberg,Bloomberg,bloomberg.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Business/finance news
+cnbc,CNBC,cnbc.com,Lean Left,-5,Mostly Factual,Left-Center,Mostly Factual,Center-Left,-1,High,4,Business news; moved left 2025
+financial-times,Financial Times,ft.com,Center,0,Very High,Left-Center,Very High,Center,0,Very High,5,UK business news
+business-insider,Business Insider,businessinsider.com,Lean Left,-5,Mixed,Left-Center,Mixed,Center-Left,-1,Mixed,2,Business/tech news mix
+politico,Politico,politico.com,Lean Left,-8,High,Left-Center,High,Center-Left,-1,High,4,Political news
+the-hill,The Hill,thehill.com,Center,0,Mostly Factual,Least Biased,Mostly Factual,Center,0,Mostly Factual,3,Political news
+axios,Axios,axios.com,Center,0,High,Least Biased,High,Center,0,High,4,Brief news format
+techcrunch,TechCrunch,techcrunch.com,Not Rated,-5,High,Left-Center,Mostly Factual,Center-Left,-1,Mostly Factual,3,Tech startup news
+the-verge,The Verge,theverge.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Tech/culture news
+wired,Wired,wired.com,Left,-10,High,Left-Center,High,Center-Left,-1,High,4,Tech/science news
+ars-technica,Ars Technica,arstechnica.com,Center,0,High,Least Biased,High,Center,0,High,4,Deep tech coverage
+newsweek,Newsweek,newsweek.com,Center,-2,Mostly Factual,Right-Center,Mostly Factual,Center,0,Mostly Factual,3,Moved right 2022
+time,Time Magazine,time.com,Lean Left,-8,High,Left-Center,High,Center-Left,-1,High,4,Weekly newsmagazine
+the-economist,The Economist,economist.com,Center,5,Very High,Least Biased,Very High,Center,0,Very High,5,UK newsweekly; free-market
+forbes,Forbes,forbes.com,Center-Right,5,Mixed,Right-Center,Mostly Factual,Center-Right,1,Mixed,2,Business magazine
+salon,Salon,salon.com,Left,-20,Mixed,Left,Mixed,Left,-2,Mixed,2,Progressive opinion/news
+slate,Slate,slate.com,Left,-20,High,Left,High,Left,-2,High,4,Progressive opinion magazine
+daily-beast,The Daily Beast,thedailybeast.com,Left,-18,High,Left,Mostly Factual,Left,-2,Mostly Factual,3,Liberal news/opinion
+national-review,National Review,nationalreview.com,Right,18,Mostly Factual,Right,Mostly Factual,Right,2,Mostly Factual,3,Conservative magazine
+the-atlantic,The Atlantic,theatlantic.com,Left,-12,High,Left,High,Left,-2,High,4,Liberal magazine
+vox,Vox,vox.com,Left,-18,High,Left,High,Left,-2,High,4,Explanatory journalism
+breitbart,Breitbart,breitbart.com,Right,30,Low,Right,Mixed,Right,2,Low,1,Conservative news/opinion
+huffpost,HuffPost,huffpost.com,Left,-20,Mixed,Left,Mixed,Left,-2,Mixed,2,Liberal news/opinion
+new-york-post,New York Post,nypost.com,Lean Right,8,Mixed,Right-Center,Mostly Factual,Center-Right,1,Mixed,2,Tabloid newspaper
+daily-mail,Daily Mail,dailymail.co.uk,Lean Right,10,Mixed,Right-Center,Mixed,Center-Right,1,Mixed,2,UK tabloid; sensationalist
+the-intercept,The Intercept,theintercept.com,Left,-18,High,Left,High,Left,-2,High,4,Investigative journalism
+propublica,ProPublica,propublica.org,Lean Left,-8,Very High,Left-Center,Very High,Center-Left,-1,Very High,5,Nonprofit investigative
+fivethirtyeight,FiveThirtyEight,fivethirtyeight.com,Center,0,High,Least Biased,High,Center,0,High,4,Data journalism
+vice-news,Vice News,vice.com,Left,-15,Mostly Factual,Left,Mostly Factual,Left,-2,Mostly Factual,3,Youth-oriented news
+buzzfeed-news,BuzzFeed News,buzzfeednews.com,Lean Left,-10,Mostly Factual,Left-Center,Mostly Factual,Center-Left,-1,Mostly Factual,3,Digital news (shut down 2023)
+engadget,Engadget,engadget.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Consumer tech news
+cnet,CNET,cnet.com,Center,0,High,Least Biased,Mostly Factual,Center,0,High,4,Tech product reviews
+washington-times,Washington Times,washingtontimes.com,Center,5,Mixed,Right,Mixed,Center-Right,1,Mixed,2,Conservative newspaper
+newsmax,Newsmax,newsmax.com,Right,25,Low,Right,Mixed,Right,2,Low,1,Conservative news

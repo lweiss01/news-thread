@@ -19,3 +19,13 @@ sealed class Screen(
         val items = listOf(Feed, Tracking, Settings)
     }
 }
+
+// Article detail is separate since it's not in bottom nav
+object ArticleDetailRoute {
+    const val route = "article_detail/{articleUrl}"
+
+    fun createRoute(articleUrl: String): String {
+        val encodedUrl = java.net.URLEncoder.encode(articleUrl, "UTF-8")
+        return "article_detail/$encodedUrl"
+    }
+}

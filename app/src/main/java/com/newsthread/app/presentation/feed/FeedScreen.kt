@@ -1,8 +1,11 @@
 package com.newsthread.app.presentation.feed
 
+import com.newsthread.app.presentation.navigation.ArticleDetailRoute
+import androidx.navigation.NavController
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +21,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +39,9 @@ import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
 import com.newsthread.app.data.repository.NewsRepository
 import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.repository.SourceRatingRepository
+import com.newsthread.app.presentation.feed.components.SourceBadge
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +57,8 @@ sealed interface FeedUiState {
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
-    private val newsRepository: NewsRepository
+    private val newsRepository: NewsRepository,
+    private val sourceRatingRepository: SourceRatingRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -78,10 +89,17 @@ class FeedViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun getSourceRating(articleUrl: String): SourceRating? {
+        return sourceRatingRepository.findSourceForArticle(articleUrl)
+    }
 }
 
 @Composable
-fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
+fun FeedScreen(
+    viewModel: FeedViewModel = hiltViewModel(),
+    navController: NavController? = null  // ← ADD THIS
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     when (val state = uiState) {
@@ -103,7 +121,12 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp)
             ) {
                 items(state.articles, key = { it.url }) { article ->
-                    ArticleCard(article = article)
+                    ArticleCard(
+                        article = article,
+                        onClick = {
+                            navController?.navigate(ArticleDetailRoute.createRoute(article.url))
+                        }
+                    )
                 }
             }
         }
@@ -130,8 +153,19 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun ArticleCard(article: Article) {
+private fun ArticleCard(
+    article: Article,
+    onClick: () -> Unit,  // ← ADD THIS
+    viewModel: FeedViewModel = hiltViewModel()
+) {
+    var sourceRating by remember { mutableStateOf<SourceRating?>(null) }
+
+    LaunchedEffect(article.url) {
+        sourceRating = viewModel.getSourceRating(article.url)
+    }
+
     Card(
+        onClick = onClick,  // ← ADD THIS
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -149,11 +183,21 @@ private fun ArticleCard(article: Article) {
             }
 
             Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = article.source.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = article.source.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    if (sourceRating != null) {
+                        SourceBadge(sourceRating = sourceRating!!)
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 

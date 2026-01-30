@@ -1,5 +1,9 @@
 package com.newsthread.app.presentation
 
+import com.newsthread.app.presentation.navigation.ArticleDetailRoute
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.newsthread.app.presentation.detail.ArticleDetailScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,12 +25,43 @@ import com.newsthread.app.presentation.settings.SettingsScreen
 import com.newsthread.app.presentation.theme.NewsThreadTheme
 import com.newsthread.app.presentation.tracking.TrackingScreen
 import dagger.hilt.android.AndroidEntryPoint
+// ⬇️ ADD THESE IMPORTS ⬇️
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.util.Log
+import com.newsthread.app.data.local.AppDatabase
+import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
+import com.newsthread.app.util.DatabaseSeeder
+// ⬆️ END NEW IMPORTS ⬆️
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Database seeding
+        lifecycleScope.launch {
+            try {
+                val db = AppDatabase.getDatabase(this@MainActivity)
+                val repository = SourceRatingRepositoryImpl(db.sourceRatingDao())
+                val seeder = DatabaseSeeder(this@MainActivity, repository)
+
+                val count = seeder.seedSourceRatings()
+
+                if (count > 0) {
+                    Log.d("NewsThread", "✅ Seeded $count source ratings!")
+                } else {
+                    Log.d("NewsThread", "ℹ️ Database already seeded")
+                }
+
+
+            } catch (e: Exception) {
+                Log.e("NewsThread", "❌ Error: ${e.message}", e)
+                e.printStackTrace()
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
             NewsThreadTheme {
@@ -54,9 +89,27 @@ fun NewsThreadApp() {
             startDestination = Screen.Feed.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Feed.route) { FeedScreen() }
+            composable(Screen.Feed.route) {
+                FeedScreen(navController = navController)
+            }
             composable(Screen.Tracking.route) { TrackingScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
+
+            // ← ADD THIS NEW ROUTE
+            composable(
+                route = ArticleDetailRoute.route,
+                arguments = listOf(
+                    navArgument("articleUrl") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val encodedUrl = backStackEntry.arguments?.getString("articleUrl") ?: ""
+                val articleUrl = java.net.URLDecoder.decode(encodedUrl, "UTF-8")
+
+                ArticleDetailScreen(
+                    url = articleUrl,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
