@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 1 of 7 (Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-02 — Roadmap created
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-02 — Completed 01-01-PLAN.md (Cache Infrastructure)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] ~5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: N/A
-- Total execution time: 0.0 hours
+- Total plans completed: 1
+- Average duration: ~6 minutes
+- Total execution time: ~0.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 Foundation | 1 | ~6 min | ~6 min |
 
 **Recent Trend:**
-- Last 5 plans: None yet
-- Trend: N/A
+- Last 5 plans: 01-01 (~6 min)
+- Trend: First plan completed
 
 *Updated after each plan completion*
 
@@ -48,9 +48,19 @@ Recent decisions affecting current work:
 - Bias spectrum UI over L/C/R buckets (more nuanced visualization)
 - User-controlled article text fetching (respects data usage preferences)
 
+**New decisions from 01-01:**
+- Feed TTL: 3 hours (midpoint of 2-4h requirement)
+- Match result TTL: 24 hours (expensive to recompute)
+- Embedding TTL: 7 days (tied to model version)
+- Article retention: 30 days
+- Embedding retention: 14 days
+- OkHttp Cache: 50 MiB complementary HTTP cache
+- Room is single source of truth; network is sync mechanism
+
 ### Pending Todos
 
-None yet.
+- Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
+- Test Room migration v1->v2 on device with existing data
 
 ### Blockers/Concerns
 
@@ -67,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (roadmap creation)
-Stopped at: Roadmap and STATE.md created, ready to plan Phase 1
+Last session: 2026-02-02
+Stopped at: Completed 01-01-PLAN.md (Cache Infrastructure)
 Resume file: None
