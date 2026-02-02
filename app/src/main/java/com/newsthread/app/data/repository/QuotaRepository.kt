@@ -1,5 +1,6 @@
 package com.newsthread.app.data.repository
 
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -10,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,20 +26,40 @@ class QuotaRepository @Inject constructor(
     // In-memory state for synchronous access from interceptor
     @Volatile private var rateLimitedUntil: Long = 0L
     @Volatile private var quotaRemaining: Int = -1  // -1 = unknown
+    @Volatile private var initialized: Boolean = false
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
     init {
-        // Load persisted state on creation
-        scope.launch {
+        // Load persisted state synchronously on creation to avoid race conditions
+        // This blocks briefly but ensures rate limit state is correct from the start
+        runBlocking {
             val prefs = dataStore.data.first()
             rateLimitedUntil = prefs[RATE_LIMIT_UNTIL_KEY] ?: 0L
             quotaRemaining = prefs[QUOTA_REMAINING_KEY] ?: -1
+            initialized = true
+            Log.d(TAG, "QuotaRepository initialized: rateLimitedUntil=$rateLimitedUntil, quotaRemaining=$quotaRemaining")
         }
     }
 
     // Synchronous methods for OkHttp interceptor
-    fun isRateLimitedSync(): Boolean = System.currentTimeMillis() < rateLimitedUntil
+    fun isRateLimitedSync(): Boolean {
+        val now = System.currentTimeMillis()
+        val isLimited = now < rateLimitedUntil
+        if (isLimited) {
+            val remainingMs = rateLimitedUntil - now
+            Log.d(TAG, "Rate limited for ${remainingMs / 1000}s more (until $rateLimitedUntil)")
+        }
+        return isLimited
+    }
+
+    /**
+     * Get minutes remaining on rate limit (for error messages).
+     */
+    fun getRateLimitMinutesRemainingSync(): Int {
+        val remainingMs = rateLimitedUntil - System.currentTimeMillis()
+        return if (remainingMs > 0) (remainingMs / 60_000).toInt().coerceAtLeast(1) else 0
+    }
 
     fun setRateLimitedSync(untilMillis: Long) {
         rateLimitedUntil = untilMillis
