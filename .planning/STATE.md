@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 2 of 7 (Text Extraction)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 02-02-PLAN.md (network infrastructure)
+Last activity: 2026-02-02 — Completed 02-03-PLAN.md (extraction repositories)
 
-Progress: [██░░░░░░░░] ~25% (1/7 phases + 2/4 plans)
+Progress: [███░░░░░░░] ~30% (1/7 phases + 3/4 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: ~3.4 minutes
-- Total execution time: ~0.23 hours
+- Total execution time: ~0.28 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 Foundation | 2 | ~11 min | ~5.5 min |
-| 2 Text Extraction | 2 | ~3 min | ~1.5 min |
+| 2 Text Extraction | 3 | ~7 min | ~2.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min), 02-01 (~1.5 min), 02-02 (~1.5 min)
+- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min), 02-01 (~1.5 min), 02-02 (~1.5 min), 02-03 (~4 min)
 - Trend: Consistent fast execution for straightforward plans
 
 *Updated after each plan completion*
@@ -75,10 +75,18 @@ Recent decisions affecting current work:
 - Return null on fetch failure for graceful degradation
 - Separate cache directory "article_html_cache" to isolate from NewsAPI cache
 
+**New decisions from 02-03:**
+- WIFI_ONLY as default fetch preference (conservative for new users)
+- 5-minute retry window before allowing extraction retry
+- Permanent failure at extractionRetryCount >= 2
+- Paywall detection increments count twice for immediate permanent failure
+- MIN_CONTENT_LENGTH threshold 100 chars catches stub content
+
 ### Pending Todos
 
 - Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
 - Test Room migration v1->v2 on device with existing data
+- Test Room migration v2->v3 on device with existing data
 
 ### Blockers/Concerns
 
@@ -96,5 +104,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 02-02-PLAN.md (network infrastructure)
+Stopped at: Completed 02-03-PLAN.md (extraction repositories)
 Resume file: None
