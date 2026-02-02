@@ -39,6 +39,11 @@ android {
             "NEWS_API_KEY",
             "\"${secrets.getProperty("NEWS_API_KEY", "")}\""
         )
+
+        // Room schema export for migrations
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     buildTypes {
