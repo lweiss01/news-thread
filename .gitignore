@@ -79,3 +79,9 @@ secrets.properties
 
 # Claude Code local settings
 .claude/
+
+# IDE inspection profile exports (root level only)
+/*.xml
+
+# Room schema exports (auto-generated)
+app/schemas/
