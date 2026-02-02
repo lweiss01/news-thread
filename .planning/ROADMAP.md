@@ -32,6 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. App detects NewsAPI 429 responses and shows user feedback without crashing
   4. App loads cached matches even without network connection (offline mode)
   5. Duplicate API endpoints in NewsApiService are consolidated
+
 **Plans**: 2 plans
 
 Plans:
@@ -47,6 +48,7 @@ Plans:
   2. App caches extracted article HTML in OkHttp with 7-day TTL
   3. User can configure article text fetching preference (WiFi-only / always / never) in settings
   4. App handles paywall detection, 404 errors, and timeouts gracefully with fallback to NewsAPI content
+
 **Plans**: 4 plans
 
 Plans:
@@ -65,6 +67,7 @@ Plans:
   3. TF Lite inference runs on background thread (never blocks main thread)
   4. App stores embeddings as compressed BLOB in Room database
   5. Model quantization validation shows <10% accuracy degradation vs float32 on news domain
+
 **Plans**: TBD
 
 Plans:
@@ -80,6 +83,7 @@ Plans:
   3. App clusters articles within the feed without API calls (feed-internal matching)
   4. App searches NewsAPI for additional coverage from sources not in feed when quota available
   5. Entity extraction handles mixed case entities and acronyms (GOP, FDA) correctly
+
 **Plans**: TBD
 
 Plans:
@@ -95,6 +99,7 @@ Plans:
   3. Comparison screen displays matched articles with source reliability badges
   4. Pipeline handles failures gracefully (text extraction failed, no matches found) with clear error messages
   5. Repeated comparisons of same article load instantly from cache (no re-computation)
+
 **Plans**: TBD
 
 Plans:
@@ -110,6 +115,7 @@ Plans:
   3. WorkManager job processes matches for top N feed articles with checkpoint-based resume
   4. User sees instant comparison results when matches were pre-computed (no spinner)
   5. On-demand computation works reliably even when WorkManager fails (fallback path)
+
 **Plans**: TBD
 
 Plans:
@@ -125,6 +131,7 @@ Plans:
   3. Loading progress shows step-by-step feedback (extracting text → generating embeddings → finding matches)
   4. Empty states ("No matches found") and error states are clear and actionable
   5. Bias spectrum UI is accessible (patterns/shapes in addition to color, WCAG AA compliant)
+
 **Plans**: TBD
 
 Plans:
