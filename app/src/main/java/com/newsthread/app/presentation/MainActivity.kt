@@ -95,6 +95,14 @@ fun NewsThreadApp() {
                 FeedScreen(navController = navController)
             }
 
+            composable(Screen.Tracking.route) {
+                TrackingScreen()
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen()
+            }
+
             composable(
                 route = ArticleDetailRoute.route,
                 arguments = listOf(
