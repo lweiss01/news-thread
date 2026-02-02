@@ -6,38 +6,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NewsThread is a native Android news reader app built with Kotlin and Jetpack Compose. The app follows an offline-first, privacy-first approach where user data is backed up to their own Google Drive.
 
-## Beads / Task tracking
+## Task Tracking: GSD + Beads
 
-## Issue Tracking: Use Beads
+This project uses **two systems** for different purposes:
 
-This project uses **beads** (`bd`) for all issue tracking.
+- **GSD** (`/gsd:*` commands) — Planned phase work (ROADMAP.md → PLAN.md → execute)
+- **Beads** (`bd` commands) — Ad-hoc issues: bugs, ideas, and tasks discovered during work
 
-### Required Workflow
+### When to Use Which
 
-Before starting any work:
+| Situation | Use |
+|-----------|-----|
+| Executing planned phases | GSD (`/gsd:execute-phase`) |
+| Bug found during work | Beads (`bd create --type=bug`) |
+| Idea for future feature | Beads (`bd create --type=feature`) |
+| Quick fix outside current phase | Beads (`bd create --type=task`) |
 
-1. Check for ready work:
-   bd ready
+### Beads Workflow
 
-2. Pick a task and claim it:
+For bugs and ad-hoc tasks:
+
+1. Create the issue:
+   ```
+   bd create --title="Issue title" --type=bug|task|feature --priority=2
+   ```
+
+2. Claim and work:
+   ```
    bd update <issue-id> --status=in_progress
+   ```
 
-3. Work on the task (code, tests, docs)
-
-4. When done, close it:
+3. When done:
+   ```
    bd close <issue-id>
-
-### Creating New Issues
-
-If you discover new work while implementing:
-
-bd create --title="Issue title" --type=task|bug|feature --priority=2
+   ```
 
 ### Rules
 
-- ALWAYS check `bd ready` before asking "what should I work on?"
-- ALWAYS update issue status to `in_progress` when you start working
-- ALWAYS close issues when you complete them
+- Use GSD for planned phase execution (don't create beads issues for PLAN.md tasks)
+- Use beads for bugs, ideas, and ad-hoc work discovered during implementation
+- ALWAYS close beads issues when complete
 - NEVER use markdown TODO lists for tracking work
 
 
