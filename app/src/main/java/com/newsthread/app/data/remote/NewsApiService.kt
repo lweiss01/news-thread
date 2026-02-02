@@ -18,7 +18,10 @@ interface NewsApiService {
     @GET("everything")
     suspend fun searchArticles(
         @Query("q") query: String,
-        @Query("sortBy") sortBy: String = "publishedAt",
+        @Query("language") language: String = "en",
+        @Query("sortBy") sortBy: String = "relevancy",
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
         @Query("page") page: Int = 1,
         @Query("pageSize") pageSize: Int = 20
     ): NewsApiResponse
@@ -29,15 +32,5 @@ interface NewsApiService {
         @Query("language") language: String? = null,
         @Query("country") country: String? = null
     ): SourcesResponse
-
-    @GET("everything")
-    suspend fun searchArticles(
-        @Query("q") query: String,
-        @Query("language") language: String = "en",
-        @Query("sortBy") sortBy: String = "relevancy",
-        @Query("from") from: String? = null,  // ADD THIS
-        @Query("to") to: String? = null,      // ADD THIS
-        @Query("pageSize") pageSize: Int = 30
-    ): NewsApiResponse
 
 }
