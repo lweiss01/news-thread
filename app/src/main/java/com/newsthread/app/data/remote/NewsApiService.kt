@@ -35,6 +35,8 @@ interface NewsApiService {
         @Query("q") query: String,
         @Query("language") language: String = "en",
         @Query("sortBy") sortBy: String = "relevancy",
+        @Query("from") from: String? = null,  // ADD THIS
+        @Query("to") to: String? = null,      // ADD THIS
         @Query("pageSize") pageSize: Int = 30
     ): NewsApiResponse
 

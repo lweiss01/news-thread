@@ -10,6 +10,8 @@ import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 /**
@@ -27,12 +29,19 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
             Log.d("NewsThread", "Searching for similar articles with query: $searchQuery")
 
-            // Search for similar articles
+            // Calculate date range (7 days before and after the article)
+            val articleDate = Instant.parse(article.publishedAt)
+            val fromDate = articleDate.minus(7, ChronoUnit.DAYS).toString()
+            val toDate = articleDate.plus(7, ChronoUnit.DAYS).toString()
+
+            // Search for similar articles with date filtering
             val response = newsApiService.searchArticles(
                 query = searchQuery,
                 language = "en",
                 sortBy = "relevancy",
-                pageSize = 30 // Get more to filter by bias
+                from = fromDate,
+                to = toDate,
+                pageSize = 50 // Get more to have better options after filtering
             )
 
             val similarArticles = response.articles
@@ -63,11 +72,18 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
             Log.d("NewsThread", "Categorized: ${leftArticles.size} left, ${centerArticles.size} center, ${rightArticles.size} right")
 
+            // Sort each category by published date (most recent first) before taking top 5
             val comparison = ArticleComparison(
                 originalArticle = article,
-                leftPerspective = leftArticles.take(5), // Limit to top 5
-                centerPerspective = centerArticles.take(5),
-                rightPerspective = rightArticles.take(5)
+                leftPerspective = leftArticles
+                    .sortedByDescending { it.publishedAt }
+                    .take(5),
+                centerPerspective = centerArticles
+                    .sortedByDescending { it.publishedAt }
+                    .take(5),
+                rightPerspective = rightArticles
+                    .sortedByDescending { it.publishedAt }
+                    .take(5)
             )
 
             emit(Result.success(comparison))
@@ -90,13 +106,16 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             "would", "could", "should", "may", "might", "must", "can", "about"
         )
 
-        return title
+        val keywords = title
             .lowercase()
             .replace(Regex("[^a-z0-9\\s]"), "") // Remove punctuation
             .split("\\s+".toRegex())
             .filter { it.length > 3 && it !in stopWords }
-            .take(5) // Take top 5 keywords
+            .take(8) // Increased from 5 to 8 for more specific matching
             .joinToString(" ")
+
+        Log.d("NewsThread", "Extracted keywords: $keywords")
+        return keywords
     }
 
     /**

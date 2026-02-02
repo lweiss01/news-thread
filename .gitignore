@@ -4,6 +4,9 @@
 *.ap_
 *.aab
 
+# Debug dump files
+*.logcat
+
 # Files for the ART/Dalvik VM
 *.dex
 
