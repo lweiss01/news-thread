@@ -76,3 +76,6 @@ Thumbs.db
 # Secrets and API keys
 secrets.properties
 *.secret
+
+# Claude Code local settings
+.claude/
