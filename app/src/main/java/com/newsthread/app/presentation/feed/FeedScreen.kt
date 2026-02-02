@@ -21,10 +21,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +42,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.newsthread.app.data.repository.NewsRepository
+import com.newsthread.app.data.repository.QuotaRepository
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.SourceRatingRepository
@@ -60,7 +65,8 @@ sealed interface FeedUiState {
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
-    private val sourceRatingRepository: SourceRatingRepository
+    private val sourceRatingRepository: SourceRatingRepository,
+    private val quotaRepository: QuotaRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -70,9 +76,29 @@ class FeedViewModel @Inject constructor(
     private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
     val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
 
+    // Rate limit state for UI feedback
+    private val _isRateLimited = MutableStateFlow(false)
+    val isRateLimited: StateFlow<Boolean> = _isRateLimited.asStateFlow()
+
+    private val _rateLimitMinutesRemaining = MutableStateFlow(0)
+    val rateLimitMinutesRemaining: StateFlow<Int> = _rateLimitMinutesRemaining.asStateFlow()
+
     init {
         loadHeadlines()
         loadSourceRatings() // NEW!
+        checkRateLimitState()
+    }
+
+    private fun checkRateLimitState() {
+        viewModelScope.launch {
+            val isLimited = quotaRepository.isRateLimitedSync()
+            _isRateLimited.value = isLimited
+            if (isLimited) {
+                val untilMillis = quotaRepository.getRateLimitedUntil()
+                val remainingMs = untilMillis - System.currentTimeMillis()
+                _rateLimitMinutesRemaining.value = (remainingMs / 60_000).toInt().coerceAtLeast(1)
+            }
+        }
     }
 
     // NEW: Load all source ratings once
@@ -96,11 +122,13 @@ class FeedViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { articles ->
                         _uiState.value = FeedUiState.Success(articles)
+                        checkRateLimitState()
                     },
                     onFailure = { error ->
                         _uiState.value = FeedUiState.Error(
                             error.message ?: "Failed to load articles"
                         )
+                        checkRateLimitState()
                     }
                 )
             }
@@ -116,8 +144,22 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle() // NEW!
+    val isRateLimited by viewModel.isRateLimited.collectAsStateWithLifecycle()
+    val rateLimitMinutes by viewModel.rateLimitMinutesRemaining.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(isRateLimited, rateLimitMinutes) {
+        if (isRateLimited) {
+            snackbarHostState.showSnackbar(
+                message = "Using cached data - API limit reached. Fresh data in ~$rateLimitMinutes min",
+                withDismissAction = true
+            )
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("NewsThread") }
