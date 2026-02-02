@@ -75,31 +75,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MATCH-01 | TBD | Pending |
-| MATCH-02 | TBD | Pending |
-| MATCH-03 | TBD | Pending |
-| MATCH-04 | TBD | Pending |
-| MATCH-05 | TBD | Pending |
-| MATCH-06 | TBD | Pending |
-| MATCH-07 | TBD | Pending |
-| BIAS-01 | TBD | Pending |
-| BIAS-02 | TBD | Pending |
-| BIAS-03 | TBD | Pending |
-| CACHE-01 | TBD | Pending |
-| CACHE-02 | TBD | Pending |
-| CACHE-03 | TBD | Pending |
-| CACHE-04 | TBD | Pending |
-| INFRA-01 | TBD | Pending |
-| INFRA-02 | TBD | Pending |
-| INFRA-03 | TBD | Pending |
-| INFRA-04 | TBD | Pending |
-| INFRA-05 | TBD | Pending |
+| MATCH-01 | Phase 3 | Pending |
+| MATCH-02 | Phase 2 | Pending |
+| MATCH-03 | Phase 4 | Pending |
+| MATCH-04 | Phase 4 | Pending |
+| MATCH-05 | Phase 4 | Pending |
+| MATCH-06 | Phase 4 | Pending |
+| MATCH-07 | Phase 6 | Pending |
+| BIAS-01 | Phase 7 | Pending |
+| BIAS-02 | Phase 7 | Pending |
+| BIAS-03 | Phase 7 | Pending |
+| CACHE-01 | Phase 1 | Pending |
+| CACHE-02 | Phase 1 | Pending |
+| CACHE-03 | Phase 1 | Pending |
+| CACHE-04 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 2 | Pending |
+| INFRA-03 | Phase 4 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19 (pending roadmap creation)
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after initial definition*
+*Last updated: 2026-02-02 after roadmap creation (traceability updated)*
