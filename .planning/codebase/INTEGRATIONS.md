@@ -1,96 +1,118 @@
 # External Integrations
 
-**Analysis Date:** 2026-02-01
+**Analysis Date:** 2026-02-02
 
 ## APIs & External Services
 
-**News Data:**
-- NewsAPI.org (https://newsapi.org/v2/) - Primary news article and source data provider
-  - SDK/Client: Retrofit 2.9.0 with OkHttp 4.12.0
-  - Auth: API key via BuildConfig.NEWS_API_KEY (configured in `secrets.properties`)
-  - Endpoints implemented in `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\remote\NewsApiService.kt`:
-    - `GET /top-headlines` - Fetch top headlines by country/category
-    - `GET /everything` - Search articles by query
-    - `GET /top-headlines/sources` - List available news sources
-  - API key injection: Automatically added to all requests via OkHttp interceptor in `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\remote\di\NetworkModule.kt`
+**News API:**
+- Service: NewsAPI.org - Aggregates articles from 40,000+ news sources
+  - SDK/Client: Retrofit interface in `com.newsthread.app.data.remote.NewsApiService`
+  - Auth: Query parameter `apiKey` injected via OkHttp interceptor
+  - Configuration: Base URL `https://newsapi.org/v2/`
+  - Endpoints:
+    - `GET /top-headlines` - Fetch latest articles by country/category
+    - `GET /everything` - Full-text search articles (queryable by date range)
+    - `GET /top-headlines/sources` - Get list of available news sources
+  - API Key Source: `BuildConfig.NEWS_API_KEY` from `secrets.properties`
+  - Implementation: `com.newsthread.app.data.remote.di.NetworkModule`
 
 ## Data Storage
 
 **Databases:**
-- SQLite via Room (local)
-  - Database name: `newsthread_database`
-  - Location: Device-local encrypted storage
-  - Client: Room 2.6.1 with Kotlin coroutine extensions
-  - Entities tracked: `SourceRatingEntity` (source bias/reliability ratings)
-  - DAO location: `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\local\dao\SourceRatingDao.kt`
-  - Database class: `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\local\AppDatabase.kt`
+- SQLite (Room ORM)
+  - Database: `newsthread_database` (local SQLite file)
+  - Connection: Via Room at `com.newsthread.app.data.local.AppDatabase`
+  - Client: Room 2.6.1 with KSP code generation
+  - Entities:
+    - `SourceRatingEntity` - Source bias/reliability ratings (table: `source_ratings`)
+  - DAOs:
+    - `SourceRatingDao` - Query/insert/update source ratings
+  - Migration: `fallbackToDestructiveMigration()` enabled for development
   - Schema export: Enabled via `exportSchema = true`
-  - Migration policy: Destructive migrations in development (`fallbackToDestructiveMigration()`)
 
 **File Storage:**
-- Local filesystem only for app-specific data
-- External storage permissions requested (scoped storage for Android 10+)
-
-**Cloud Backup:**
-- Google Drive API v3 (rev20231128-2.0.0) - Offline-first user data backup
-  - Client: Google API Client Android 2.2.0
-  - Purpose: Back up user preferences, tracked stories, ratings to personal Google Drive
-  - Auth: Google Sign-In via Play Services Auth 20.7.0
-  - Implementation status: Integrated as dependency, usage TBD in codebase
+- Local filesystem only
+  - App uses private app data directory for database
+  - No explicit file I/O for caching (handled by Room)
 
 **Caching:**
-- In-memory: Coil 2.5.0 image cache for article thumbnails
-- None: No Redis/Memcached integration
+- OkHttp level caching configured via network interceptor
+- Image caching: Coil handles disk/memory cache for images
+
+**Preferences:**
+- DataStore Preferences - Type-safe key-value storage
+  - Location: App private data directory
+  - Used for user preferences (device-level settings)
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- Firebase Authentication (included via firebase-bom:32.7.1)
-  - Implementation: Firebase Auth KTX for sign-in state management
-  - Usage: User authentication (implementation pending in current codebase)
+- Firebase Authentication (via firebase-auth-ktx)
+  - Configuration: `google-services.json` (not committed)
+  - Supports: Email/password, Google Sign-In
+  - Integration: Initialized via Firebase SDK in app startup
 
-- Google Sign-In (Google Play Services Auth 20.7.0)
-  - Purpose: Primary login mechanism and Google Drive access
-  - Scopes likely include: `profile`, `email`, `https://www.googleapis.com/auth/drive` (backup integration)
+**Google Sign-In:**
+- Google Play Services Auth (20.7.0)
+  - Purpose: OAuth sign-in, Google account selection
+  - Scope: Access to Google Drive for backup
+  - Permission: `android.permission.GET_ACCOUNTS` in manifest
+
+## Google Drive Integration
+
+**Purpose:** Offline-first backup of user data to personal Google Drive
+
+**Components:**
+- google-api-client-android (2.2.0) - Base Google API client
+- google-api-services-drive (v3) - Google Drive API v3
+- Authentication: OAuth 2.0 via Firebase Auth + Play Services Auth
+- Scopes: Drive API write/read access
+- Backup targets: User preferences, source ratings, article history
+
+**Current Status:**
+- Dependencies present in build.gradle.kts but not actively used in codebase
+- Google-services.json required but not checked into repository
+- Infrastructure in place for future implementation of backup sync
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- Not detected in current dependencies
-- Recommendation: Consider adding Firebase Crashlytics (available via firebase-bom:32.7.1) for production monitoring
+- None currently configured
+- Exception handling: Try-catch blocks with logging to Android Log
 
 **Logs:**
-- HttpLoggingInterceptor in debug builds (BODY level) for HTTP request/response inspection
-  - Location: `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\remote\di\NetworkModule.kt`
-  - Production: Disabled (NONE level)
-- Android Logcat via standard Kotlin logging (not explicitly configured)
+- Android Log (android.util.Log)
+- Development: `BuildConfig.DEBUG` controls log verbosity
+- HTTP logging: OkHttp HttpLoggingInterceptor logs full request/response body in debug builds
+- Pattern: `Log.e()`, `Log.d()` calls throughout app
 
 ## CI/CD & Deployment
 
 **Hosting:**
 - Google Play Store (target deployment platform)
-- App package: `com.newsthread.app` (release), `com.newsthread.app.debug` (debug)
+- Local APK builds via Gradle
 
 **CI Pipeline:**
-- Not detected in repository
-- Firebase and Google Services integration configured via `google-services.json`
+- None detected (no GitHub Actions, GitLab CI, or Jenkins configuration)
+- Manual builds: `./gradlew assembleDebug` and `./gradlew assembleRelease`
 
-**Build Variants:**
-- Debug: Logging enabled, no minification, `.debug` app ID suffix
-- Release: ProGuard minification enabled, resource shrinking enabled
+**Build Artifacts:**
+- Debug APK: Generated with `.debug` suffix
+- Release APK: Minified and shrunk via ProGuard/R8
 
 ## Environment Configuration
 
 **Required env vars:**
-- `NEWS_API_KEY` - API key for NewsAPI.org (loaded from `secrets.properties` at build time, not runtime)
+- `NEWS_API_KEY` - NewsAPI.org API key (critical, injected into BuildConfig)
 
 **Secrets location:**
-- `secrets.properties` (project root, git-ignored) - NewsAPI key and other sensitive configuration
-- `google-services.json` (`C:\Users\lweis\Documents\newsthread\app\google-services.json`, git-ignored) - Firebase project configuration with placeholder values
+- `secrets.properties` - Root project level, not committed to git
+- Loaded at build time in `app/build.gradle.kts`
+- Pattern: Properties file with key-value pairs
 
-**Build Configuration:**
-- `BuildConfig.NEWS_API_KEY` - Injected at build time from `secrets.properties`
-- Google API key from `google-services.json` - Automatically configured by Google Services plugin
+**Build Config Access:**
+- `BuildConfig.NEWS_API_KEY` - Exposed to app code
+- `BuildConfig.DEBUG` - Controls logging behavior
 
 ## Webhooks & Callbacks
 
@@ -99,53 +121,38 @@
 
 **Outgoing:**
 - None detected
-- Future consideration: NewsAPI webhooks for real-time article updates (if supported)
+- App is read-only for news API (no events posted back)
 
-## Permissions
+## Network Configuration
 
-**Network:**
-- `android.permission.INTERNET` - API calls to NewsAPI
-- `android.permission.ACCESS_NETWORK_STATE` - Check network connectivity
+**Security:**
+- Network security config: `app/src/main/res/xml/network_security_config.xml`
+- Cleartext traffic: Disabled for production, allowed only for debug builds (user certificates)
+- Trust anchors: System certificates for prod, user certificates for debug
 
-**Storage:**
-- `android.permission.READ_EXTERNAL_STORAGE` (maxSdkVersion 32) - Legacy external storage access
-- `android.permission.WRITE_EXTERNAL_STORAGE` (maxSdkVersion 29) - Legacy write access for caching
-- Scoped Storage: Enforced on Android 10+ via manifest configuration
+**HTTP Interceptors:**
+- HttpLoggingInterceptor (conditional on DEBUG build)
+- Custom API key injector - Adds `apiKey` query parameter to all NewsAPI requests
+- Implementation: `com.newsthread.app.data.remote.di.NetworkModule`
 
-**Accounts:**
-- `android.permission.GET_ACCOUNTS` - Google Sign-In account selection
+## Data Backup & Extraction
 
-**Background:**
-- `android.permission.RECEIVE_BOOT_COMPLETED` - WorkManager background tasks after device reboot
-- `android.permission.FOREGROUND_SERVICE` - Background sync operations
+**Cloud Backup Rules:** `app/src/main/res/xml/backup_rules.xml`
+- Includes: All SharedPreferences
+- Excludes: `device.xml` preference file
+- Targets: Android Cloud Backup service
 
-## Data Flow
+**Data Extraction Rules:** `app/src/main/res/xml/data_extraction_rules.xml`
+- Scope: User preferences in SharedPreferences
+- Automatic backup: Configured but controlled by Android OS
 
-**Article Fetching:**
-1. FeedScreen (UI) requests articles via ViewModel
-2. ViewModel calls NewsRepository
-3. NewsRepository invokes NewsApiService.getTopHeadlines() via Retrofit
-4. OkHttp interceptor adds API key to request
-5. NewsAPI returns JSON articles (NewsApiResponse)
-6. DTOs converted to domain models via extension functions in `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\remote\dto\ArticleDto.kt`
-7. Flow<Result<List<Article>>> emitted back to UI
+## Rate Limiting & Quotas
 
-**Source Ratings Storage:**
-1. User rates source bias/reliability in UI
-2. SourceRatingRepositoryImpl writes to Room DAO
-3. Data persists locally in SQLite
-4. Ratings retrieved from Room for display
-
-## API Configuration
-
-**Base URL:** `https://newsapi.org/v2/`
-
-**Response Format:** JSON
-
-**Authentication:** Query parameter `apiKey` added by OkHttp interceptor
-
-**Rate Limits:** Handled by NewsAPI (typically 100 requests/day for free tier)
+**NewsAPI.org:**
+- Plan: Free tier documented (rate limits vary by endpoint)
+- No local rate limiting implemented
+- No caching strategy for repeated queries
 
 ---
 
-*Integration audit: 2026-02-01*
+*Integration audit: 2026-02-02*

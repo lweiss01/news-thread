@@ -1,163 +1,120 @@
 # Technology Stack
 
-**Analysis Date:** 2026-02-01
+**Analysis Date:** 2026-02-02
 
 ## Languages
 
 **Primary:**
-- Kotlin 1.9.22 - Main language for all app code, includes Android-specific libraries and Compose
-- XML - Android manifest, layouts, configuration files, data extraction rules, backup rules, network security config
+- Kotlin 1.9.22 - Native Android development, all app code
+- Java 17 - JVM compilation target
 
 **Secondary:**
-- Java 17 - Compilation target (kotlinOptions jvmTarget = "17", compileOptions sourceCompatibility/targetCompatibility = VERSION_17)
+- XML - Android manifest, resources, configuration files
 
 ## Runtime
 
 **Environment:**
-- Android Runtime (API 26-34)
-- Min SDK: 26 (Android 8.0 Oreo)
-- Target SDK: 34 (Android 14)
+- Android Runtime (ART) - Target SDK 34 (Android 14)
+- Min SDK 26 (Android 8.0 Oreo)
 
-**Build System:**
-- Gradle 8.13.2 - Build orchestration and dependency management
-- Gradle configuration caching enabled (`org.gradle.configuration-cache=true`)
-- Kotlin Compiler Extension: 1.5.8 - Required for Compose compilation
+**Package Manager:**
+- Gradle 8.13.2 (wrapper-based)
+- Lockfile: `gradle.properties` and `gradle/wrapper/gradle-wrapper.properties`
 
 ## Frameworks
 
 **Core UI:**
-- Jetpack Compose (2024.02.00 BOM) - Declarative UI framework
-  - `androidx.compose.ui:ui` - Core UI primitives
-  - `androidx.compose.material3:material3` - Material Design 3 components
-  - `androidx.compose.material:material-icons-extended` - Icon library
-  - `androidx.compose.animation:animation` - Animation API
-
-**Navigation:**
-- `androidx.navigation:navigation-compose:2.7.6` - Compose-based navigation with routing
-
-**Lifecycle & ViewModels:**
-- `androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0` - ViewModel state management in Compose
-- `androidx.lifecycle:lifecycle-runtime-compose:2.7.0` - Lifecycle-aware Compose integration
-- `androidx.lifecycle:lifecycle-runtime-ktx:2.7.0` - Lifecycle-aware coroutine scopes
-
-**Database:**
-- Room 2.6.1 - Local SQLite persistence and ORM
-  - `androidx.room:room-runtime:2.6.1` - Runtime
-  - `androidx.room:room-ktx:2.6.1` - Coroutine extensions
-  - KSP compiler for code generation (`androidx.room:room-compiler:2.6.1`)
-
-**Networking:**
-- Retrofit 2.9.0 - REST API client
-  - `retrofit2:retrofit:2.9.0` - Core library
-  - `retrofit2:converter-gson:2.9.0` - JSON serialization via Gson
-
-- OkHttp 4.12.0 - HTTP client underneath Retrofit
-  - `okhttp3:okhttp:4.12.0` - Core HTTP client
-  - `okhttp3:logging-interceptor:4.12.0` - Debug request/response logging
+- Jetpack Compose (2024.02.00) - Declarative UI framework
+- Material Design 3 - Compose Material3 library
+- Jetpack Navigation Compose (2.7.6) - Screen routing and navigation
 
 **Dependency Injection:**
-- Hilt 2.50 - DI framework built on Dagger
-  - `com.google.dagger:hilt-android:2.50` - Core Hilt
-  - `com.google.dagger:hilt-android-compiler:2.50` - KSP annotation processing
-  - `androidx.hilt:hilt-navigation-compose:1.1.0` - Compose navigation integration
-  - `androidx.hilt:hilt-work:1.1.0` - WorkManager integration
-  - `androidx.hilt:hilt-compiler:1.1.0` - KSP compiler for WorkManager bindings
+- Dagger/Hilt (2.50) - Constructor injection with `@HiltViewModel`, `@Inject`
+- Hilt Android for lifecycle-aware injection
+- Hilt Navigation Compose (1.1.0) - VM creation in composables
 
-**Async & Reactive:**
-- Kotlin Coroutines 1.7.3
-  - `kotlinx-coroutines-android:1.7.3` - Android-specific coroutine context
-  - `kotlinx-coroutines-core:1.7.3` - Core coroutine library
-  - Repositories use `Flow<Result<T>>` for reactive data streams
+**Database:**
+- Room (2.6.1) - SQLite ORM with type-safe queries
+- KSP (1.9.22-1.0.17) - Annotation processing for Room code generation
+
+**Networking:**
+- Retrofit (2.9.0) - REST HTTP client
+- OkHttp (4.12.0) - HTTP client with logging interceptor
+- Gson - JSON serialization/deserialization
+
+**Async:**
+- Kotlin Coroutines (1.7.3) - Async/await patterns
+- Coroutines Flow - Reactive streams for data
 
 **Image Loading:**
-- Coil 2.5.0 (`io.coil-kt:coil-compose:2.5.0`) - Compose-native image loading and caching
-
-**User Preferences:**
-- DataStore 1.0.0 (`androidx.datastore:datastore-preferences:1.0.0`) - Type-safe preference storage
+- Coil Compose (2.5.0) - Async image loading for Compose
 
 **Background Work:**
-- WorkManager 2.9.0 (`androidx.work:work-runtime-ktx:2.9.0`) - Scheduled/one-time background tasks with Hilt support
+- WorkManager (2.9.0) - Scheduled background tasks
+- Hilt WorkManager integration (1.1.0)
 
-**Kotlin Standard Library:**
-- `org.jetbrains.kotlin:kotlin-stdlib` - From kotlin-bom:1.9.22
+**Preferences:**
+- DataStore Preferences (1.0.0) - Type-safe preferences (successor to SharedPreferences)
 
-**Android Core:**
-- `androidx.core:core-ktx:1.12.0` - Kotlin extensions for Android APIs
-- `androidx.activity:activity-compose:1.8.2` - Activity composability
-
-## Testing Frameworks
-
-**Unit Testing:**
-- JUnit 4.13.2 - Standard testing framework
-- Kotlin Coroutines Test 1.7.3 - Coroutine testing utilities and TestDispatchers
-
-**Instrumented Testing:**
-- `androidx.test.ext:junit:1.1.5` - AndroidX test extensions
-- `androidx.test.espresso:espresso-core:3.5.1` - UI testing framework
-- `androidx.compose.ui:ui-test-junit4` (from 2024.02.00 BOM) - Compose UI testing
-
-**Debug Tools:**
-- `androidx.compose.ui:ui-tooling:2024.02.00` - Compose preview and debugging
-- `androidx.compose.ui:ui-test-manifest:2024.02.00` - Test manifest configuration
+**Testing:**
+- JUnit (4.13.2) - Unit test framework
+- Kotlin Coroutines Test (1.7.3) - Coroutine testing utilities
+- Android Test (androidx.test) - Instrumented testing
+- Espresso (3.5.1) - UI automation testing
+- Compose UI Test - Compose-specific testing DSL
 
 ## Key Dependencies
 
 **Critical:**
-- Firebase Auth KTX - User authentication (included via firebase-bom:32.7.1)
-- Google API Client Android 2.2.0 - Base client for Google API interactions
-- Google API Services Drive v3 (rev20231128-2.0.0) - Google Drive API for backup functionality
-- Google Play Services Auth 20.7.0 - Google Sign-In integration
+- androidx.core:core-ktx (1.12.0) - Android Core Kotlin extensions
+- androidx.lifecycle:lifecycle-runtime-ktx (2.7.0) - Lifecycle-aware coroutine scoping
+- androidx.lifecycle:lifecycle-viewmodel-compose (2.7.0) - ViewModel integration with Compose
+- androidx.activity:activity-compose (1.8.2) - Activity integration with Compose
 
-**Plugins:**
-- Android Gradle Plugin 8.13.2 - Official Android build plugin
-- Kotlin Android Plugin 1.9.22 - Kotlin language support in Android builds
-- Hilt Android Plugin 2.50 - Dependency injection setup
-- Google Services Plugin 4.4.0 - Firebase and Google services integration
-- KSP Plugin 1.9.22-1.0.17 - Kotlin Symbol Processing for code generation (Room, Hilt)
+**External Services:**
+- com.google.firebase:firebase-auth-ktx - Firebase Authentication (BOM 32.7.1)
+- com.google.android.gms:play-services-auth (20.7.0) - Google Sign-In
+- com.google.api-client:google-api-client-android (2.2.0) - Google API client library
+- com.google.apis:google-api-services-drive (v3-rev20231128-2.0.0) - Google Drive API (v3)
+
+**Build Tools:**
+- Kotlin compiler extension (1.5.8) - For Compose state management
+- KSP compiler - Generates Room DAOs and Hilt components
+- ProGuard/R8 - Code shrinking and obfuscation (enabled for release builds)
 
 ## Configuration
 
 **Environment:**
-- Configuration from `secrets.properties` file (required, not committed)
-  - `NEWS_API_KEY` - News API key injected as BuildConfig.NEWS_API_KEY
-- Debug vs Release builds with different logging levels
-- Network interceptor in `NetworkModule` (location: `C:\Users\lweis\Documents\newsthread\app\src\main\java\com\newsthread\app\data\remote\di\NetworkModule.kt`) adds API key to all requests
+- `BuildConfig.DEBUG` - Determines HTTP logging level
+- `BuildConfig.NEWS_API_KEY` - NewsAPI.org API key from `secrets.properties`
+- `google-services.json` - Firebase configuration (app/google-services.json, not committed)
 
-**Build Options:**
+**Build Settings:**
+- Min API level 26, target API level 34
+- NonTransitiveRClass enabled for faster builds
+- Kotlin code style: official
+- Gradle parallel builds and configuration cache enabled
+- Gradle build cache enabled
+- JVM args: `-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8`
+
+**Security:**
+- Network security config restricts cleartext traffic (debug allows user certificates)
 - ProGuard minification enabled in release builds
 - Resource shrinking enabled in release builds
-- Vector drawable support library enabled
-- Build config field generation enabled
-- Compose feature enabled
-
-**Gradle Configuration:**
-- Max heap: 4096m, max metaspace: 512m
-- Parallel build execution enabled (`org.gradle.parallel=true`)
-- Configuration caching enabled for faster builds
-- Build caching enabled
-- Kotlin official code style enforced (`kotlin.code.style=official`)
-- AndroidX libraries enabled (`android.useAndroidX=true`)
-- Non-transitive R class enabled for better performance
-
-**Manifest Configuration:**
-- Network security configuration from `C:\Users\lweis\Documents\newsthread\app\src\main\xml\network_security_config`
-- Backup configuration rules from `C:\Users\lweis\Documents\newsthread\app\src\main\xml\backup_rules.xml`
-- Data extraction rules from `C:\Users\lweis\Documents\newsthread\app\src\main\xml\data_extraction_rules.xml`
 
 ## Platform Requirements
 
 **Development:**
-- JDK 17 or higher
-- Android SDK (API 34 minimum for compilation)
-- Gradle 8.13.2 (wrapper included in repository)
-- Kotlin 1.9.22 compiler
+- Android Studio (latest) with Kotlin plugin
+- Android SDK 34 (compileSdk)
+- Min SDK 26 for device testing
+- Emulator or connected Android device
 
 **Production:**
-- Android 8.0+ (API 26+) for app installation
-- Target Android 14 (API 34) features available on compatible devices
-- Internet connectivity required for news API calls
-- Google account required for Firebase Auth and Drive backup integration
+- Target: Google Play Store
+- Device support: Android 8.0 (API 26) and above
+- Supports various screen sizes via Compose adaptive layouts
 
 ---
 
-*Stack analysis: 2026-02-01*
+*Stack analysis: 2026-02-02*

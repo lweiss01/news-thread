@@ -1,150 +1,198 @@
 # Architecture
 
-**Analysis Date:** 2026-02-01
+**Analysis Date:** 2026-02-02
 
 ## Pattern Overview
 
-**Overall:** MVVM + Clean Architecture
+**Overall:** MVVM + Clean Architecture with layered separation of concerns
 
 **Key Characteristics:**
-- Clear separation into data, domain, and presentation layers
-- Dependency injection via Hilt for loose coupling
-- Reactive data flow using Kotlin Flow and StateFlow
-- ViewModels expose UI state to Compose screens
-- Repository pattern decouples data sources (local DB and remote API)
-- Domain layer contains pure business logic with no Android dependencies
+- **Layered Structure**: Data layer (repositories + API/DB), Domain layer (models + business logic), Presentation layer (UI + ViewModels)
+- **Reactive Data Flow**: Flow-based state management using Coroutines and StateFlow
+- **Dependency Injection**: Hilt for compile-time DI with module-based configuration
+- **Offline-First Design**: Room database provides local persistence; remote data flows through repositories
+- **Perspective-Driven Logic**: Article comparison engine categorizes content by political bias
 
 ## Layers
 
-**Presentation Layer:**
-- Purpose: UI rendering using Jetpack Compose and navigation
-- Location: `app/src/main/java/com/newsthread/app/presentation/`
-- Contains: Screens, ViewModels, Compose components, navigation configuration
-- Depends on: Domain layer (for use cases and models), Android framework (Compose, Navigation)
-- Used by: Android runtime
+**Data Layer:**
+- Purpose: Manages all data access (network API calls and local database operations)
+- Location: `app/src/main/java/com/newsthread/app/data/`
+- Contains: Retrofit API interfaces, Room DAOs/entities, Repository implementations, DTOs
+- Depends on: Retrofit + OkHttp (remote), Room (local), Domain models (for mapping)
+- Used by: ViewModels through repository interfaces
 
 **Domain Layer:**
-- Purpose: Pure business logic independent of Android framework
+- Purpose: Business logic, use cases, and pure Kotlin models independent of Android framework
 - Location: `app/src/main/java/com/newsthread/app/domain/`
-- Contains: Domain models (Article, Source, SourceRating), repository interfaces, use case logic
-- Depends on: Kotlin standard library, Coroutines
-- Used by: Presentation and data layers
+- Contains: Domain models (Article, SourceRating, ArticleComparison), Repository interfaces, article matching logic
+- Depends on: Nothing (no external dependencies)
+- Used by: Presentation layer (ViewModels), Data layer for interface definitions
 
-**Data Layer:**
-- Purpose: Data access and persistence across local database and remote API
-- Location: `app/src/main/java/com/newsthread/app/data/`
-- Contains: Room entities, DAOs, Retrofit API service, repository implementations
-- Depends on: Room, Retrofit, OkHttp, domain layer
-- Used by: Repositories that expose to domain layer
+**Presentation Layer:**
+- Purpose: Jetpack Compose UI components, ViewModels managing UI state, Navigation
+- Location: `app/src/main/java/com/newsthread/app/presentation/`
+- Contains: Composable functions, ViewModels using StateFlow, Navigation routes, Hilt AndroidEntryPoint classes
+- Depends on: Domain models/repositories, Compose Material 3, AndroidX Navigation, Hilt
+- Used by: Android Activity (MainActivity)
 
 **Dependency Injection Layer:**
-- Purpose: Configure and provide singleton instances
+- Purpose: Provides container configuration and bindings for all dependencies
 - Location: `app/src/main/java/com/newsthread/app/di/`
-- Contains: Hilt modules for database, network, and repository bindings
-- Depends on: Hilt, configuration classes
+- Contains: Hilt Modules (@Module, @Provides, @Binds), singleton scope definitions
+- Depends on: All layers for configuration
+- Used by: Entire application through @HiltViewModel, @AndroidEntryPoint
 
 ## Data Flow
 
-**Headline Loading Flow:**
+**Feed Screen Article Load:**
 
-1. FeedScreen loads with FeedViewModel (injected via hiltViewModel)
-2. FeedViewModel.init() calls loadHeadlines()
-3. loadHeadlines() collects from NewsRepository.getTopHeadlines()
-4. NewsRepository.getTopHeadlines() emits a Flow<Result<List<Article>>>
-5. Flow wraps a coroutine that calls NewsApiService.getTopHeadlines() (Retrofit)
-6. Retrofit response articles are mapped to domain Article models via toArticle() extension
-7. Result emitted to FeedViewModel, which updates _uiState StateFlow
-8. FeedScreen observes uiState via collectAsStateWithLifecycle()
-9. UI renders articles as LazyColumn of ArticleCard composables
+1. User launches app → MainActivity calls newsRepository.getTopHeadlines()
+2. NewsRepository (singleton) makes Retrofit call to NewsApiService
+3. API response wrapped in Result<List<Article>> Flow
+4. FeedViewModel collects Flow, updates _uiState StateFlow
+5. FeedScreen observes uiState with collectAsStateWithLifecycle()
+6. Article list renders via LazyColumn with ArticleCard composables
+7. SourceRatingRepository loads ratings in parallel, stored in _sourceRatings StateFlow
 
-**Source Rating Lookup Flow:**
+**Article Detail & Comparison Flow:**
 
-1. ArticleCard launches effect when article URL is available
-2. Calls viewModel.getSourceRating(article.url)
-3. viewModel suspends and queries SourceRatingRepository.findSourceForArticle(url)
-4. Repository extracts domain from URL, queries SourceRatingDao
-5. Dao returns SourceRatingEntity from Room database
-6. Entity mapped to domain SourceRating via toDomain() extension
-7. Domain model passed back to ArticleCard, SourceBadge displays rating
+1. User clicks ArticleCard → saves selected Article to NavController savedStateHandle
+2. Navigation to ArticleDetailRoute with URL-encoded URL parameter
+3. ArticleDetailScreen loads article in WebView
+4. User taps Compare button → ComparisonScreen launched with saved Article
+5. ComparisonViewModel.findSimilarArticles() called via LaunchedEffect
+6. ArticleMatchingRepositoryImpl performs entity extraction → searches NewsAPI → filters matches
+7. Matched articles categorized by bias using SourceRating lookup
+8. ArticleComparison result (left/center/right perspectives) emitted to ComparisonScreen
+9. UI renders three sections using PerspectiveHeader + ComparisonArticleCard list
 
-**Article Detail Navigation:**
+**State Management Pattern:**
 
-1. User clicks ArticleCard
-2. ArticleCard onClick triggers navController.navigate(ArticleDetailRoute.createRoute(url))
-3. URL is encoded and passed as route argument
-4. Navigation triggers ArticleDetailScreen composable
-5. ArticleDetailScreen receives URL, decodes it, loads WebView with article URL
+```
+ViewModel {
+    _uiState: MutableStateFlow<UiState> → uiState: StateFlow<UiState>
+    _sourceRatings: MutableStateFlow<Map<String, SourceRating>>
 
-**State Management:**
+    On Init: launch coroutine → repository.flow().collect { update _uiState }
+}
 
-- FeedViewModel holds private _uiState MutableStateFlow, exposes immutable StateFlow
-- State updated via _uiState.value = newState in response to repository emissions
-- UI observes uiState with collectAsStateWithLifecycle() which respects lifecycle events
-- When state is Loading, Error, or Success, corresponding UI branch renders
-- Error state includes retry button that calls loadHeadlines() again
+Screen @Composable {
+    val state = viewModel.uiState.collectAsStateWithLifecycle()
+    when (state) { Loading → ..., Success → ..., Error → ... }
+}
+```
 
 ## Key Abstractions
 
+**Article Matching Engine:**
+- Purpose: Find similar articles from different political perspectives covering the same story
+- Location: `app/src/main/java/com/newsthread/app/data/repository/ArticleMatchingRepositoryImpl.kt`
+- Pattern:
+  - Extract named entities (capitalized words) + important words (>5 chars) from title + description
+  - Search NewsAPI using top 3 entities within 3-day window
+  - Filter candidates: entity overlap ≥40%, title similarity 20-80%, not duplicate (>90%)
+  - Categorize by source bias score: -2 to -1 (left), 0 (center), +1 to +2 (right)
+  - Sort by publication date proximity to original article
+  - Return top 5 from each perspective
+
 **Repository Pattern:**
-- Purpose: Abstract data sources from business logic
-- Examples: `app/src/main/java/com/newsthread/app/data/repository/NewsRepository.kt`, `SourceRatingRepositoryImpl.kt`
-- Pattern: Repository implements domain interface, receives DAO and API service via constructor injection, maps between entities and domain models
+- Data repositories (`NewsRepository`, `SourceRatingRepositoryImpl`, `ArticleMatchingRepositoryImpl`) expose Flow-based APIs
+- Interface in domain layer (`SourceRatingRepository`, `ArticleMatchingRepository`) defines contracts
+- Implementation in data layer provides concrete logic
+- Hilt bindings in `RepositoryModule` wire implementations to interfaces
+- Example: `FeedViewModel` depends on `SourceRatingRepository` interface, receives `SourceRatingRepositoryImpl` at runtime
 
-**Flow for Async Data:**
-- Purpose: Emit sequences of data reactively, handle backpressure
-- Examples: NewsRepository.getTopHeadlines() returns Flow<Result<List<Article>>>, SourceRatingRepositoryImpl.getAllSourcesFlow()
-- Pattern: Use flow { } builder to wrap suspend functions, emit results, handle errors
-
-**StateFlow for UI State:**
-- Purpose: Hold mutable state that emits to all subscribers
-- Examples: FeedViewModel._uiState exposes StateFlow<FeedUiState>
-- Pattern: Create sealed interface for state variants (Loading, Success, Error), update via .value assignment
-
-**Entity-to-Domain Mapping:**
-- Purpose: Decouple database schema from domain models
-- Examples: SourceRatingEntity with extension toDomain() in `SourceRatingRepositoryImpl.kt`
-- Pattern: Room entities are mutable @Entity classes, domain models are immutable data classes, mappers in repository layer
-
-**Sealed Classes for Variants:**
-- Purpose: Model state with multiple outcomes
-- Examples: FeedUiState sealed interface with Loading, Success, Error variants
-- Pattern: Use sealed interface/class, implement with data object or data class, use when() for exhaustive matching
+**SourceRating Domain Model:**
+- Aggregates bias and reliability ratings from three sources: Allsides, AdFontes, MBFC
+- Provides helper methods: getBiasSymbol() (◄◄/◄/●/►/►►), getStarRating() (★/☆), getReliabilityDescription()
+- Used by presentation layer to display trust badges and perspective categorization
 
 ## Entry Points
 
 **MainActivity:**
 - Location: `app/src/main/java/com/newsthread/app/presentation/MainActivity.kt`
-- Triggers: Launched by Android OS when app starts
-- Responsibilities: Initialize database seeding, set Compose content, configure edge-to-edge display
+- Triggers: Android system launches app
+- Responsibilities:
+  - Database seeding (SourceRating entities loaded from JSON on first launch)
+  - Theme initialization (NewsThreadTheme)
+  - Scaffold with bottom nav bar
+  - NavHost setup with route definitions
 
-**NewsThreadApp Composable:**
-- Location: `app/src/main/java/com/newsthread/app/presentation/MainActivity.kt` (composable function)
-- Triggers: Called within MainActivity.setContent()
-- Responsibilities: Create NavController, set up Scaffold with bottom navigation bar, define NavHost with all screen routes
+**NewsThreadApp (Composable):**
+- Location: `app/src/main/java/com/newsthread/app/presentation/MainActivity.kt` (function inside MainActivity)
+- Triggers: Called by MainActivity.onCreate() via setContent {}
+- Responsibilities:
+  - Manages NavController and navigation stack
+  - Routes to Feed, Tracking, Settings, ArticleDetail, Comparison screens
+  - Passes articles via NavController savedStateHandle
 
 **FeedScreen:**
 - Location: `app/src/main/java/com/newsthread/app/presentation/feed/FeedScreen.kt`
-- Triggers: Default destination when app launches (Screen.Feed.route)
-- Responsibilities: Render headlines LazyColumn, manage loading/error states, handle article selection navigation
+- Triggers: NavHost composable on app launch (startDestination = Screen.Feed.route)
+- Responsibilities:
+  - Displays headline list via LazyColumn + ArticleCard
+  - Injects FeedViewModel via @HiltViewModel
+  - Observes newsRepository flow for article loading
+  - Observes sourceRatingRepository for bias badges
+  - Navigation to ArticleDetailRoute on article click
 
 ## Error Handling
 
-**Strategy:** Result wrapper with fold pattern
+**Strategy:** Result<T> pattern with fold() for success/failure branching
 
 **Patterns:**
-- NewsRepository wraps API calls in runCatching { } and emits Result type
-- FeedViewModel collects from repository and uses result.fold() to handle success/failure branches
-- Failure branch shows Error state with message and retry button
-- SourceRatingRepository queries use try-catch returning null on error, allowing graceful degradation
+- All repository methods return Flow<Result<T>> (success wraps T, failure wraps Exception)
+- ViewModels call repository.collect { result.fold(onSuccess, onFailure) }
+- UiState sealed interface includes Error variant with message String
+- UI displays error message in Box with Retry button that calls viewModel method again
+- Network errors logged with Log.e() for debugging; user sees friendly message
+
+**Example:**
+```kotlin
+// Repository
+fun getTopHeadlines(): Flow<Result<List<Article>>> = flow {
+    val result = runCatching { newsApiService.getTopHeadlines(...) }
+    emit(result)
+}
+
+// ViewModel
+newsRepository.getTopHeadlines().collect { result →
+    result.fold(
+        onSuccess = { articles → _uiState.value = FeedUiState.Success(articles) },
+        onFailure = { error → _uiState.value = FeedUiState.Error(error.message ?: "Failed") }
+    )
+}
+
+// UI
+when (uiState) {
+    is FeedUiState.Error → { Text(message); Button("Retry") { viewModel.loadHeadlines() } }
+}
+```
 
 ## Cross-Cutting Concerns
 
-**Logging:** Manual console logging via Log.d() and Log.e() in MainActivity during database seeding. OkHttp logging interceptor configured in NetworkModule with DEBUG level in debug builds.
+**Logging:**
+- Uses Android Log class (Log.d, Log.e, Log.w)
+- Tags match feature names: "NewsThread" (general), specific repository names for detailed traces
+- Heavy logging in ArticleMatchingRepositoryImpl for debugging entity extraction and matching thresholds
 
-**Validation:** Domain models assume valid data from repository. Entity parsing in DatabaseSeeder handles CSV parsing errors, returning null for malformed lines.
+**Validation:**
+- DTOs validate non-null required fields during mapping (ArticleDto.toArticle() returns null if title/url/publishedAt missing)
+- SourceRating entities require domain field for lookup
+- Navigation requires encoded URL parameter
 
-**Authentication:** Firebase Auth and Google Sign-In configured in dependencies (google-services.json), but not yet implemented in current screens. Permissions declared in AndroidManifest.xml.
+**Authentication:**
+- Firebase Authentication configured (dependency included, not yet implemented in UI)
+- Google Sign-In available via play-services-auth (for Drive API backup feature)
+- No current auth-protecting screens (all public)
+
+**Bias Filtering & Categorization:**
+- Central logic in ArticleMatchingRepositoryImpl.findRatingForArticle() and categorization logic
+- Lookup by: domain (parsed from URL) first, fallback to source.id
+- Bias score mapping: ≤-1 (left), 0 (center), ≥1 (right)
+- Unrated sources default to center perspective
 
 ---
 
-*Architecture analysis: 2026-02-01*
+*Architecture analysis: 2026-02-02*

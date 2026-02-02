@@ -1,209 +1,258 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-02-01
+**Analysis Date:** 2026-02-02
 
 ## Directory Layout
 
 ```
 newsthread/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/newsthread/app/
-│   │   │   │   ├── data/                      # Data layer
-│   │   │   │   │   ├── local/                 # Local database
-│   │   │   │   │   │   ├── dao/
-│   │   │   │   │   │   ├── entity/
-│   │   │   │   │   │   └── AppDatabase.kt
-│   │   │   │   │   ├── remote/                # Remote API
-│   │   │   │   │   │   ├── di/
-│   │   │   │   │   │   ├── dto/
-│   │   │   │   │   │   └── NewsApiService.kt
-│   │   │   │   │   └── repository/            # Data repositories
-│   │   │   │   ├── domain/                    # Domain layer
-│   │   │   │   │   ├── model/                 # Domain models
-│   │   │   │   │   ├── repository/            # Repository interfaces
-│   │   │   │   │   └── usecase/               # Use cases (if needed)
-│   │   │   │   ├── presentation/              # Presentation layer
-│   │   │   │   │   ├── feed/                  # News feed screen
-│   │   │   │   │   │   └── components/
-│   │   │   │   │   ├── detail/                # Article detail screen
-│   │   │   │   │   ├── tracking/              # Story tracking screen
-│   │   │   │   │   ├── settings/              # Settings screen
-│   │   │   │   │   ├── theme/                 # Compose theme
-│   │   │   │   │   ├── navigation/            # Navigation routes
-│   │   │   │   │   └── MainActivity.kt        # App entry point
-│   │   │   │   ├── di/                        # Dependency injection modules
-│   │   │   │   ├── util/                      # Utilities
-│   │   │   │   └── NewsThreadApp.kt           # Hilt application class
-│   │   │   ├── res/                           # Android resources
-│   │   │   │   ├── drawable/
-│   │   │   │   ├── mipmap-*/                  # App icons
-│   │   │   │   ├── values/
-│   │   │   │   └── xml/
-│   │   │   └── AndroidManifest.xml            # App manifest
-│   │   └── test/
-│   └── build.gradle.kts
-├── gradle/
-├── build.gradle.kts
-└── settings.gradle.kts
+├── app/                                          # Main Android app module
+│   ├── src/main/
+│   │   ├── java/com/newsthread/app/
+│   │   │   ├── data/                             # Data layer
+│   │   │   │   ├── local/                        # Room database
+│   │   │   │   │   ├── dao/                      # Data access objects
+│   │   │   │   │   │   └── SourceRatingDao.kt
+│   │   │   │   │   ├── entity/                   # Database entities
+│   │   │   │   │   │   └── SourceRatingEntity.kt
+│   │   │   │   │   └── AppDatabase.kt            # Room database class
+│   │   │   │   ├── remote/                       # Network layer
+│   │   │   │   │   ├── di/
+│   │   │   │   │   │   └── NetworkModule.kt      # Retrofit/OkHttp config (Hilt)
+│   │   │   │   │   ├── dto/                      # Data transfer objects
+│   │   │   │   │   │   ├── ArticleDto.kt
+│   │   │   │   │   │   ├── SourceDto.kt
+│   │   │   │   │   │   └── (mapper functions)
+│   │   │   │   │   └── NewsApiService.kt         # Retrofit interface
+│   │   │   │   └── repository/                   # Repository implementations
+│   │   │   │       ├── NewsRepository.kt
+│   │   │   │       ├── SourceRatingRepositoryImpl.kt
+│   │   │   │       └── ArticleMatchingRepositoryImpl.kt
+│   │   │   ├── domain/                           # Domain layer (pure Kotlin)
+│   │   │   │   ├── model/                        # Domain models
+│   │   │   │   │   ├── Article.kt
+│   │   │   │   │   ├── Source.kt
+│   │   │   │   │   ├── SourceRating.kt           # With helper methods for UI
+│   │   │   │   │   └── ArticleComparison.kt
+│   │   │   │   └── repository/                   # Repository interfaces
+│   │   │   │       ├── SourceRatingRepository.kt
+│   │   │   │       └── ArticleMatchingRepository.kt
+│   │   │   ├── presentation/                     # Presentation layer (Compose UI)
+│   │   │   │   ├── feed/                         # News feed feature
+│   │   │   │   │   ├── FeedScreen.kt             # Composable + ViewModel
+│   │   │   │   │   └── components/
+│   │   │   │   │       └── SourceBadge.kt        # Reusable badge component
+│   │   │   │   ├── detail/                       # Article detail screen
+│   │   │   │   │   └── ArticleDetailScreen.kt    # WebView for article content
+│   │   │   │   ├── comparison/                   # Article comparison feature
+│   │   │   │   │   ├── ComparisonScreen.kt       # Screen + helper composables
+│   │   │   │   │   └── ComparisonViewModel.kt
+│   │   │   │   ├── tracking/                     # Story tracking feature
+│   │   │   │   │   └── TrackingScreen.kt
+│   │   │   │   ├── settings/                     # User preferences
+│   │   │   │   │   └── SettingsScreen.kt
+│   │   │   │   ├── navigation/                   # Navigation setup
+│   │   │   │   │   ├── Screen.kt                 # Route definitions
+│   │   │   │   │   └── BottomNavBar.kt           # Bottom navigation UI
+│   │   │   │   ├── theme/                        # Design system
+│   │   │   │   │   ├── Theme.kt                  # Color + composition
+│   │   │   │   │   ├── Type.kt                   # Typography
+│   │   │   │   │   └── (Color.kt if present)
+│   │   │   │   ├── MainActivity.kt                # App entry point + root composable
+│   │   │   │   └── NewsThreadApp.kt (in MainActivity) # Root composable with NavHost
+│   │   │   ├── di/                               # Dependency injection
+│   │   │   │   ├── DatabaseModule.kt             # Room DI
+│   │   │   │   └── RepositoryModule.kt           # Repository bindings
+│   │   │   ├── util/                             # Shared utilities
+│   │   │   │   ├── DatabaseSeeder.kt             # Load SourceRating JSON seed data
+│   │   │   │   └── (other utilities)
+│   │   │   └── NewsThreadApp.kt                  # Application subclass with @HiltAndroidApp
+│   │   └── res/                                  # Android resources (layouts, strings, etc.)
+│   ├── build.gradle.kts                          # Module-level Gradle config
+│   └── ...
+├── build.gradle.kts                              # Root Gradle config
+├── settings.gradle.kts                           # Gradle settings
+├── gradle/                                       # Gradle wrapper files
+├── .gradle/                                      # Gradle cache (git-ignored)
+├── CLAUDE.md                                     # Project instructions
+├── README.md                                     # Project documentation
+├── secrets.properties                            # API keys (git-ignored)
+└── .planning/                                    # GSD planning artifacts
+    └── codebase/
+        ├── ARCHITECTURE.md
+        └── STRUCTURE.md
 ```
 
 ## Directory Purposes
 
-**app/src/main/java/com/newsthread/app/data/local/:**
-- Purpose: Local persistence using Room database
-- Contains: Database class, entities, data access objects (DAOs)
-- Key files: `AppDatabase.kt` (main database), `entity/SourceRatingEntity.kt`, `dao/SourceRatingDao.kt`
+**data/local/:**
+- Purpose: Room database persistence
+- Contains: Database schema (AppDatabase), entities (SourceRatingEntity), DAOs (SourceRatingDao)
+- Key files: `AppDatabase.kt` (singleton with getDatabase() factory)
 
-**app/src/main/java/com/newsthread/app/data/remote/:**
-- Purpose: Remote API communication via Retrofit
-- Contains: API service interface, DTOs for serialization, network configuration
-- Key files: `NewsApiService.kt` (API endpoints), `di/NetworkModule.kt` (Retrofit setup), `dto/ArticleDto.kt`, `dto/SourceDto.kt`
+**data/remote/:**
+- Purpose: External API integration (NewsAPI)
+- Contains: Retrofit interface (NewsApiService), DTOs for API responses, mapper functions
+- Key files: `NewsApiService.kt` (Retrofit interface), `ArticleDto.kt` (with toArticle() converter)
 
-**app/src/main/java/com/newsthread/app/data/repository/:**
-- Purpose: Concrete repository implementations
-- Contains: Classes implementing domain repository interfaces, data mapping logic
-- Key files: `NewsRepository.kt` (headline repository), `SourceRatingRepositoryImpl.kt` (ratings repository)
+**data/remote/di/:**
+- Purpose: Network layer dependency injection configuration
+- Contains: Retrofit + OkHttp setup, API key injection, logging interceptor
+- Key files: `NetworkModule.kt` (Hilt @Module)
 
-**app/src/main/java/com/newsthread/app/domain/model/:**
-- Purpose: Domain entities used throughout the application
-- Contains: Immutable data classes representing business concepts
-- Key files: `Article.kt`, `Source.kt`, `SourceRating.kt`
+**data/repository/:**
+- Purpose: Repository implementations combining data sources
+- Contains: NewsRepository (API-only), SourceRatingRepositoryImpl (Room DAO wrapper), ArticleMatchingRepositoryImpl (article comparison logic)
+- Key files: `ArticleMatchingRepositoryImpl.kt` (complex entity extraction and matching)
 
-**app/src/main/java/com/newsthread/app/domain/repository/:**
-- Purpose: Repository interfaces that define contracts
-- Contains: Abstract repository interfaces
-- Key files: `SourceRatingRepository.kt` (interface implemented by SourceRatingRepositoryImpl)
+**domain/model/:**
+- Purpose: Business domain models independent of framework/database
+- Contains: Article, Source, SourceRating (with UI helper methods), ArticleComparison
+- Key files: `SourceRating.kt` (aggregates bias ratings + provides getBiasSymbol(), getStarRating(), etc.)
 
-**app/src/main/java/com/newsthread/app/presentation/feed/:**
-- Purpose: News feed screen and related composables
-- Contains: FeedScreen composable, FeedViewModel, article card component
-- Key files: `FeedScreen.kt` (main screen + ViewModel), `components/SourceBadge.kt`
+**domain/repository/:**
+- Purpose: Repository interface contracts for DI
+- Contains: SourceRatingRepository interface, ArticleMatchingRepository interface
+- Used by: Data layer implements these, Presentation layer depends on them
 
-**app/src/main/java/com/newsthread/app/presentation/detail/:**
-- Purpose: Article detail screen
-- Contains: ArticleDetailScreen composable displaying WebView of article
-- Key files: `ArticleDetailScreen.kt`
+**presentation/feed/:**
+- Purpose: News feed listing feature
+- Contains: FeedScreen Composable, FeedViewModel, ArticleCard composable
+- Key files: `FeedScreen.kt` (includes ViewModel + screen UI + helpers)
 
-**app/src/main/java/com/newsthread/app/presentation/navigation/:**
-- Purpose: Navigation configuration and screen routing
-- Contains: Screen definitions, route constants, navigation bar UI
-- Key files: `Screen.kt` (sealed class for navigation routes), `BottomNavBar.kt`
+**presentation/detail/:**
+- Purpose: Full article viewing in WebView
+- Contains: ArticleDetailScreen Composable with embedded WebView
+- Key files: `ArticleDetailScreen.kt` (receives articleUrl + optional Article for comparison button)
 
-**app/src/main/java/com/newsthread/app/presentation/theme/:**
-- Purpose: Compose Material 3 theming
-- Contains: Color scheme, typography, theme composable
-- Key files: `Theme.kt`, `Type.kt`
+**presentation/comparison/:**
+- Purpose: Article comparison across perspectives
+- Contains: ComparisonScreen, ComparisonViewModel, perspective header + article card components
+- Key files: `ComparisonScreen.kt` (Layout + all composables), `ComparisonViewModel.kt` (state management)
 
-**app/src/main/java/com/newsthread/app/di/:**
-- Purpose: Hilt dependency injection configuration
-- Contains: Modules providing singleton instances
-- Key files: `DatabaseModule.kt` (Room setup), `RepositoryModule.kt` (repository bindings), `NetworkModule.kt` in `data/remote/di/`
+**presentation/navigation/:**
+- Purpose: Navigation routing and bottom bar
+- Contains: Route definitions (Feed, Tracking, Settings, ArticleDetail, Comparison), bottom navigation UI
+- Key files: `Screen.kt` (sealed class with route strings), `BottomNavBar.kt`
 
-**app/src/main/java/com/newsthread/app/util/:**
+**presentation/theme/:**
+- Purpose: Design system (Material 3 theming)
+- Contains: Color palette, typography, Compose theme composition
+- Key files: `Theme.kt` (NewsThreadTheme Composable), `Type.kt` (typography scales)
+
+**di/:**
+- Purpose: Global dependency injection configuration
+- Contains: Hilt Modules for singleton scopes
+- Key files: `DatabaseModule.kt` (AppDatabase provision), `RepositoryModule.kt` (@Binds for interfaces)
+
+**util/:**
 - Purpose: Shared utilities and helpers
-- Contains: General-purpose functions not specific to a layer
-- Key files: `DatabaseSeeder.kt` (CSV to database import)
-
-**app/src/main/res/:**
-- Purpose: Android resources (drawables, layouts, strings, themes)
-- Contains: App icons, color definitions, string resources, XML configurations
-- Key files: `mipmap-*/ ic_launcher.xml` (app icon), `values/strings.xml`, `xml/network_security_config.xml`
+- Contains: DatabaseSeeder (loads SourceRating JSON on app init), domain extraction helpers
+- Key files: `DatabaseSeeder.kt` (seeds Room with SourceRating data)
 
 ## Key File Locations
 
 **Entry Points:**
-- `app/src/main/java/com/newsthread/app/NewsThreadApp.kt`: Hilt Application class (initializes DI)
-- `app/src/main/java/com/newsthread/app/presentation/MainActivity.kt`: Activity launching the Compose app (database seeding, NavHost setup)
-- `app/src/main/AndroidManifest.xml`: Manifest defining MainActivity as launcher activity
+- `app/src/main/java/com/newsthread/app/NewsThreadApp.kt`: Application subclass with @HiltAndroidApp
+- `app/src/main/java/com/newsthread/app/presentation/MainActivity.kt`: Activity entry point, database seeding, theme setup
 
 **Configuration:**
-- `app/build.gradle.kts`: Gradle build configuration, dependencies, API key BuildConfig
-- `build.gradle.kts`: Root project configuration
-- `app/src/main/AndroidManifest.xml`: App permissions, activity declarations
-- `app/src/main/res/xml/network_security_config.xml`: Network security configuration
+- `app/build.gradle.kts`: Dependencies, buildConfig (API_KEY), Compose setup, Hilt/KSP config
+- `secrets.properties`: API keys (NEWS_API_KEY) - git-ignored, loaded in build.gradle.kts
 
 **Core Logic:**
-- `app/src/main/java/com/newsthread/app/data/remote/NewsApiService.kt`: API endpoints (getTopHeadlines, searchArticles, getSources)
-- `app/src/main/java/com/newsthread/app/data/repository/NewsRepository.kt`: Headlines repository
-- `app/src/main/java/com/newsthread/app/data/repository/SourceRatingRepositoryImpl.kt`: Source ratings repository with domain matching logic
-- `app/src/main/java/com/newsthread/app/presentation/feed/FeedScreen.kt`: Main feed UI and ViewModel
+- `app/src/main/java/com/newsthread/app/data/repository/ArticleMatchingRepositoryImpl.kt`: Article comparison algorithm
+- `app/src/main/java/com/newsthread/app/domain/model/SourceRating.kt`: Bias rating aggregation
+- `app/src/main/java/com/newsthread/app/data/local/AppDatabase.kt`: Room database singleton
 
 **Testing:**
-- `app/src/test/`: Unit test directory (androidx.test.ext:junit, kotlinx.coroutines.test)
-- `app/src/androidTest/`: Instrumented test directory (espresso, compose UI tests)
+- Test files: Not present (testing structure to be established)
+- Test dependencies: JUnit 4, Coroutines-test, Espresso, Compose UI test in build.gradle.kts
 
 ## Naming Conventions
 
 **Files:**
-- Kotlin files use PascalCase: `MainActivity.kt`, `FeedViewModel.kt`, `NewsApiService.kt`
-- DTOs suffixed with Dto: `ArticleDto.kt`, `SourceDto.kt`
-- Entities suffixed with Entity: `SourceRatingEntity.kt`
-- DAOs suffixed with Dao: `SourceRatingDao.kt`
-- Repositories suffixed with Impl (implementations): `SourceRatingRepositoryImpl.kt`
-- Screens suffixed with Screen: `FeedScreen.kt`, `ArticleDetailScreen.kt`
-- Composables (lower-case functions) use camelCase: `ArticleCard`, `SourceBadge`
+- `*Screen.kt`: Composable screens (FeedScreen, ArticleDetailScreen, etc.)
+- `*ViewModel.kt`: ViewModel classes managing UI state (FeedViewModel, ComparisonViewModel)
+- `*Impl.kt`: Repository implementations (SourceRatingRepositoryImpl, ArticleMatchingRepositoryImpl)
+- `*Dto.kt`: Data transfer objects for APIs (ArticleDto, SourceDto)
+- `*Entity.kt`: Room database entities (SourceRatingEntity)
+- `*Dao.kt`: Room DAOs (SourceRatingDao)
+- `*Repository.kt`: Repository interfaces or main implementation
+- `*Module.kt`: Hilt dependency injection modules (NetworkModule, DatabaseModule, RepositoryModule)
 
 **Directories:**
-- Feature directories use singular noun: `feed`, `detail`, `settings` (not `feeds`, `details`)
-- Layer directories use descriptive names: `local`, `remote`, `repository`, `domain`, `presentation`
-- Component directories use plural: `components/`, `dao/`, `dto/`, `entity/`
+- Plural for feature collections: `feed/`, `presentation/`, `domain/`
+- Singular or specific for single items: `local/`, `remote/`, `data/`, `di/`, `util/`
+- Feature-named: Each presentation feature gets its own folder (feed/, detail/, comparison/, tracking/, settings/)
 
-**Classes:**
-- ViewModels: `{Feature}ViewModel` (e.g., `FeedViewModel`)
-- Sealed interfaces for state: `{Feature}UiState` (e.g., `FeedUiState`)
-- Sealed classes for routes: `{Feature}Route` or `Screen` (e.g., `ArticleDetailRoute`, `Screen`)
-- Repository interfaces: `{Entity}Repository` (e.g., `SourceRatingRepository`)
-- Repository implementations: `{Entity}RepositoryImpl` (e.g., `SourceRatingRepositoryImpl`)
-- Screens: `{Feature}Screen` (e.g., `FeedScreen`)
+**Functions/Classes (Kotlin):**
+- Use camelCase for functions and variables
+- Use PascalCase for classes, data classes, sealed interfaces
+- Private composables prefix with lowercase: `ArticleCard()`, `ComparisonArticleCard()`
+- ViewModel sealed state interfaces: `FeedUiState`, `ComparisonUiState`
+- State variants: `Loading`, `Success(data)`, `Error(message)`
 
 ## Where to Add New Code
 
-**New Feature (e.g., Search):**
-- Primary code: Create `app/src/main/java/com/newsthread/app/presentation/search/` with `SearchScreen.kt` and `SearchViewModel.kt`
-- Domain logic: Add to `app/src/main/java/com/newsthread/app/domain/repository/SearchRepository.kt` interface
-- Data layer: Add implementation in `app/src/main/java/com/newsthread/app/data/repository/SearchRepositoryImpl.kt`
-- Navigation: Add `data object Search : Screen(...)` to `app/src/main/java/com/newsthread/app/presentation/navigation/Screen.kt`
-- DI: Add @Binds for repository in `app/src/main/java/com/newsthread/app/di/RepositoryModule.kt`
-- Tests: Add unit tests in `app/src/test/java/com/newsthread/app/presentation/search/SearchViewModelTest.kt`
+**New Feature (e.g., Saved Articles):**
+1. **Presentation**: Create `presentation/saved/` with `SavedScreen.kt` + `SavedViewModel.kt`
+2. **Domain Model**: Add `SavedArticle` data class in `domain/model/SavedArticle.kt`
+3. **Data Layer**: Create `data/local/entity/SavedArticleEntity.kt` + `SavedArticleDao.kt`
+4. **Repository**: Add `SavedArticleRepository` interface in `domain/repository/`, implement in `data/repository/SavedArticleRepositoryImpl.kt`
+5. **DI**: Add binding in `RepositoryModule.kt` (`@Binds` for interface → implementation)
+6. **Navigation**: Add `data object Saved : Screen(...)` to `presentation/navigation/Screen.kt`
 
-**New Component/Module:**
-- Implementation: Follow feature directory structure above
-- Composables: Place in `app/src/main/java/com/newsthread/app/presentation/{feature}/components/` or main feature file
-- ViewModel: Create as inner class or separate file in feature directory
+**New API Endpoint:**
+1. Add method to `data/remote/NewsApiService.kt` (Retrofit interface)
+2. Create DTO in `data/remote/dto/` with mapper function (`.toModel()`)
+3. Create repository in `data/repository/` returning `Flow<Result<T>>`
+4. Bind in DI (if using repository pattern)
+5. Inject into ViewModel, expose as `StateFlow<UiState>`
 
-**Utilities:**
-- Shared helpers: Add to `app/src/main/java/com/newsthread/app/util/`
-- Extension functions: Can be in same package as usage or in a dedicated file like `StringExtensions.kt`
-- Constants: Define in object companion blocks or in a `Constants.kt` file
+**New Composable Component:**
+1. Create in feature subdirectory: `presentation/feed/components/YourComponent.kt`
+2. Make private if only used by parent screen
+3. Accept state as parameters (immutable data passing)
+4. Use `@Composable @Preview` for design-time preview
 
-**Database Entities:**
-- New entities: Add to `app/src/main/java/com/newsthread/app/data/local/entity/`
-- New DAOs: Add to `app/src/main/java/com/newsthread/app/data/local/dao/`
-- Register in: `AppDatabase.kt` entities list and abstract fun declarations
-
-**API DTOs:**
-- Request/response models: Add to `app/src/main/java/com/newsthread/app/data/remote/dto/`
-- API methods: Add to `app/src/main/java/com/newsthread/app/data/remote/NewsApiService.kt`
+**Utility Functions:**
+- Shared across features: `util/` directory
+- Feature-specific helpers: Keep in feature folder (e.g., `presentation/feed/helpers/` if many)
+- Domain-level text processing: `domain/` (e.g., entity extraction)
 
 ## Special Directories
 
-**app/build/:**
-- Purpose: Generated build artifacts
+**build/**:
+- Purpose: Gradle build outputs
 - Generated: Yes
-- Committed: No (in .gitignore)
+- Committed: No (.gitignore)
+- Contains: APK artifacts, intermediate classes
 
-**app/src/main/res/:**
-- Purpose: Android resources (drawables, layouts, strings)
-- Generated: Partially (generated from Compose at compile time)
-- Committed: Yes (hand-written XML files)
+**.gradle/**:
+- Purpose: Gradle cache and plugins
+- Generated: Yes
+- Committed: No (.gitignore)
+- Cached: Build artifacts, dependency metadata
 
-**gradle/wrapper/:**
-- Purpose: Gradle wrapper for reproducible builds
-- Generated: No (checked in)
-- Committed: Yes
+**res/**:
+- Purpose: Android resources (strings, drawables, layouts, etc.)
+- Generated: Partially (build tools generate R.java)
+- Committed: Yes (source resources)
+- Note: Compose-based project minimizes XML layouts
+
+**secrets.properties:**
+- Purpose: API keys and sensitive configuration
+- Generated: Manual (developer creates locally)
+- Committed: No (.gitignore)
+- Required: Build fails without NEWS_API_KEY
+
+**.planning/**:
+- Purpose: GSD analysis and planning artifacts
+- Generated: By GSD tools
+- Committed: Yes (documents changes over time)
+- Contains: ARCHITECTURE.md, STRUCTURE.md, CONCERNS.md, etc.
 
 ---
 
-*Structure analysis: 2026-02-01*
+*Structure analysis: 2026-02-02*

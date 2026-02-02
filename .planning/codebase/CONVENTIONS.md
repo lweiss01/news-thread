@@ -1,230 +1,167 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-02-01
+**Analysis Date:** 2026-02-02
 
 ## Naming Patterns
 
 **Files:**
-- PascalCase for Kotlin classes: `FeedScreen.kt`, `NewsRepository.kt`, `ArticleDetailScreen.kt`
-- PascalCase for composable functions: `ArticleCard()`, `SourceBadge()`
-- Lowercase snake_case for resources and drawables: `source_ratings` (database table)
-- Data Transfer Objects (DTOs) use suffix: `ArticleDto`, `SourceDto`, `NewsApiResponse`
-- Entity classes use suffix: `SourceRatingEntity`
-- Repository implementations use suffix: `SourceRatingRepositoryImpl`
+- PascalCase for classes and interfaces: `NewsRepository.kt`, `FeedViewModel.kt`, `SourceRatingEntity.kt`
+- PascalCase with "Impl" suffix for implementation classes: `SourceRatingRepositoryImpl.kt`, `ArticleMatchingRepositoryImpl.kt`
+- PascalCase for composable functions: `FeedScreen.kt`, `ArticleDetailScreen.kt`, `SourceBadge.kt`
+- PascalCase for data classes and sealed interfaces: `Article.kt`, `FeedUiState.kt`
+- Descriptive names for utility/extension functions in DTOs: `ArticleDto.kt` contains `toArticle()`, `SourceDto.kt` contains `toSource()`
 
 **Functions:**
-- camelCase for all function names: `getTopHeadlines()`, `findSourceForArticle()`, `loadHeadlines()`
-- Private functions prefixed with underscore in property names: `_uiState` (private backing field)
-- Composable functions are `@Composable` annotated and use PascalCase: `FeedScreen()`, `ArticleCard()`
-- Suspend functions used with Flow/coroutines: `suspend fun getSourceById()`, `suspend fun insert()`
-- Lambda parameters use `it` convention in simple cases: `.map { it.toDomain() }`
+- camelCase for all functions, both public and private: `loadHeadlines()`, `loadSourceRatings()`, `extractDomain()`, `findRatingForArticle()`
+- Composable functions use PascalCase: `FeedScreen()`, `ArticleCard()`, `SourceBadge()`
+- Extension functions in DTOs use simple verbs: `toArticle()`, `toDomain()`, `toEntity()`
+- Private helper functions with descriptive names: `findByDomainComponents()`, `extractDomain()`, `findRatingForArticle()`
+- Repository methods use action verbs: `getTopHeadlines()`, `getAllSources()`, `findSimilarArticles()`, `getSourcesByBiasScore()`
 
 **Variables:**
-- camelCase: `viewModel`, `sourceRating`, `articleUrl`, `navController`
-- Private properties with underscore backing: `private val _uiState`, `val uiState` (public exposed)
-- State variables explicitly marked `private` when backing fields: `private val _uiState = MutableStateFlow<FeedUiState>()`
-- Constants in UPPER_SNAKE_CASE within companion objects: `DATABASE_NAME`, `NEWS_API_KEY`
+- camelCase for all local and member variables: `uiState`, `sourceRatings`, `viewModel`, `article`, `domain`
+- Private backing fields use underscore prefix with camelCase: `_uiState`, `_sourceRatings`, `_uiState`
+- Constants in companion objects use UPPER_SNAKE_CASE: `DATABASE_NAME`, `NEWS_API_KEY`
+- Meaningful names that describe the content: `sourceRatings` (not `ratings`), `articleUrl` (not `url`)
 
 **Types:**
-- Sealed interfaces for state classes: `sealed interface FeedUiState`
-- Data classes with `data class` keyword: `data class Article(...)`, `data class SourceRating(...)`
-- Repository interfaces without suffix: `SourceRatingRepository` (in domain layer)
-- ViewModel classes with suffix: `FeedViewModel`, `class FeedViewModel @Inject constructor(...)`
+- PascalCase for all custom types: `Article`, `SourceRating`, `ArticleComparison`, `NewsApiResponse`
+- Sealed interfaces for UI state: `FeedUiState`, `ComparisonUiState` with object/data class implementations
+- Entity suffix for Room database entities: `SourceRatingEntity`
+- Dto suffix for API response objects: `ArticleDto`, `SourceDto`, `NewsApiResponse`, `SourcesResponse`
 
 ## Code Style
 
 **Formatting:**
-- Kotlin standard formatting conventions (no explicit formatter config found)
-- Consistent indentation: 4 spaces
-- Multiline parameter lists aligned with opening parenthesis
-- Trailing commas in multiline collections
-
-**Example formatting from codebase:**
-```kotlin
-// Parameters aligned
-composable(
-    route = ArticleDetailRoute.route,
-    arguments = listOf(
-        navArgument("articleUrl") { type = NavType.StringType }
-    )
-) { backStackEntry ->
-    // body
-}
-```
+- No explicit formatter configured (not detected in `.editorconfig` or `.prettierrc`)
+- Implicit Android Studio/IntelliJ IDEA defaults apply
+- Standard Kotlin formatting: 4-space indentation, line-based organization
+- Consistent spacing in modifier chains and function parameters
 
 **Linting:**
-- No explicit linting rules configured (no detekt.yml or ktlint config found)
-- Standard Kotlin conventions followed implicitly
-- Build uses standard Android Gradle plugin without explicit lint configuration
+- Android Lint active (configured in build.gradle.kts)
+- No explicit lint rules configuration found
+- Standard Android linting behavior applies
 
 ## Import Organization
 
 **Order:**
 1. Package declaration
-2. Local package imports (com.newsthread.app)
-3. Framework imports (androidx, android)
-4. Third-party imports (dagger, retrofit, kotlinx)
-5. Java/Kotlin standard library
+2. Import statements (alphabetically organized)
+3. Blank line before code
 
-**Example from `FeedScreen.kt`:**
+**Pattern observed in codebase:**
 ```kotlin
 package com.newsthread.app.presentation.feed
 
-import com.newsthread.app.presentation.navigation.ArticleDetailRoute
-import androidx.navigation.NavController
-import androidx.compose.foundation.layout.* // Wildcard imports acceptable for compose
+import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+// ... more compose imports
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
 import com.newsthread.app.data.repository.NewsRepository
+import com.newsthread.app.domain.model.Article
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 ```
 
 **Path Aliases:**
-- No import aliases configured in codebase
-- Fully qualified imports used throughout
-- Wildcard imports used selectively for Compose (androidx.compose.foundation.layout.*)
+- No path aliases (tsconfig/compilerOptions) detected
+- Uses full package paths: `com.newsthread.app.presentation`, `com.newsthread.app.domain.model`
+- Imports organized by origin: Android, AndroidX, Compose, App-specific, external libraries, Kotlin stdlib
 
 ## Error Handling
 
 **Patterns:**
-- `runCatching` with `fold()` for synchronous operations:
-  ```kotlin
-  val result = runCatching {
-      val response = newsApiService.getTopHeadlines(...)
-      response.articles.mapNotNull { it.toArticle() }
-  }
-  emit(result)
-  ```
+- `Result<T>` wrapper type using `runCatching` blocks: See `NewsRepository.kt` lines 19-28
+- `fold()` for Result handling with `onSuccess` and `onFailure` blocks: See `FeedViewModel.kt` lines 96-105
+- Try-catch for extraction utilities that might fail: See `SourceRatingRepositoryImpl.kt` lines 69-82, 98-109
+- Null coalescing with `?:` operator: See `FeedScreen.kt` line 264-266
+- Safe call operator `?.let{}` for optional values: See `FeedScreen.kt` lines 229-238, 241-252
+- Log.e() for error logging with exception parameter: See `FeedViewModel.kt` line 88
+- Graceful degradation with defaults: See `ArticleDto.toArticle()` lines 34-38 (unknown source default)
 
-- Try-catch with null return for optional operations:
-  ```kotlin
-  override suspend fun findSourceForArticle(articleUrl: String): SourceRating? {
-      return try {
-          val domain = extractDomain(articleUrl)
-          dao.getByDomain(domain)?.toDomain() ?: dao.findByDomainPart(domain)?.toDomain()
-      } catch (e: Exception) {
-          null
-      }
-  }
-  ```
-
-- Result type in Flow for async operations (Success/Error states)
-- Sealed interface for UI state management: `sealed interface FeedUiState` with `Loading`, `Success`, `Error` variants
-- Log.d() for debug info, Log.e() for errors with exception stacktrace:
-  ```kotlin
-  Log.d("NewsThread", "✅ Seeded $count source ratings!")
-  Log.e("NewsThread", "❌ Error: ${e.message}", e)
-  ```
+**Error message patterns:**
+- User-facing messages in UI state: `"Failed to load articles"`, `"No similar articles found from other perspectives"`
+- Error details in logs with full exception: `Log.e("NewsThread", "Error loading source ratings: ${e.message}", e)`
 
 ## Logging
 
 **Framework:** `android.util.Log`
 
 **Patterns:**
-- Log tag using constant app name: `Log.d("NewsThread", ...)`
-- Debug logging for informational messages: `Log.d()`
-- Error logging with exception: `Log.e("NewsThread", "message", e)`
-- Emoji prefixes for visual distinction in logs: ✅, ℹ️, ❌
-- Logged during initialization and error scenarios
-
-**Example:**
-```kotlin
-try {
-    val count = seeder.seedSourceRatings()
-    if (count > 0) {
-        Log.d("NewsThread", "✅ Seeded $count source ratings!")
-    } else {
-        Log.d("NewsThread", "ℹ️ Database already seeded")
-    }
-} catch (e: Exception) {
-    Log.e("NewsThread", "❌ Error: ${e.message}", e)
-    e.printStackTrace()
-}
-```
+- Log.e() for errors with tag "NewsThread": `Log.e("NewsThread", "Error loading source ratings: ${e.message}", e)`
+- No debug logging observed in core logic
+- Logging used for error tracking and diagnostics, not flow logging
 
 ## Comments
 
 **When to Comment:**
-- Class-level documentation for significant classes with purpose and usage
-- Method-level documentation using KDoc style for DAOs and repository methods
-- Inline comments for complex logic (domain extraction, filtering algorithms)
-- Section headers for organizing related methods in DAOs
+- Class-level documentation for important contracts
+- Interface documentation explaining the purpose and parameters
+- Inline comments for complex logic (domain lookups, extraction algorithms)
+- Comments flagging temporary/developmental decisions (e.g., `fallbackToDestructiveMigration()` for development)
 
-**JSDoc/TSDoc:**
-- KDoc format used for documentation:
-  ```kotlin
-  /**
-   * Main Room database for NewsThread.
-   *
-   * Version 1: Initial version with SourceRating support
-   */
-  ```
+**KDoc/JSDoc:**
+- Used for interface methods: See `ArticleMatchingRepository.kt` lines 10-15
+- Used for repository interface contracts: See `SourceRatingRepository.kt` lines 6-9
+- Used for entity field documentation: See `SourceRatingEntity.kt` lines 6-31
+- Format: Standard Kotlin KDoc with `/**` and `*/`
+- Includes parameter descriptions `@param article The original article to find matches for`
+- Includes return descriptions `@return Flow of ArticleComparison with matched articles`
 
-- Method documentation in DAOs:
-  ```kotlin
-  /**
-   * Data Access Object for source ratings.
-   */
-  @Dao
-  interface SourceRatingDao {
-  ```
-
-- Section headers in DAOs to organize method groups:
-  ```kotlin
-  // ========== Insert ==========
-  @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun insert(sourceRating: SourceRatingEntity)
-  ```
+**Inline comments:**
+- Minimal but strategic: `// NEW:` comments marking recent features (see FeedViewModel.kt lines 69, 75, 78)
+- Helper comments explaining domain logic: See `SourceRatingRepositoryImpl.kt` lines 73-78
+- Section headers for grouping related methods: `// ========== Mappers ==========` (line 21)
 
 ## Function Design
 
 **Size:**
-- Most functions kept under 50 lines
-- Composable functions split into private helper composables: `FeedScreen()` and private `ArticleCard()`
-- Repository methods typically 5-15 lines (thin wrappers around DAO calls)
+- Small, focused functions (most under 30 lines)
+- Repository methods average 5-15 lines
+- ViewModel methods 15-20 lines
+- Composable functions vary: Simple composables 10-30 lines, complex ones up to 70 lines
 
 **Parameters:**
-- Dependency injection via constructor for repositories and viewmodels: `@Inject constructor(...)`
-- State and callbacks passed explicitly to composables
-- Optional parameters with default values: `country: String = "us"`, `category: String? = null`
-- Named parameters used in function calls for clarity
+- Use default parameters in Retrofit interfaces: `@Query("country") country: String = "us"`
+- Repository methods accept specific filters: `getSourcesByBiasScore(score: Int)`, `getSourcesInBiasRange(minScore: Int, maxScore: Int)`
+- Composables use trailing lambda for callbacks: `onClick: () -> Unit`
+- Constructor injection for dependencies: `@Inject constructor(private val newsRepository: NewsRepository)`
 
 **Return Values:**
-- Nullable types for optional values: `SourceRating?`, `SourceRatingEntity?`
-- Flow for reactive streams: `Flow<List<SourceRating>>`, `StateFlow<FeedUiState>`
-- Result type for error handling: `Result<List<Article>>`
-- Suspend functions return unwrapped values (error handling via try-catch or runCatching)
+- Reactive flows for data: `Flow<Result<List<Article>>>`, `Flow<List<SourceRating>>`
+- State flows for UI state: `StateFlow<FeedUiState>`
+- Nullable types where absence is meaningful: `suspend fun getSourceById(sourceId: String): SourceRating?`
+- Result wrapper type for operations with fallible outcomes: `Result<List<Article>>`
+- Sealed interfaces for discriminated union types: `sealed interface FeedUiState` with `Loading`, `Success`, `Error`
 
 ## Module Design
 
 **Exports:**
-- Public methods exposed from repositories without implementation details
-- ViewModel exposes StateFlow for reactive state: `val uiState: StateFlow<FeedUiState>`
-- Private implementation details hidden: `private val _uiState` with public `uiState` accessor
+- Single responsibility per file: One main class/interface per file
+- Companion objects for singleton construction: See `AppDatabase.kt` lines 28-54
+- Top-level extension functions in DTOs: `fun ArticleDto.toArticle(): Article?` (no class wrapper)
 
 **Barrel Files:**
-- No explicit barrel files (index.kt exports) found in codebase
-- Imports use direct file paths to classes
+- Not observed in codebase
+- Each source file represents a single entity/concept
 
-## Special Patterns
+## Type System
 
-**Dependency Injection:**
-- Hilt annotation `@HiltViewModel` for ViewModels
-- `@Inject` on constructor parameters for all DI-managed classes
-- `@Module` and `@Provides` pattern for Retrofit/OkHttp configuration
-- `@Singleton` scope for repositories and network clients
+**Sealed Types for UI State:**
+- Standard pattern throughout: `sealed interface FeedUiState`, `sealed interface ComparisonUiState`
+- Implementations as data classes or objects: `data class Success(val articles: List<Article>)`, `data object Loading`
+- Used with exhaustive when expressions in UI layer
 
-**Data Transformation:**
-- Extension functions for DTOs to domain models: `ArticleDto.toArticle(): Article?`
-- Mapping functions in repositories: `private fun SourceRatingEntity.toDomain(): SourceRating`
-- Null filtering during transformation: `mapNotNull { it.toArticle() }`
+**Data Classes:**
+- Used for domain models: `data class Article(...)`, `data class SourceRating(...)`
+- Used for API DTOs: `data class ArticleDto(...)`, `data class NewsApiResponse(...)`
+- Used for UI state payloads: `data class Success(val articles: List<Article>)`
 
-**State Management:**
-- StateFlow with private MutableStateFlow backing: common pattern for ViewModels
-- Sealed interfaces for type-safe state classes
-- LaunchedEffect for side effects in Composables: `LaunchedEffect(article.url) { ... }`
-- collectAsStateWithLifecycle() for lifecycle-aware state collection
-
----
-
-*Convention analysis: 2026-02-01*
+**Nullable vs Non-Null:**
+- Non-null for required fields: `val title: String`, `val url: String`
+- Nullable for optional fields: `val author: String?`, `val description: String?`
+- Return nullable for queries that may not find results: `suspend fun getSourceById(sourceId: String): SourceRating?`
