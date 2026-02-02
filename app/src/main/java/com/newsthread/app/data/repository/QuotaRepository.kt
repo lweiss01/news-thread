@@ -95,6 +95,7 @@ class QuotaRepository @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "QuotaRepository"
         val RATE_LIMIT_UNTIL_KEY = longPreferencesKey("rate_limit_until")
         val QUOTA_REMAINING_KEY = intPreferencesKey("quota_remaining")
     }
