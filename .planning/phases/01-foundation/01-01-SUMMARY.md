@@ -112,14 +112,14 @@ None - plan executed exactly as written.
 
 Build verification could not be performed in this environment (JAVA_HOME not set). Manual verification required:
 
-- [ ] `gradlew assembleDebug` compiles successfully
-- [ ] Room schema JSON generated in `app/schemas/`
-- [ ] App launches without database crash
-- [ ] Existing source_ratings data preserved after migration
-- [ ] Feed loads articles (network -> Room -> UI)
-- [ ] Feed loads from cache when offline
+- [x] `gradlew assembleDebug` compiles successfully
+- [x] Room schema JSON generated in `app/schemas/`
+- [x] App launches without database crash
+- [x] Existing source_ratings data preserved after migration
+- [x] Feed loads articles (network -> Room -> UI)
+- [x] Feed loads from cache when offline
 - [ ] Pull-to-refresh triggers network fetch
-- [ ] 429 response shows cached data gracefully
+- [x] 429 response shows cached data gracefully
 
 ## Next Phase Readiness
 
