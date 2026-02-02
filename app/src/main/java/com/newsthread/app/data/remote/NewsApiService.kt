@@ -29,4 +29,13 @@ interface NewsApiService {
         @Query("language") language: String? = null,
         @Query("country") country: String? = null
     ): SourcesResponse
+
+    @GET("everything")
+    suspend fun searchArticles(
+        @Query("q") query: String,
+        @Query("language") language: String = "en",
+        @Query("sortBy") sortBy: String = "relevancy",
+        @Query("pageSize") pageSize: Int = 30
+    ): NewsApiResponse
+
 }

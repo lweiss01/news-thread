@@ -1,6 +1,8 @@
 package com.newsthread.app.presentation
 
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
+import com.newsthread.app.presentation.comparison.ComparisonScreen
+import com.newsthread.app.presentation.navigation.ComparisonRoute
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.newsthread.app.presentation.detail.ArticleDetailScreen
@@ -25,14 +27,14 @@ import com.newsthread.app.presentation.settings.SettingsScreen
 import com.newsthread.app.presentation.theme.NewsThreadTheme
 import com.newsthread.app.presentation.tracking.TrackingScreen
 import dagger.hilt.android.AndroidEntryPoint
-// ⬇️ ADD THESE IMPORTS ⬇️
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.util.Log
 import com.newsthread.app.data.local.AppDatabase
 import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
 import com.newsthread.app.util.DatabaseSeeder
-// ⬆️ END NEW IMPORTS ⬆️
+import com.newsthread.app.domain.model.Article
+import java.net.URLDecoder
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -92,23 +94,42 @@ fun NewsThreadApp() {
             composable(Screen.Feed.route) {
                 FeedScreen(navController = navController)
             }
-            composable(Screen.Tracking.route) { TrackingScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
 
-            // ← ADD THIS NEW ROUTE
             composable(
                 route = ArticleDetailRoute.route,
                 arguments = listOf(
                     navArgument("articleUrl") { type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val encodedUrl = backStackEntry.arguments?.getString("articleUrl") ?: ""
-                val articleUrl = java.net.URLDecoder.decode(encodedUrl, "UTF-8")
+                val encodedUrl = backStackEntry.arguments?.getString("articleUrl")
+                val articleUrl = encodedUrl?.let { URLDecoder.decode(it, "UTF-8") }
 
-                ArticleDetailScreen(
-                    url = articleUrl,
-                    onBackClick = { navController.popBackStack() }
-                )
+                // NEW: Get the article from savedStateHandle
+                val article = navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<Article>("selected_article")
+
+                if (articleUrl != null) {
+                    ArticleDetailScreen(
+                        articleUrl = articleUrl,
+                        article = article, // NEW: Pass the article!
+                        navController = navController
+                    )
+                }
+            }
+
+            // NEW: Add comparison route
+            composable(ComparisonRoute.route) {
+                val article = navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<Article>("selected_article")
+
+                if (article != null) {
+                    ComparisonScreen(
+                        article = article,
+                        navController = navController
+                    )
+                }
             }
         }
     }

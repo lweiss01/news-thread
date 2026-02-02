@@ -29,3 +29,10 @@ object ArticleDetailRoute {
         return "article_detail/$encodedUrl"
     }
 }
+
+// Comparison screen route
+object ComparisonRoute {
+    const val route = "comparison"
+
+    fun createRoute(): String = route
+}

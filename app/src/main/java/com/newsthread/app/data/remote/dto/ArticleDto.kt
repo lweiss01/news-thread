@@ -25,7 +25,12 @@ data class ArticleDto(
 )
 
 fun ArticleDto.toArticle(): Article? {
-    if (title.isNullOrBlank() || url.isNullOrBlank()) return null
+    val title = title
+    val url = url
+    val publishedAt = publishedAt
+
+    if (title.isNullOrBlank() || url.isNullOrBlank() || publishedAt.isNullOrBlank()) return null
+
     return Article(
         source = source?.toSource() ?: com.newsthread.app.domain.model.Source(
             id = null, name = "Unknown", description = null,

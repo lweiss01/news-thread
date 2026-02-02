@@ -1,6 +1,8 @@
 package com.newsthread.app.di
 
+import com.newsthread.app.data.repository.ArticleMatchingRepositoryImpl
 import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
+import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import dagger.Binds
 import dagger.Module
@@ -15,6 +17,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSourceRatingRepository(
-        sourceRatingRepositoryImpl: SourceRatingRepositoryImpl
+        impl: SourceRatingRepositoryImpl
     ): SourceRatingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindArticleMatchingRepository(
+        impl: ArticleMatchingRepositoryImpl
+    ): ArticleMatchingRepository
 }

@@ -1,31 +1,30 @@
 package com.newsthread.app.presentation.feed
 
-import com.newsthread.app.presentation.navigation.ArticleDetailRoute
-import androidx.navigation.NavController
+import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,17 +35,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.newsthread.app.data.repository.NewsRepository
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.presentation.feed.components.SourceBadge
+import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 import javax.inject.Inject
 
 sealed interface FeedUiState {
@@ -64,87 +66,113 @@ class FeedViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
+    // NEW: Pre-load all source ratings
+    private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
+    val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
+
     init {
         loadHeadlines()
+        loadSourceRatings() // NEW!
+    }
+
+    // NEW: Load all source ratings once
+    private fun loadSourceRatings() {
+        viewModelScope.launch {
+            try {
+                sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
+                    // Create map: domain -> rating
+                    val ratingsMap = ratings.associateBy { it.domain }
+                    _sourceRatings.value = ratingsMap
+                }
+            } catch (e: Exception) {
+                Log.e("NewsThread", "Error loading source ratings: ${e.message}", e)
+            }
+        }
     }
 
     fun loadHeadlines() {
-        _uiState.value = FeedUiState.Loading
         viewModelScope.launch {
             newsRepository.getTopHeadlines().collect { result ->
-                _uiState.value = result.fold(
+                result.fold(
                     onSuccess = { articles ->
-                        if (articles.isEmpty()) {
-                            FeedUiState.Error("No articles found")
-                        } else {
-                            FeedUiState.Success(articles)
-                        }
+                        _uiState.value = FeedUiState.Success(articles)
                     },
-                    onFailure = { throwable ->
-                        FeedUiState.Error(
-                            throwable.localizedMessage ?: "Failed to load articles"
+                    onFailure = { error ->
+                        _uiState.value = FeedUiState.Error(
+                            error.message ?: "Failed to load articles"
                         )
                     }
                 )
             }
         }
     }
-
-    suspend fun getSourceRating(articleUrl: String): SourceRating? {
-        return sourceRatingRepository.findSourceForArticle(articleUrl)
-    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
     viewModel: FeedViewModel = hiltViewModel(),
-    navController: NavController? = null  // ← ADD THIS
+    navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle() // NEW!
 
-    when (val state = uiState) {
-        is FeedUiState.Loading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("NewsThread") }
+            )
         }
-
-        is FeedUiState.Success -> {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp)
-            ) {
-                items(state.articles, key = { it.url }) { article ->
-                    ArticleCard(
-                        article = article,
-                        onClick = {
-                            navController?.navigate(ArticleDetailRoute.createRoute(article.url))
-                        }
-                    )
+    ) { paddingValues ->
+        when (uiState) {
+            is FeedUiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
-        }
+            is FeedUiState.Success -> {
+                val articles = uiState.let { it as FeedUiState.Success }.articles
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    items(articles) { article ->
+                        ArticleCard(
+                            article = article,
+                            sourceRatings = sourceRatings,
+                            onClick = {
+                                // Save article to navigation state
+                                navController.currentBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set("selected_article", article)
 
-        is FeedUiState.Error -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { viewModel.loadHeadlines() }) {
-                        Text("Retry")
+                                val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
+                                navController.navigate(
+                                    ArticleDetailRoute.createRoute(encodedUrl)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+            is FeedUiState.Error -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = (uiState as FeedUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { viewModel.loadHeadlines() }) {
+                            Text("Retry")
+                        }
                     }
                 }
             }
@@ -155,70 +183,95 @@ fun FeedScreen(
 @Composable
 private fun ArticleCard(
     article: Article,
-    onClick: () -> Unit,  // ← ADD THIS
-    viewModel: FeedViewModel = hiltViewModel()
+    sourceRatings: Map<String, SourceRating>, // NEW: Accept ratings map!
+    onClick: () -> Unit
 ) {
-    var sourceRating by remember { mutableStateOf<SourceRating?>(null) }
-
-    LaunchedEffect(article.url) {
-        sourceRating = viewModel.getSourceRating(article.url)
-    }
-
     Card(
-        onClick = onClick,  // ← ADD THIS
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column {
-            if (article.urlToImage != null) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Source name with badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = article.source.name ?: "Unknown Source",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // NEW: Instant lookup, no suspend call!
+                val rating = findRatingForArticle(article, sourceRatings)
+                if (rating != null) {
+                    SourceBadge(sourceRating = rating)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Title
+            Text(
+                text = article.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // Description
+            article.description?.let { description ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Image
+            article.urlToImage?.let { imageUrl ->
+                Spacer(modifier = Modifier.height(8.dp))
                 AsyncImage(
-                    model = article.urlToImage,
-                    contentDescription = article.title,
+                    model = imageUrl,
+                    contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                        .clip(MaterialTheme.shapes.medium),
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
-
-            Column(modifier = Modifier.padding(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = article.source.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    if (sourceRating != null) {
-                        SourceBadge(sourceRating = sourceRating!!)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = article.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                if (article.description != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = article.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
         }
+    }
+}
+
+// NEW: Helper function to find rating
+private fun findRatingForArticle(
+    article: Article,
+    sourceRatings: Map<String, SourceRating>
+): SourceRating? {
+    // Try exact domain match first
+    val domain = extractDomain(article.url)
+    return sourceRatings[domain] ?:
+    // Try source ID if no domain match
+    article.source.id?.let { sourceRatings[it] }
+}
+
+// NEW: Extract domain from URL
+private fun extractDomain(url: String): String {
+    return try {
+        val uri = android.net.Uri.parse(url)
+        uri.host?.lowercase() ?: ""
+    } catch (e: Exception) {
+        ""
     }
 }
