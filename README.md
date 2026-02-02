@@ -45,14 +45,24 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] Article detail view with in-app WebView reader
 - [x] Basic article comparison (keyword-based, being replaced)
 
+#### Phase 1: Foundation (Completed 2026-02-02)
+- [x] Room cache tables for articles, embeddings, and match results
+- [x] Feed response caching with 3-hour TTL
+- [x] Offline-first NewsRepository (Room as source of truth)
+- [x] NewsAPI 429 rate limit detection with graceful degradation
+- [x] User feedback when rate limited (Snackbar with time remaining)
+- [x] OkHttp 50 MiB HTTP cache with custom interceptors
+- [x] DataStore persistence for quota state across app restarts
+- [x] Embedding storage utilities (FloatArray ↔ ByteArray conversion)
+
 ### In Development — Matching Engine Rebuild (7 Phases)
 
 The current keyword-based matching produces poor results. We're rebuilding it with on-device NLP:
 
 | Phase | Name | Status | What It Does |
 |-------|------|--------|-------------|
-| 1 | Foundation | Up Next | Data models, Room schema, caching, rate limiting |
-| 2 | Text Extraction | Planned | Fetch and parse full article text from URLs |
+| 1 | Foundation | **Complete** | Data models, Room schema, caching, rate limiting |
+| 2 | Text Extraction | Up Next | Fetch and parse full article text from URLs |
 | 3 | Embedding Engine | Planned | On-device TF Lite sentence embeddings |
 | 4 | Similarity Matching | Planned | Cosine similarity, article clustering, API search |
 | 5 | Pipeline Integration | Planned | End-to-end matching orchestration |
@@ -60,6 +70,7 @@ The current keyword-based matching produces poor results. We're rebuilding it wi
 | 7 | UI Implementation | Planned | Bias spectrum visualization |
 
 **19 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
+**6 requirements** completed in Phase 1: CACHE-01 through CACHE-04, INFRA-01, INFRA-04.
 
 ### Planned (Future Milestones)
 
