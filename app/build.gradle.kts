@@ -150,6 +150,10 @@ dependencies {
     // DataStore (for preferences)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
+    // Article text extraction
+    implementation("net.dankito.readability4j:readability4j:1.0.8")
+    implementation("org.jsoup:jsoup:1.22.1")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
