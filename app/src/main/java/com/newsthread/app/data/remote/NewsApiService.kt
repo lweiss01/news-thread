@@ -5,6 +5,18 @@ import com.newsthread.app.data.remote.dto.SourcesResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 
+/**
+ * NewsAPI v2 REST interface.
+ *
+ * IMPORTANT: Each NewsAPI endpoint should have exactly ONE method here.
+ * Do not add duplicate methods for the same endpoint with different parameter
+ * defaults -- use optional/nullable parameters instead.
+ *
+ * Endpoints:
+ * - GET /v2/top-headlines        -> getTopHeadlines()
+ * - GET /v2/everything           -> searchArticles()
+ * - GET /v2/top-headlines/sources -> getSources()
+ */
 interface NewsApiService {
 
     @GET("top-headlines")
