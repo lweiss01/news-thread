@@ -32,10 +32,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. App detects NewsAPI 429 responses and shows user feedback without crashing
   4. App loads cached matches even without network connection (offline mode)
   5. Duplicate API endpoints in NewsApiService are consolidated
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
+- [x] 01-01-PLAN.md — Cache infrastructure (Room tables, interceptors, offline-first repository)
+- [ ] 01-02-PLAN.md — Rate limit UI feedback (gap closure: Snackbar when API limited)
 
 ### Phase 2: Text Extraction
 **Goal**: Fetch and parse full article text from URLs using Readability algorithm
@@ -133,7 +134,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 1/2 | In progress | - |
 | 2. Text Extraction | 0/TBD | Not started | - |
 | 3. Embedding Engine | 0/TBD | Not started | - |
 | 4. Similarity Matching | 0/TBD | Not started | - |
