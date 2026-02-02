@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 2 of 7 (Text Extraction)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 02-01-PLAN.md (domain models and dependencies)
+Last activity: 2026-02-02 — Completed 02-02-PLAN.md (network infrastructure)
 
-Progress: [██░░░░░░░░] ~21% (1/7 phases + 1/4 plans)
+Progress: [██░░░░░░░░] ~25% (1/7 phases + 2/4 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: ~4.2 minutes
-- Total execution time: ~0.2 hours
+- Total plans completed: 4
+- Average duration: ~3.4 minutes
+- Total execution time: ~0.23 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 Foundation | 2 | ~11 min | ~5.5 min |
-| 2 Text Extraction | 1 | ~1.5 min | ~1.5 min |
+| 2 Text Extraction | 2 | ~3 min | ~1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min), 02-01 (~1.5 min)
-- Trend: Fast execution, plan was straightforward
+- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min), 02-01 (~1.5 min), 02-02 (~1.5 min)
+- Trend: Consistent fast execution for straightforward plans
 
 *Updated after each plan completion*
 
@@ -68,6 +68,13 @@ Recent decisions affecting current work:
 - 5-variant sealed class for extraction outcomes (Success, PaywallDetected, NetworkError, ExtractionError, NotFetched)
 - PaywallDetector uses 3-tier detection: structured data, CSS selectors, text patterns
 
+**New decisions from 02-02:**
+- 100 MiB article cache (vs 50 MiB for NewsAPI) since articles are larger
+- 7-day cache TTL for article HTML (vs 3 hours for feed data)
+- User-Agent "Mozilla/5.0 (Linux; Android 14) NewsThread/1.0" to avoid bot blocking
+- Return null on fetch failure for graceful degradation
+- Separate cache directory "article_html_cache" to isolate from NewsAPI cache
+
 ### Pending Todos
 
 - Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
@@ -89,5 +96,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 02-01-PLAN.md (domain models and dependencies)
+Stopped at: Completed 02-02-PLAN.md (network infrastructure)
 Resume file: None
