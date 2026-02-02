@@ -22,6 +22,7 @@ import com.newsthread.app.data.local.entity.SourceRatingEntity
  *
  * Version 1: Initial version with SourceRating support
  * Version 2: Add cache tables (cached_articles, article_embeddings, match_results, feed_cache)
+ * Version 3: Add extraction retry tracking columns (extractionFailedAt, extractionRetryCount)
  */
 @Database(
     entities = [
@@ -31,7 +32,7 @@ import com.newsthread.app.data.local.entity.SourceRatingEntity
         MatchResultEntity::class,
         FeedCacheEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -121,6 +122,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 2 to 3.
+         * Adds extraction retry tracking columns to cached_articles.
+         * Per user decision: "Retry once on next view (handles transient failures)"
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add extraction failure tracking columns
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN extractionFailedAt INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN extractionRetryCount INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -128,7 +142,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
 
                 INSTANCE = instance

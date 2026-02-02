@@ -38,4 +38,73 @@ interface CachedArticleDao {
 
     @Query("DELETE FROM cached_articles")
     suspend fun deleteAll()
+
+    /**
+     * Gets articles that need text extraction (fullText is null and article not expired).
+     * Excludes articles that have permanently failed (retryCount >= 2).
+     * Orders by fetchedAt DESC to prioritize recently fetched articles.
+     *
+     * @param now Current timestamp for expiry check
+     * @param limit Maximum number of articles to return (for batch processing)
+     * @return List of articles needing extraction
+     */
+    @Query("""
+        SELECT * FROM cached_articles
+        WHERE fullText IS NULL
+        AND expiresAt > :now
+        AND extractionRetryCount < 2
+        ORDER BY fetchedAt DESC
+        LIMIT :limit
+    """)
+    suspend fun getArticlesNeedingExtraction(
+        now: Long = System.currentTimeMillis(),
+        limit: Int = 10
+    ): List<CachedArticleEntity>
+
+    /**
+     * Marks an article's extraction as failed.
+     * Increments retry count and records failure timestamp.
+     *
+     * @param url Article URL
+     * @param failedAt Timestamp of failure
+     */
+    @Query("""
+        UPDATE cached_articles
+        SET extractionFailedAt = :failedAt,
+            extractionRetryCount = extractionRetryCount + 1
+        WHERE url = :url
+    """)
+    suspend fun markExtractionFailed(url: String, failedAt: Long = System.currentTimeMillis())
+
+    /**
+     * Clears extraction failure state for an article (on successful extraction).
+     *
+     * @param url Article URL
+     */
+    @Query("UPDATE cached_articles SET extractionFailedAt = NULL, extractionRetryCount = 0 WHERE url = :url")
+    suspend fun clearExtractionFailure(url: String)
+
+    /**
+     * Checks if an article is eligible for extraction retry.
+     * Eligible if: failed once (retryCount = 1) and enough time has passed (>= 5 minutes).
+     *
+     * @param url Article URL
+     * @param minTimeSinceFailure Minimum milliseconds since failure before retry (default 5 min)
+     * @param now Current timestamp
+     * @return True if article should be retried
+     */
+    @Query("""
+        SELECT CASE
+            WHEN extractionRetryCount = 1
+            AND extractionFailedAt IS NOT NULL
+            AND (:now - extractionFailedAt) >= :minTimeSinceFailure
+            THEN 1 ELSE 0 END
+        FROM cached_articles
+        WHERE url = :url
+    """)
+    suspend fun isRetryEligible(
+        url: String,
+        minTimeSinceFailure: Long = 5 * 60 * 1000L,
+        now: Long = System.currentTimeMillis()
+    ): Boolean
 }
