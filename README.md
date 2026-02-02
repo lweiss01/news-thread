@@ -1,217 +1,208 @@
-# 📰 NewsThread
+# NewsThread
 
 **Follow the thread of every story**
 
-A native Android news reader that helps you follow the thread of every developing story — with an offline-first, privacy-first design. Now featuring **source bias ratings and reliability scores** to help you read news from diverse perspectives.
+A native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. Built with an offline-first, privacy-first design — all processing happens on your device.
 
 ---
 
-## 🌟 What Makes NewsThread Different
+## What Makes NewsThread Different
 
-### **Bias-Aware News Reading**
-- **First news app with integrated bias ratings** on every article
+### Bias-Aware News Reading
+- **Integrated bias ratings** on every article from three respected organizations
 - Visual indicators showing Left (◄◄), Center-Left (◄), Center (●), Center-Right (►), Right (►►)
 - Reliability ratings (1-5 stars) from trusted fact-checking organizations
 - 50+ major news sources rated and categorized
 
-### **Story Tracking** (Coming Soon)
-Track developing stories over time and see how coverage evolves across different sources and perspectives.
+### Perspective Comparison
+Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer — articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
 
-### **Privacy-First Design**
-- Your data stays in your Google Drive
+### On-Device NLP Matching (In Development)
+The next-generation matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. No backend server, no data leaves your phone. The app extracts article text, generates semantic embeddings, and finds genuinely related stories — replacing the current keyword-based approach with real understanding.
+
+### Privacy-First Design
+- All processing happens on-device (no backend server)
 - No tracking, no ads, no data selling
 - Works offline with cached articles
+- Future: data backed up to your own Google Drive
 
 ---
 
-## 🎯 Design Philosophy
+## Current Status
 
-1. **Offline-first**: Cache everything, work without internet
-2. **Privacy-first**: User data stays in their Google Drive  
-3. **Performance-first**: Smooth 60fps, fast load times
-4. **Journalism-first**: Encourage supporting quality news sources
-5. **Perspective-first**: Show bias ratings, promote diverse viewpoints
+**Version**: 0.3.0 (Alpha)
+**Status**: Active Development
 
----
+### Completed
 
-## ✨ Features
+- [x] Clean Architecture setup (MVVM, Repository pattern, Hilt DI)
+- [x] Bottom navigation (Feed, Tracking, Settings)
+- [x] NewsAPI integration for live headlines
+- [x] Room database with source ratings system
+- [x] Article feed with images, summaries, and source info
+- [x] Bias rating system (50 sources from AllSides, Ad Fontes, MBFC)
+- [x] Bias symbols (◄◄ ◄ ● ► ►►) and reliability stars on every article
+- [x] Article detail view with in-app WebView reader
+- [x] Basic article comparison (keyword-based, being replaced)
 
-### **Completed** ✅
+### In Development — Matching Engine Rebuild (7 Phases)
 
-- [x] **Project setup** with Clean Architecture (MVVM, Repository pattern)
-- [x] **Basic UI shell** with bottom navigation (Feed, Tracking, Settings)
-- [x] **NewsAPI integration** for live headlines
-- [x] **Room database** with source ratings system
-- [x] **Article feed** with images, summaries, and source info
-- [x] **Bias rating system** 
-  - 50 news sources rated by AllSides, Ad Fontes, Media Bias/Fact Check
-  - Bias symbols (◄◄ ◄ ● ► ►►) visible on every article
-  - Reliability stars (★★★★★) showing factual accuracy
-- [x] **Article detail view** with in-app WebView reader
-- [x] **Navigation** between feed and article reading
+The current keyword-based matching produces poor results. We're rebuilding it with on-device NLP:
 
-### **In Development** 🚧
+| Phase | Name | Status | What It Does |
+|-------|------|--------|-------------|
+| 1 | Foundation | Up Next | Data models, Room schema, caching, rate limiting |
+| 2 | Text Extraction | Planned | Fetch and parse full article text from URLs |
+| 3 | Embedding Engine | Planned | On-device TF Lite sentence embeddings |
+| 4 | Similarity Matching | Planned | Cosine similarity, article clustering, API search |
+| 5 | Pipeline Integration | Planned | End-to-end matching orchestration |
+| 6 | Background Processing | Planned | WorkManager pre-computation during idle |
+| 7 | UI Implementation | Planned | Bias spectrum visualization |
 
-- [ ] **Side-by-Side View** - Compare how Left/Center/Right sources covered the same story
-- [ ] **Perspective Gap Detection** - Alerts when you're missing coverage from one side
-- [ ] **Paywall Detection** - Prioritize free articles in recommendations
-- [ ] **Story tracking** - Follow developing stories over days/weeks
-- [ ] **Reading analytics** - Track your bias exposure over time
+**19 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
-### **Planned** 📋
+### Planned (Future Milestones)
 
-- [ ] **Google Sign-In** for seamless authentication
-- [ ] **Drive backup** for tracked stories and preferences
-- [ ] **Support Journalism** feature with micropayments
-- [ ] **Notifications** for story updates
-- [ ] **Share insights** about bias distribution
-- [ ] **Filter bubble warnings** when reading habits become one-sided
-
-### **Future Vision** 🔮
-
-- [ ] **Knowledge graph visualization** (v2.0) - See connections between stories
-- [ ] **Social intelligence layer** (v3.0) - Understand how stories spread
-- [ ] **Story clustering** - Automatically group related articles
-- [ ] **Temporal analysis** - Track how stories evolve over time
+- [ ] Story tracking — follow developing stories over days/weeks
+- [ ] Google Sign-In and Google Drive backup
+- [ ] Reading analytics — track your bias exposure over time
+- [ ] Filter bubble warnings when reading habits become one-sided
+- [ ] Interactive bias spectrum (tap/drag to filter by bias range)
 
 ---
 
-## 🏗️ Technical Architecture
+## Key Technical Decisions
 
-### **Clean Architecture Layers**
+| Decision | Rationale |
+|----------|-----------|
+| On-device NLP only, no backend | Privacy-first — all data stays on your device |
+| TF Lite with all-MiniLM-L6-v2 | ~25MB quantized model, optimized for sentence similarity |
+| Pre-compute matches in background | Results ready before user taps Compare |
+| Bias spectrum UI (not L/C/R buckets) | Continuous axis is more nuanced than three categories |
+| Readability4J + JSoup for text extraction | Parse article body from URLs with fallback strategy |
+| In-memory cosine similarity | Sufficient for <1K articles, no vector DB needed |
+| User-controlled article fetching | WiFi-only / always / never setting respects data usage |
+
+---
+
+## Architecture
+
+### Clean Architecture Layers
 
 ```
 presentation/         # UI layer (Jetpack Compose)
 ├── feed/             # News feed with bias ratings
 ├── detail/           # Article detail WebView
-├── tracking/         # Story tracking (coming soon)
+├── comparison/       # Perspective comparison (bias spectrum)
+├── tracking/         # Story tracking (future)
 ├── settings/         # App settings
-└── navigation/       # Navigation routes
+└── theme/            # Material 3 theming
 
-domain/               # Business logic layer
+domain/               # Business logic (pure Kotlin)
 ├── model/            # Domain models (Article, SourceRating, etc.)
+├── usecase/          # Business logic use cases
 └── repository/       # Repository interfaces
 
 data/                 # Data layer
-├── local/            # Room database
-│   ├── entity/       # Database entities
-│   └── dao/          # Data Access Objects
-├── remote/           # NewsAPI client
+├── local/            # Room database, DAOs, entities
+├── remote/           # Retrofit API, DTOs
 └── repository/       # Repository implementations
 
+di/                   # Hilt dependency injection modules
 util/                 # Utilities (DatabaseSeeder, etc.)
 ```
 
-### **Tech Stack**
+### Tech Stack
 
 - **UI**: Jetpack Compose with Material Design 3
 - **Architecture**: MVVM + Clean Architecture
 - **DI**: Hilt (Dagger)
-- **Database**: Room (SQLite)
-- **Networking**: Retrofit + OkHttp
+- **Database**: Room (SQLite) with proper migrations
+- **Networking**: Retrofit + OkHttp with caching
 - **Image Loading**: Coil
 - **Async**: Kotlin Coroutines + Flow
 - **Navigation**: Jetpack Navigation Compose
+- **ML** (coming): TensorFlow Lite for on-device sentence embeddings
+- **Text Extraction** (coming): Readability4J + JSoup
+- **Background**: WorkManager with Hilt integration
+
+### Matching Pipeline (In Development)
+
+```
+Article Feed
+  → Text Extraction (fetch URL + parse with Readability4J)
+  → Embedding Generation (TF Lite sentence embeddings)
+  → Similarity Matching (cosine similarity, configurable threshold)
+  → Bias Clustering (join with source ratings)
+  → Bias Spectrum UI (continuous left-to-right visualization)
+```
 
 ---
 
-## 📊 Source Bias Rating System
+## Source Bias Rating System
 
-> **⚠️ Important Disclaimer**
-> 
-> Bias ratings are provided for **informational and educational purposes only**. These ratings aggregate data from third-party organizations (AllSides, Ad Fontes Media, Media Bias/Fact Check) and represent general consensus, not absolute truth.
-> 
-> **Please note:**
-> - Individual articles may vary from a source's overall rating
-> - Bias ratings are subjective and can change over time
-> - We encourage you to read from multiple sources and think critically
-> - Ratings are meant to promote diverse reading, not to discourage any sources
-> 
-> NewsThread does not endorse or oppose any news source. Our goal is transparency, not censorship.
-
----
+> **Disclaimer**
+>
+> Bias ratings are provided for **informational and educational purposes only**. These ratings aggregate data from third-party organizations and represent general consensus, not absolute truth. Individual articles may vary from a source's overall rating. We encourage reading from multiple sources and thinking critically.
 
 NewsThread uses a **consensus approach** combining three respected media bias organizations:
 
-### **Rating Sources**
-1. **AllSides** - Community-driven bias ratings
-2. **Ad Fontes Media** - Interactive Media Bias Chart
-3. **Media Bias/Fact Check** - Detailed factual reporting analysis
+### Rating Sources
+1. **AllSides** — Community-driven bias ratings
+2. **Ad Fontes Media** — Interactive Media Bias Chart
+3. **Media Bias/Fact Check** — Detailed factual reporting analysis
 
-### **Bias Scale**
-- **-2 (◄◄)**: Left - CNN, MSNBC, HuffPost
-- **-1 (◄)**: Center-Left - NPR, Washington Post, Politico
-- **0 (●)**: Center - Reuters, AP, BBC, The Hill
-- **+1 (►)**: Center-Right - WSJ (news), The Economist
-- **+2 (►►)**: Right - Fox News, Breitbart, Newsmax
+### Bias Scale
+- **-2 (◄◄)**: Left — CNN, MSNBC, HuffPost
+- **-1 (◄)**: Center-Left — NPR, Washington Post, Politico
+- **0 (●)**: Center — Reuters, AP, BBC, The Hill
+- **+1 (►)**: Center-Right — WSJ (news), The Economist
+- **+2 (►►)**: Right — Fox News, Breitbart, Newsmax
 
-### **Reliability Scale** (1-5 stars)
-- **★★★★★**: Very High - Reuters, AP, BBC
-- **★★★★☆**: High - NPR, WSJ, Washington Post
-- **★★★☆☆**: Mostly Factual - CNN, Fox News
-- **★★☆☆☆**: Mixed - Opinion sites, partisan sources
-- **★☆☆☆☆**: Low - Conspiracy sites, misinformation
+### Reliability Scale (1-5 stars)
+- **★★★★★**: Very High — Reuters, AP, BBC
+- **★★★★☆**: High — NPR, WSJ, Washington Post
+- **★★★☆☆**: Mostly Factual — CNN, Fox News
+- **★★☆☆☆**: Mixed — Opinion sites, partisan sources
+- **★☆☆☆☆**: Low — Conspiracy sites, misinformation
 
-### **50 Sources Rated**
-Including: CNN, Fox News, MSNBC, Reuters, AP, BBC, NPR, New York Times, Washington Post, Wall Street Journal, The Guardian, Politico, The Hill, Bloomberg, and 36 more.
+50+ sources rated including CNN, Fox News, MSNBC, Reuters, AP, BBC, NPR, New York Times, Washington Post, Wall Street Journal, The Guardian, Politico, The Hill, Bloomberg, and more.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### **Prerequisites**
+### Prerequisites
 - Android Studio Hedgehog or newer
 - Android SDK 34
 - Kotlin 1.9+
-- NewsAPI key
+- NewsAPI key ([newsapi.org](https://newsapi.org))
 
-### **Setup**
+### Setup
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/newsthread.git
-   cd newsthread
+   git clone https://github.com/lweiss01/news-thread.git
+   cd news-thread
    ```
 
-2. **Get a NewsAPI key**
-   - Visit [newsapi.org](https://newsapi.org)
-   - Sign up for a free API key
+2. **Add API key**
+   Create `secrets.properties` in the project root:
+   ```
+   NEWS_API_KEY=your_key_here
+   ```
 
-3. **Add API key**
-   - Create `local.properties` in project root
-   - Add: `NEWS_API_KEY=your_key_here`
-
-4. **Build and run**
-   - Open in Android Studio
-   - Sync Gradle
-   - Run on emulator or device
-
----
-
-## 📱 Current Status
-
-**Version**: 0.2.0 (Alpha)  
-**Status**: Active Development  
-**Target**: Public Beta by Q2 2026
-
-### **Recent Milestones** 🎉
-
-**January 30, 2026**: Major breakthrough!
-- ✅ Implemented complete Room database with Clean Architecture
-- ✅ Loaded 50 news sources with bias/reliability ratings
-- ✅ Created beautiful bias badge UI (◄ ★★★★☆)
-- ✅ Integrated badges into live news feed
-- ✅ Built in-app article reader with WebView
-- ✅ Set up navigation system
-
-**Next Up**: Side-by-Side view to compare coverage across political spectrum
+3. **Build and run**
+   ```bash
+   gradlew assembleDebug
+   ```
+   Or open in Android Studio, sync Gradle, and run on emulator or device.
 
 ---
 
+## Screenshots
 
-## 📱 Screenshots
-
-### Current Progress (v0.2 - Day 2!)
+### Current (v0.2)
 
 <table>
   <tr>
@@ -226,60 +217,49 @@ Including: CNN, Fox News, MSNBC, Reuters, AP, BBC, NPR, New York Times, Washingt
   <tr>
     <td align="center">
       <b>News Feed with Bias Ratings</b><br>
-      Real-time news with bias symbols (◄ ● ►) and reliability stars (★★★★☆) visible on every article
+      Real-time news with bias symbols and reliability stars on every article
     </td>
     <td></td>
     <td align="center">
       <b>Article Detail View</b><br>
-      In-app WebView reader for seamless article reading without leaving NewsThread
+      In-app WebView reader for seamless article reading
     </td>
   </tr>
 </table>
 
 ---
 
-## 🤝 Contributing
+## Configuration
 
-Not yet accepting contributions as this is early-stage development. Check back in Q2 2026!
+- **Min SDK**: 26 (Android 8.0)
+- **Target SDK**: 34 (Android 14)
+- **Java**: 17
+- **Kotlin**: 1.9.22
 
----
-
-## 📄 License
-
-Copyright © 2026 NewsThread. All rights reserved.
-
----
-
-## 👩‍💻 About
-
-Built by a senior information security data analyst who believes we need better tools to navigate today's complex media landscape. NewsThread is designed to help people read news from diverse perspectives and understand the full story.
-
-**Why I'm building this:**
-- Too many news apps create filter bubbles
-- No app shows bias ratings transparently
-- Tracking story development is too hard
-- Privacy shouldn't be traded for convenience
-
-**My background:**
-- 18 years in information security
-- 6 years in data analysis and visualization
-- History major who learned to code
-- Passionate about media literacy and informed citizenship
+Firebase requires a valid `google-services.json` in `app/` (not committed to git).
 
 ---
 
-## 🔗 Links
+## Contributing
 
-- **Repository**: https://github.com/yourusername/newsthread
-- **Issues**: https://github.com/yourusername/newsthread/issues
-- **Documentation**: Coming soon!
+Not yet accepting contributions as this is early-stage development. Check back later!
 
 ---
 
-## 📮 Contact
+## License
 
-Questions? Feedback? Reach out via GitHub issues or email.
+Copyright 2026 NewsThread. All rights reserved.
 
 ---
 
-**"Follow the thread of every story"** 🧵📰
+## About
+
+Built by a senior information security data analyst who believes we need better tools to navigate today's complex media landscape. NewsThread helps people read news from diverse perspectives and understand the full story.
+
+**Links:**
+- **Repository**: https://github.com/lweiss01/news-thread
+- **Issues**: https://github.com/lweiss01/news-thread/issues
+
+---
+
+**"Follow the thread of every story"**
