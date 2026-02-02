@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 1 of 7 (Foundation)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 01-01-PLAN.md (Cache Infrastructure)
+Last activity: 2026-02-02 — Completed 01-02-PLAN.md (Rate Limit UI Feedback)
 
-Progress: [█░░░░░░░░░] ~5%
+Progress: [██░░░░░░░░] ~10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: ~6 minutes
-- Total execution time: ~0.1 hours
+- Total plans completed: 2
+- Average duration: ~5.5 minutes
+- Total execution time: ~0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 Foundation | 1 | ~6 min | ~6 min |
+| 1 Foundation | 2 | ~11 min | ~5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~6 min)
-- Trend: First plan completed
+- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min)
+- Trend: Stable, fast gap closure
 
 *Updated after each plan completion*
 
@@ -57,6 +57,11 @@ Recent decisions affecting current work:
 - OkHttp Cache: 50 MiB complementary HTTP cache
 - Room is single source of truth; network is sync mechanism
 
+**New decisions from 01-02:**
+- Snackbar with dismissAction for non-blocking rate limit feedback
+- Minutes remaining calculation uses coerceAtLeast(1) to avoid "0 min" edge case
+- QuotaRepository injection pattern: inject into ViewModel, expose via StateFlow
+
 ### Pending Todos
 
 - Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
@@ -78,5 +83,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 01-01-PLAN.md (Cache Infrastructure)
+Stopped at: Completed 01-02-PLAN.md (Rate Limit UI Feedback)
 Resume file: None
