@@ -12,7 +12,7 @@ NewsThread is replacing its keyword-based article matching with on-device NLP us
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Data models, Room schema, and caching infrastructure
+- [x] **Phase 1: Foundation** - Data models, Room schema, and caching infrastructure
 - [ ] **Phase 2: Text Extraction** - Full article text fetching with Readability4J
 - [ ] **Phase 3: Embedding Engine** - TensorFlow Lite integration for semantic embeddings
 - [ ] **Phase 4: Similarity Matching** - Cosine similarity and article clustering
@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Cache infrastructure (Room tables, interceptors, offline-first repository)
-- [ ] 01-02-PLAN.md — Rate limit UI feedback (gap closure: Snackbar when API limited)
+- [x] 01-02-PLAN.md — Rate limit UI feedback (gap closure: Snackbar when API limited)
 
 ### Phase 2: Text Extraction
 **Goal**: Fetch and parse full article text from URLs using Readability algorithm
@@ -134,7 +134,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/2 | In progress | - |
+| 1. Foundation | 2/2 | Complete | 2026-02-02 |
 | 2. Text Extraction | 0/TBD | Not started | - |
 | 3. Embedding Engine | 0/TBD | Not started | - |
 | 4. Similarity Matching | 0/TBD | Not started | - |

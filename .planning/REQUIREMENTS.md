@@ -85,14 +85,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BIAS-01 | Phase 7 | Pending |
 | BIAS-02 | Phase 7 | Pending |
 | BIAS-03 | Phase 7 | Pending |
-| CACHE-01 | Phase 1 | Pending |
-| CACHE-02 | Phase 1 | Pending |
-| CACHE-03 | Phase 1 | Pending |
-| CACHE-04 | Phase 1 | Pending |
-| INFRA-01 | Phase 1 | Pending |
+| CACHE-01 | Phase 1 | Complete |
+| CACHE-02 | Phase 1 | Complete |
+| CACHE-03 | Phase 1 | Complete |
+| CACHE-04 | Phase 1 | Complete |
+| INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 2 | Pending |
 | INFRA-03 | Phase 4 | Pending |
-| INFRA-04 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 4 | Pending |
 
 **Coverage:**
