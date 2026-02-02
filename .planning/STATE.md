@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 2 of 7 (Text Extraction)
-Plan: 0 of 4 in current phase
-Status: Planned, ready to execute
-Last activity: 2026-02-02 — Phase 2 planned (4 plans in 3 waves)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-02 — Completed 02-01-PLAN.md (domain models and dependencies)
 
-Progress: [█░░░░░░░░░] ~14% (1/7 phases)
+Progress: [██░░░░░░░░] ~21% (1/7 phases + 1/4 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~5.5 minutes
+- Total plans completed: 3
+- Average duration: ~4.2 minutes
 - Total execution time: ~0.2 hours
 
 **By Phase:**
@@ -28,10 +28,11 @@ Progress: [█░░░░░░░░░] ~14% (1/7 phases)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 Foundation | 2 | ~11 min | ~5.5 min |
+| 2 Text Extraction | 1 | ~1.5 min | ~1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min)
-- Trend: Stable, fast gap closure
+- Last 5 plans: 01-01 (~6 min), 01-02 (~5 min), 02-01 (~1.5 min)
+- Trend: Fast execution, plan was straightforward
 
 *Updated after each plan completion*
 
@@ -62,6 +63,11 @@ Recent decisions affecting current work:
 - Minutes remaining calculation uses coerceAtLeast(1) to avoid "0 min" edge case
 - QuotaRepository injection pattern: inject into ViewModel, expose via StateFlow
 
+**New decisions from 02-01:**
+- Readability4J 1.0.8 and jsoup 1.22.1 for extraction (production-proven versions)
+- 5-variant sealed class for extraction outcomes (Success, PaywallDetected, NetworkError, ExtractionError, NotFetched)
+- PaywallDetector uses 3-tier detection: structured data, CSS selectors, text patterns
+
 ### Pending Todos
 
 - Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
@@ -83,5 +89,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed Phase 1 Foundation (2 plans verified)
+Stopped at: Completed 02-01-PLAN.md (domain models and dependencies)
 Resume file: None
