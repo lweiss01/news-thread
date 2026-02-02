@@ -6,6 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NewsThread is a native Android news reader app built with Kotlin and Jetpack Compose. The app follows an offline-first, privacy-first approach where user data is backed up to their own Google Drive.
 
+## Beads / Task tracking
+
+This repo uses Beads (`bd`) as the issue tracker and long-term task memory.
+
+Guidelines for you:
+
+- Before starting work, run `bd ready` to see ready tasks and choose one.
+- If there is no appropriate task, create one with:
+  - `bd create "Short task title" -t task -p 2`
+- Keep issues updated:
+  - When you start, set status to in_progress.
+  - When you finish, set status to done or close the issue.
+- Prefer using `bd` instead of ad-hoc TODO lists or long planning markdowns.
+- When you propose a plan for a new feature, break it into Beads tasks and dependencies.
+
+
 ## Build Commands
 
 On Windows, use `gradlew` instead of `./gradlew`.
