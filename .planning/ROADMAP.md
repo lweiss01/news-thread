@@ -24,8 +24,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 1: Foundation
 **Goal**: Establish data contracts and persistence layer for all matching components
+
 **Depends on**: Nothing (first phase)
+
 **Requirements**: CACHE-01, CACHE-02, CACHE-03, CACHE-04, INFRA-01, INFRA-04
+
 **Success Criteria** (what must be TRUE):
   1. App persists article text, embeddings, and match results in Room database with proper indices
   2. App caches feed responses with 2-4 hour TTL to reduce API calls
@@ -41,8 +44,11 @@ Plans:
 
 ### Phase 2: Text Extraction
 **Goal**: Fetch and parse full article text from URLs using Readability algorithm
+
 **Depends on**: Phase 1
+
 **Requirements**: MATCH-02, INFRA-02
+
 **Success Criteria** (what must be TRUE):
   1. App extracts clean article text from news URLs using Readability4J with JSoup fallback
   2. App caches extracted article HTML in OkHttp with 7-day TTL
@@ -59,8 +65,11 @@ Plans:
 
 ### Phase 3: Embedding Engine
 **Goal**: Generate semantic embeddings on-device using TensorFlow Lite
+
 **Depends on**: Phase 2
+
 **Requirements**: MATCH-01
+
 **Success Criteria** (what must be TRUE):
   1. App loads quantized sentence-transformer model (<100MB) from assets directory on startup
   2. App generates 384-512 dimensional embeddings for article text in <200ms on mid-range device
@@ -75,8 +84,11 @@ Plans:
 
 ### Phase 4: Similarity Matching
 **Goal**: Find semantically similar articles using cosine similarity on embeddings
+
 **Depends on**: Phase 3
+
 **Requirements**: MATCH-03, MATCH-04, MATCH-05, MATCH-06, INFRA-03, INFRA-05
+
 **Success Criteria** (what must be TRUE):
   1. App computes cosine similarity between article embeddings and returns top matches above threshold (default 0.7)
   2. App uses dynamic time windows for matching (story velocity-based, not hardcoded 3-day)
@@ -91,8 +103,11 @@ Plans:
 
 ### Phase 5: Pipeline Integration
 **Goal**: Wire components into end-to-end matching pipeline with domain use cases
+
 **Depends on**: Phase 4
+
 **Requirements**: (orchestrates all MATCH requirements)
+
 **Success Criteria** (what must be TRUE):
   1. User taps "Compare" button on article detail screen and sees loading progress indicator
   2. App orchestrates full pipeline: fetch text → generate embedding → find matches → cluster by bias
@@ -107,8 +122,11 @@ Plans:
 
 ### Phase 6: Background Processing
 **Goal**: Pre-compute matches in background during device idle
+
 **Depends on**: Phase 5
+
 **Requirements**: MATCH-07
+
 **Success Criteria** (what must be TRUE):
   1. App schedules WorkManager jobs when new articles arrive in feed
   2. Background matching runs only when device is idle, on WiFi, with sufficient battery
@@ -123,8 +141,11 @@ Plans:
 
 ### Phase 7: UI Implementation
 **Goal**: Display matched articles along bias spectrum with source reliability indicators
+
 **Depends on**: Phase 6
+
 **Requirements**: BIAS-01, BIAS-02, BIAS-03
+
 **Success Criteria** (what must be TRUE):
   1. Comparison screen displays matched articles plotted on continuous left-to-right bias spectrum (not L/C/R buckets)
   2. Each matched article shows source reliability badge (star rating from rating agencies)
