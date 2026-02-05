@@ -88,6 +88,9 @@ class NewsRepository @Inject constructor(
             result.fold(
                 onSuccess = { articles -> emit(Result.success(articles)) },
                 onFailure = { error ->
+                    // Log ALL errors to help debug issues like newsthread-1k5
+                    Log.e(TAG, "Failed to refresh feed: ${error.message}", error)
+
                     // If we have cached data, silently swallow error (offline-first)
                     if (cached.isEmpty()) {
                         emit(Result.failure(error))
@@ -158,6 +161,9 @@ class NewsRepository @Inject constructor(
             result.fold(
                 onSuccess = { articles -> emit(Result.success(articles)) },
                 onFailure = { error ->
+                    // Log ALL errors to help debug issues
+                    Log.e(TAG, "Failed to search articles: ${error.message}", error)
+
                     if (cached.isEmpty()) {
                         emit(Result.failure(error))
                     }
