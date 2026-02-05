@@ -87,6 +87,7 @@ Recent decisions affecting current work:
 - Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
 - Test Room migration v1->v2 on device with existing data
 - Test Room migration v2->v3 on device with existing data
+- Test plans must include validation methods and steps (2026-02-04)
 
 ### Blockers/Concerns
 
