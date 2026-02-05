@@ -25,6 +25,15 @@ class UserPreferencesRepository @Inject constructor(
         }
 
     /**
+     * Current embedding model version (Phase 3).
+     * Used to invalidate embeddings when model is upgraded.
+     */
+    val embeddingModelVersion: Flow<Int> = dataStore.data
+        .map { prefs ->
+            prefs[EMBEDDING_MODEL_VERSION_KEY] ?: 1  // Default to version 1
+        }
+
+    /**
      * Updates the article fetch preference.
      *
      * @param preference New preference value (ALWAYS, WIFI_ONLY, or NEVER)
@@ -35,7 +44,19 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    /**
+     * Updates the embedding model version (Phase 3).
+     *
+     * @param version New model version (e.g., 1, 2, ...)
+     */
+    suspend fun setEmbeddingModelVersion(version: Int) {
+        dataStore.edit { prefs ->
+            prefs[EMBEDDING_MODEL_VERSION_KEY] = version
+        }
+    }
+
     companion object {
         val ARTICLE_FETCH_PREF_KEY = intPreferencesKey("article_fetch_preference")
+        val EMBEDDING_MODEL_VERSION_KEY = intPreferencesKey("embedding_model_version")
     }
 }

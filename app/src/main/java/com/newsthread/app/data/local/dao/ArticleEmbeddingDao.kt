@@ -11,8 +11,12 @@ interface ArticleEmbeddingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(embedding: ArticleEmbeddingEntity)
 
-    @Query("SELECT * FROM article_embeddings WHERE articleUrl = :articleUrl")
-    suspend fun getByArticleUrl(articleUrl: String): ArticleEmbeddingEntity?
+    /**
+     * Get embedding for an article URL with specific model version.
+     * Phase 3: Ensures we return embeddings from the current model only.
+     */
+    @Query("SELECT * FROM article_embeddings WHERE articleUrl = :articleUrl AND modelVersion = :modelVersion")
+    suspend fun getByArticleUrl(articleUrl: String, modelVersion: Int = 1): ArticleEmbeddingEntity?
 
     @Query("SELECT * FROM article_embeddings WHERE articleUrl IN (:articleUrls)")
     suspend fun getByArticleUrls(articleUrls: List<String>): List<ArticleEmbeddingEntity>
@@ -28,4 +32,11 @@ interface ArticleEmbeddingDao {
 
     @Query("DELETE FROM article_embeddings")
     suspend fun deleteAll()
+
+    // Phase 3: Failure tracking queries
+    @Query("SELECT * FROM article_embeddings WHERE embeddingStatus = 'FAILED'")
+    suspend fun getFailedEmbeddings(): List<ArticleEmbeddingEntity>
+
+    @Query("UPDATE article_embeddings SET embeddingStatus = 'PENDING', lastAttemptAt = :timestamp WHERE articleUrl = :articleUrl")
+    suspend fun markForRetry(articleUrl: String, timestamp: Long)
 }

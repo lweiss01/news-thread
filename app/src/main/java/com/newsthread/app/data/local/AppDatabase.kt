@@ -23,6 +23,7 @@ import com.newsthread.app.data.local.entity.SourceRatingEntity
  * Version 1: Initial version with SourceRating support
  * Version 2: Add cache tables (cached_articles, article_embeddings, match_results, feed_cache)
  * Version 3: Add extraction retry tracking columns (extractionFailedAt, extractionRetryCount)
+ * Version 4: Add embedding versioning and status tracking (modelVersion, embeddingStatus, failureReason, lastAttemptAt)
  */
 @Database(
     entities = [
@@ -32,9 +33,10 @@ import com.newsthread.app.data.local.entity.SourceRatingEntity
         MatchResultEntity::class,
         FeedCacheEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
+@androidx.room.TypeConverters(AppDatabase.Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun sourceRatingDao(): SourceRatingDao
@@ -135,6 +137,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 3 to 4.
+         * Adds embedding versioning and status tracking to article_embeddings.
+         * Phase 3: Tracks model version, embedding status, failure reasons, and retry timestamps.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add new columns to article_embeddings table
+                db.execSQL("ALTER TABLE article_embeddings ADD COLUMN modelVersion INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE article_embeddings ADD COLUMN embeddingStatus TEXT NOT NULL DEFAULT 'SUCCESS'")
+                db.execSQL("ALTER TABLE article_embeddings ADD COLUMN failureReason TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE article_embeddings ADD COLUMN lastAttemptAt INTEGER NOT NULL DEFAULT 0")
+                
+                // Update existing rows to have lastAttemptAt = computedAt
+                db.execSQL("UPDATE article_embeddings SET lastAttemptAt = computedAt WHERE lastAttemptAt = 0")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -142,7 +162,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
 
                 INSTANCE = instance
@@ -154,6 +174,21 @@ abstract class AppDatabase : RoomDatabase() {
         fun closeDatabase() {
             INSTANCE?.close()
             INSTANCE = null
+        }
+    }
+
+    /**
+     * Type converters for custom enum types.
+     */
+    class Converters {
+        @androidx.room.TypeConverter
+        fun fromEmbeddingStatus(status: com.newsthread.app.data.local.entity.EmbeddingStatus): String {
+            return status.name
+        }
+
+        @androidx.room.TypeConverter
+        fun toEmbeddingStatus(value: String): com.newsthread.app.data.local.entity.EmbeddingStatus {
+            return com.newsthread.app.data.local.entity.EmbeddingStatus.valueOf(value)
         }
     }
 }

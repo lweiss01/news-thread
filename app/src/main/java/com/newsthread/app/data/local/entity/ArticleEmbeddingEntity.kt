@@ -6,6 +6,12 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+/**
+ * Article embedding entity with version tracking and failure handling.
+ *
+ * Version changes:
+ * - v4: Added modelVersion, embeddingStatus, failureReason, lastAttemptAt for Phase 3
+ */
 @Entity(
     tableName = "article_embeddings",
     foreignKeys = [
@@ -27,10 +33,15 @@ data class ArticleEmbeddingEntity(
     val articleUrl: String,
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val embedding: ByteArray,
-    val embeddingModel: String,     // e.g., "all-MiniLM-L6-v2"
-    val dimensions: Int,            // e.g., 384
+    val embeddingModel: String,        // e.g., "all-MiniLM-L6-v2"
+    val dimensions: Int,                // e.g., 384
     val computedAt: Long,
-    val expiresAt: Long
+    val expiresAt: Long,
+    // Phase 3: Embedding versioning and failure tracking
+    val modelVersion: Int = 1,          // Tracks which model version generated this embedding
+    val embeddingStatus: EmbeddingStatus = EmbeddingStatus.SUCCESS,  // SUCCESS, FAILED, PENDING
+    val failureReason: String? = null,  // "OOM", "MODEL_ERROR", "TEXT_TOO_LONG", null if SUCCESS
+    val lastAttemptAt: Long = computedAt  // Timestamp of last embedding attempt
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -40,4 +51,13 @@ data class ArticleEmbeddingEntity(
     }
 
     override fun hashCode(): Int = 31 * id.hashCode() + articleUrl.hashCode()
+}
+
+/**
+ * Embedding generation status for tracking failures and retries.
+ */
+enum class EmbeddingStatus {
+    SUCCESS,    // Embedding generated successfully
+    FAILED,     // Generation failed (check failureReason)
+    PENDING     // Currently being generated
 }
