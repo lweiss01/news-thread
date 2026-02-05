@@ -86,6 +86,11 @@ android {
             excludes += "/META-INF/INDEX.LIST"
         }
     }
+
+    // Prevent compression of TensorFlow Lite model files
+    aaptOptions {
+        noCompress("tflite")
+    }
 }
 
 dependencies {
@@ -153,6 +158,10 @@ dependencies {
     // Article text extraction
     implementation("net.dankito.readability4j:readability4j:1.0.8")
     implementation("org.jsoup:jsoup:1.22.1")
+
+    // TensorFlow Lite (Phase 3: Embedding Engine)
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

@@ -88,3 +88,7 @@ app/schemas/
 
 # Invalid Windows reserved filenames
 nul
+
+# TensorFlow Lite model files (too large for version control)
+*.tflite
+**/assets/vocab.txt
