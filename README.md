@@ -55,7 +55,7 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] DataStore persistence for quota state across app restarts
 - [x] Embedding storage utilities (FloatArray ↔ ByteArray conversion)
 
-#### Phase 2: Text Extraction (Completed 2026-02-05)
+#### Phase 2: Text Extraction (Completed 2026-02-05) ✅ **Verified**
 - [x] Readability4J 1.0.8 and jsoup 1.22.1 dependencies
 - [x] ExtractionResult sealed class (5 variants: Success, PaywallDetected, NetworkError, ExtractionError, NotFetched)
 - [x] ArticleFetchPreference enum (ALWAYS, WIFI_ONLY, NEVER)
@@ -67,6 +67,7 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] Retry-once extraction logic with 5-minute window
 - [x] Database migration v2→v3 (extraction failure tracking columns)
 - [x] Settings UI for article fetch preference (SettingsViewModel, radio buttons)
+- [x] **Verification**: 8/10 tests passed (2 deferred to Phase 5 pipeline integration)
 
 #### Recent Improvements (2026-02-05)
 **Article Matching Refinements:**
