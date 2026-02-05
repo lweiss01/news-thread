@@ -73,5 +73,12 @@ When a user reads an article, they can instantly see how the same story is cover
 | Bias spectrum UI over L/C/R buckets | More nuanced than three categories, shows where each source actually falls | — Pending |
 | User-controlled article text fetching | Respects data usage preferences, WiFi-only option for bandwidth savings | — Pending |
 
+## Beads Issues
+
+| ID | Title | Status | Strategy |
+|----|-------|--------|----------|
+| newsthread-1k5 | API Quota Investigation | Open | Researching request optimization and caching |
+| newsthread-1k6 | 16 KB Page Size Alignment | Open | Align TF Lite JNI libraries for Android 15+ |
+
 ---
-*Last updated: 2026-02-02 after initialization*
+*Last updated: 2026-02-05*

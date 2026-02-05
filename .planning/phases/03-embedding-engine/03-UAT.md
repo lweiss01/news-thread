@@ -96,11 +96,11 @@
 - Database migrations valid
 
 **Result**: PASS  
-**Notes**: Build requires Java on PATH (not tested in this session - deferred to local machine)
+**Notes**: Build succeeded locally for user.
 
 ---
 
-### FT-2: Install & Launch Test
+### FT-2: Install & Launch Test ⚠
 **Steps**: Install APK on device/emulator and launch app
 
 **What it validates**:
@@ -108,8 +108,8 @@
 - Database migration 3→4 runs successfully
 - No TF Lite initialization errors
 
-**Result**: PENDING (requires device)  
-**Notes**: To be tested on local device
+**Result**: PARTIAL PASS  
+**Notes**: App launched successfully, but showed warning: "This app isn't 16 KB compatible. libtensorflowlite_jni.so: LOAD segment not aligned". Filed issue newsthread-1k6.
 
 ---
 

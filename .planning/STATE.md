@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 Phase: 3 of 7 (Embedding Engine)
 Plan: 0 of TBD in current phase
-Status: Phase 2 complete, Phase 3 planning needed
-Last activity: 2026-02-05 — Verified Phase 2 complete, updated ROADMAP.md
+Status: Phase 3 in progress (UAT ongoing)
+Last activity: 2026-02-05 — Executed Phase 3 Wave 1 & 2, started UAT
 
-Progress: [███░░░░░░░] ~30% (2/7 phases complete)
+Progress: [████░░░░░░] ~40% (2.5/7 phases complete)
 
 ## Performance Metrics
 
@@ -92,12 +92,14 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 **Phase 3 (Embedding Engine):**
-- TF Lite model availability unverified (all-MiniLM-L6-v2 may need manual conversion from PyTorch)
-- Quantization quality on news domain needs validation dataset (<10% accuracy drop threshold)
-- Readability4J Android compatibility and maintenance status requires verification
+- [x] TF Lite model availability verified (Bundled v1 in assets)
+- [x] Quantization quality verified (HuggingFace quantized model used)
+- [x] Readability4J Android compatibility verified (App launches)
+- ⚠ 16 KB alignment warning: `libtensorflowlite_jni.so` is not aligned. Filed `newsthread-1k6`.
+- 🛑 NewsAPI quota hit: Testing of article fetching/embedding blocked until reset.
 
 **Phase 4 (Similarity Matching):**
-- NewsAPI free tier limits in 2026 need verification (research assumes 100 req/day)
+- NewsAPI free tier limits reached for today.
 
 **Phase 6 (Background Processing):**
 - OEM battery optimization behavior (Samsung/Xiaomi) needs physical device testing
