@@ -68,6 +68,15 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] Database migration v2→v3 (extraction failure tracking columns)
 - [x] Settings UI for article fetch preference (SettingsViewModel, radio buttons)
 
+#### Recent Improvements (2026-02-05)
+**Article Matching Refinements:**
+- [x] Relaxed matching thresholds (10% entity overlap, 10-100% title similarity) for better recall
+- [x] Fixed hyphenated word handling in entity extraction (US-Russian → US Russian)
+- [x] Preserved special characters in entities (S&P 500, U.S.)
+- [x] Added editorial prefix filtering (Scoop, Exclusive, Analysis, Opinion)
+- [x] Comprehensive unit tests for matching logic with real-world edge cases
+- [x] Multi-stage search strategy (precision → recall → fallback)
+
 ### In Development — Matching Engine Rebuild (7 Phases)
 
 The current keyword-based matching produces poor results. We're rebuilding it with on-device NLP:
@@ -76,7 +85,7 @@ The current keyword-based matching produces poor results. We're rebuilding it wi
 |-------|------|--------|-------------|
 | 1 | Foundation | ✅ **Complete** | Data models, Room schema, caching, rate limiting |
 | 2 | Text Extraction | ✅ **Complete** | Fetch and parse full article text from URLs |
-| 3 | Embedding Engine | 📋 Planned | On-device TF Lite sentence embeddings |
+| 3 | Embedding Engine | 📋 **Next** | On-device TF Lite sentence embeddings |
 | 4 | Similarity Matching | 📋 Planned | Cosine similarity, article clustering, API search |
 | 5 | Pipeline Integration | 📋 Planned | End-to-end matching orchestration |
 | 6 | Background Processing | 📋 Planned | WorkManager pre-computation during idle |
