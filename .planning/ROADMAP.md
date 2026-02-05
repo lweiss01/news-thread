@@ -77,10 +77,13 @@ Plans:
   4. App stores embeddings as compressed BLOB in Room database
   5. Model quantization validation shows <10% accuracy degradation vs float32 on news domain
 
-**Plans**: TBD
+**Plans**: 4 plans in 2 waves
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — TensorFlow Lite dependencies and model setup (wave 1)
+- [ ] 03-02-PLAN.md — Database schema and DataStore updates (wave 1)
+- [ ] 03-03-PLAN.md — Embedding generation engine (wave 2, depends on 03-01)
+- [ ] 03-04-PLAN.md — Repository integration and lazy embedding (wave 2, depends on 03-02, 03-03)
 
 ### Phase 4: Similarity Matching
 **Goal**: Find semantically similar articles using cosine similarity on embeddings
