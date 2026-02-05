@@ -55,7 +55,7 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] DataStore persistence for quota state across app restarts
 - [x] Embedding storage utilities (FloatArray ↔ ByteArray conversion)
 
-#### Phase 2: Text Extraction (75% Complete — 3/4 plans done)
+#### Phase 2: Text Extraction (Completed 2026-02-05)
 - [x] Readability4J 1.0.8 and jsoup 1.22.1 dependencies
 - [x] ExtractionResult sealed class (5 variants: Success, PaywallDetected, NetworkError, ExtractionError, NotFetched)
 - [x] ArticleFetchPreference enum (ALWAYS, WIFI_ONLY, NEVER)
@@ -66,7 +66,7 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] TextExtractionRepository orchestrating fetch → paywall → parse → save pipeline
 - [x] Retry-once extraction logic with 5-minute window
 - [x] Database migration v2→v3 (extraction failure tracking columns)
-- [ ] Settings UI for article fetch preference (Plan 02-04 pending)
+- [x] Settings UI for article fetch preference (SettingsViewModel, radio buttons)
 
 ### In Development — Matching Engine Rebuild (7 Phases)
 
@@ -75,14 +75,14 @@ The current keyword-based matching produces poor results. We're rebuilding it wi
 | Phase | Name | Status | What It Does |
 |-------|------|--------|-------------|
 | 1 | Foundation | ✅ **Complete** | Data models, Room schema, caching, rate limiting |
-| 2 | Text Extraction | 🔨 **75% Complete** | Fetch and parse full article text from URLs (Settings UI pending) |
+| 2 | Text Extraction | ✅ **Complete** | Fetch and parse full article text from URLs |
 | 3 | Embedding Engine | 📋 Planned | On-device TF Lite sentence embeddings |
 | 4 | Similarity Matching | 📋 Planned | Cosine similarity, article clustering, API search |
 | 5 | Pipeline Integration | 📋 Planned | End-to-end matching orchestration |
 | 6 | Background Processing | 📋 Planned | WorkManager pre-computation during idle |
 | 7 | UI Implementation | 📋 Planned | Bias spectrum visualization |
 
-**Progress:** Phase 1 complete (2/2 plans), Phase 2 nearly complete (3/4 plans) — 30% of milestone complete
+**Progress:** Phase 1 complete (2/2 plans), Phase 2 complete (4/4 plans) — ~30% of milestone complete
 
 **19 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 **10 requirements** completed: CACHE-01 through CACHE-04, INFRA-01, INFRA-02, INFRA-04, MATCH-02 (partial).

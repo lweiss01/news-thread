@@ -13,7 +13,7 @@ NewsThread is replacing its keyword-based article matching with on-device NLP us
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Data models, Room schema, and caching infrastructure
-- [ ] **Phase 2: Text Extraction** - Full article text fetching with Readability4J
+- [x] **Phase 2: Text Extraction** - Full article text fetching with Readability4J
 - [ ] **Phase 3: Embedding Engine** - TensorFlow Lite integration for semantic embeddings
 - [ ] **Phase 4: Similarity Matching** - Cosine similarity and article clustering
 - [ ] **Phase 5: Pipeline Integration** - End-to-end orchestration with use cases
@@ -58,10 +58,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Foundation dependencies and domain models (Readability4J, jsoup, ExtractionResult, PaywallDetector)
-- [ ] 02-02-PLAN.md — Network infrastructure (ArticleFetchModule with 7-day cache, ArticleHtmlFetcher, NetworkMonitor)
-- [ ] 02-03-PLAN.md — Core extraction repository (UserPreferencesRepository, TextExtractionRepository)
-- [ ] 02-04-PLAN.md — Settings UI (SettingsViewModel, fetch preference radio buttons)
+- [x] 02-01-PLAN.md — Foundation dependencies and domain models (Readability4J, jsoup, ExtractionResult, PaywallDetector)
+- [x] 02-02-PLAN.md — Network infrastructure (ArticleFetchModule with 7-day cache, ArticleHtmlFetcher, NetworkMonitor)
+- [x] 02-03-PLAN.md — Core extraction repository (UserPreferencesRepository, TextExtractionRepository)
+- [x] 02-04-PLAN.md — Settings UI (SettingsViewModel, fetch preference radio buttons)
 
 ### Phase 3: Embedding Engine
 **Goal**: Generate semantic embeddings on-device using TensorFlow Lite
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-02-02 |
-| 2. Text Extraction | 0/4 | Planned | - |
+| 2. Text Extraction | 4/4 | Complete | 2026-02-05 |
 | 3. Embedding Engine | 0/TBD | Not started | - |
 | 4. Similarity Matching | 0/TBD | Not started | - |
 | 5. Pipeline Integration | 0/TBD | Not started | - |
