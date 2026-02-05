@@ -18,6 +18,9 @@ interface CachedArticleDao {
     @Query("SELECT * FROM cached_articles WHERE url = :url")
     suspend fun getByUrl(url: String): CachedArticleEntity?
 
+    @Query("SELECT * FROM cached_articles WHERE url IN (:urls)")
+    suspend fun getByUrls(urls: List<String>): List<CachedArticleEntity>
+
     @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC")
     fun getAllFlow(): Flow<List<CachedArticleEntity>>
 

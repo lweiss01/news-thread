@@ -85,3 +85,6 @@ secrets.properties
 
 # Room schema exports (auto-generated)
 app/schemas/
+
+# Invalid Windows reserved filenames
+nul
