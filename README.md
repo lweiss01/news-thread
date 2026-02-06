@@ -119,6 +119,7 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 ### Planned (Future Milestones)
 
 - [ ] Story tracking — follow developing stories over days/weeks
+- [ ] Timeline visualization — see the evolution of a story thread over time
 - [ ] Google Sign-In and Google Drive backup
 - [ ] Reading analytics — track your bias exposure over time
 - [ ] Filter bubble warnings when reading habits become one-sided
