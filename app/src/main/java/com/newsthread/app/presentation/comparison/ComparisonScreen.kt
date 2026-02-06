@@ -190,6 +190,24 @@ private fun ComparisonContent(
                 )
             }
         }
+
+        // Unrated Sources
+        if (comparison.unratedPerspective.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                PerspectiveHeader(
+                    title = "Unrated Sources",
+                    count = comparison.unratedPerspective.size,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+            items(comparison.unratedPerspective) { article ->
+                ComparisonArticleCard(
+                    article = article,
+                    onClick = { onArticleClick(article) }
+                )
+            }
+        }
     }
 }
 

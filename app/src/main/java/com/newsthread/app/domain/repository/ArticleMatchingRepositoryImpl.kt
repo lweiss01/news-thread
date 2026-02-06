@@ -181,11 +181,12 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         val leftArticles = mutableListOf<Article>()
         val centerArticles = mutableListOf<Article>()
         val rightArticles = mutableListOf<Article>()
+        val unratedArticles = mutableListOf<Article>()
 
         matches.forEach { candidate ->
             val rating = findRatingForArticle(candidate, ratingsMap)
             when {
-                rating == null -> centerArticles.add(candidate)
+                rating == null -> unratedArticles.add(candidate)
                 rating.finalBiasScore <= -1 -> leftArticles.add(candidate)
                 rating.finalBiasScore >= 1 -> rightArticles.add(candidate)
                 else -> centerArticles.add(candidate)
@@ -206,7 +207,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             originalArticle = original,
             leftPerspective = sortByDateProximity(leftArticles).take(5),
             centerPerspective = sortByDateProximity(centerArticles).take(5),
-            rightPerspective = sortByDateProximity(rightArticles).take(5)
+            rightPerspective = sortByDateProximity(rightArticles).take(5),
+            unratedPerspective = sortByDateProximity(unratedArticles).take(5)
         )
     }
 
