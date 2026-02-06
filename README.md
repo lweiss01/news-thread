@@ -17,8 +17,8 @@ A native Android news reader that shows how different media sources cover the sa
 ### Perspective Comparison
 Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer — articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
 
-### On-Device NLP Matching (In Development)
-The next-generation matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. No backend server, no data leaves your phone. The app extracts article text, generates semantic embeddings, and finds genuinely related stories — replacing the current keyword-based approach with real understanding.
+### On-Device NLP Matching
+The matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. No backend server, no data leaves your phone. The app extracts article text, generates semantic embeddings (384-dimensional vectors), and finds genuinely related stories — replacing keyword-based matching with real semantic understanding.
 
 ### Privacy-First Design
 - All processing happens on-device (no backend server)
@@ -30,7 +30,7 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 
 ## Current Status
 
-**Version**: 0.3.0 (Alpha)
+**Version**: 0.4.0 (Alpha)
 **Status**: Active Development
 
 ### Completed
@@ -77,6 +77,17 @@ The next-generation matching engine uses TensorFlow Lite sentence embeddings run
 - [x] Added editorial prefix filtering (Scoop, Exclusive, Analysis, Opinion)
 - [x] Comprehensive unit tests for matching logic with real-world edge cases
 - [x] Multi-stage search strategy (precision → recall → fallback)
+- [x] **"Unrated Sources" category** in Compare Perspectives (sources without bias ratings separated from Center)
+
+#### Phase 3: Embedding Engine (Completed 2026-02-06) ✅ **Verified**
+- [x] TensorFlow Lite 2.16.1 integration with XNNPACK optimization
+- [x] all-MiniLM-L6-v2 quantized INT8 model (~23MB) bundled in assets
+- [x] BertTokenizerWrapper with 30,522 token vocabulary (WordPiece)
+- [x] EmbeddingModelManager with lazy loading and thread-safe inference
+- [x] EmbeddingRepository with caching, retry logic, and failure tracking
+- [x] Runtime tensor resizing fix for dynamic input shapes
+- [x] 384-dimensional embeddings with L2 normalization
+- [x] **Verification**: All 5 functional tests passed on device
 
 ### In Development — Matching Engine Rebuild (7 Phases)
 
@@ -86,16 +97,15 @@ The current keyword-based matching produces poor results. We're rebuilding it wi
 |-------|------|--------|-------------|
 | 1 | Foundation | ✅ **Complete** | Data models, Room schema, caching, rate limiting |
 | 2 | Text Extraction | ✅ **Complete** | Fetch and parse full article text from URLs |
-| 3 | Embedding Engine | 📋 **Next** | On-device TF Lite sentence embeddings |
-| 4 | Similarity Matching | 📋 Planned | Cosine similarity, article clustering, API search |
+| 3 | Embedding Engine | ✅ **Complete** | On-device TF Lite sentence embeddings (384-dim) |
+| 4 | Similarity Matching | 📋 **Next** | Cosine similarity, article clustering, API search |
 | 5 | Pipeline Integration | 📋 Planned | End-to-end matching orchestration |
 | 6 | Background Processing | 📋 Planned | WorkManager pre-computation during idle |
 | 7 | UI Implementation | 📋 Planned | Bias spectrum visualization |
 
-**Progress:** Phase 1 complete (2/2 plans), Phase 2 complete (4/4 plans) — ~30% of milestone complete
+**Progress:** Phase 1-3 complete — ~43% of matching engine milestone complete
 
 **19 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
-**10 requirements** completed: CACHE-01 through CACHE-04, INFRA-01, INFRA-02, INFRA-04, MATCH-02 (partial).
 
 ### Planned (Future Milestones)
 
@@ -158,8 +168,8 @@ util/                 # Utilities (DatabaseSeeder, etc.)
 - **Image Loading**: Coil
 - **Async**: Kotlin Coroutines + Flow
 - **Navigation**: Jetpack Navigation Compose
-- **ML** (coming): TensorFlow Lite for on-device sentence embeddings
-- **Text Extraction** (coming): Readability4J + JSoup
+- **ML**: TensorFlow Lite with all-MiniLM-L6-v2 for on-device sentence embeddings
+- **Text Extraction**: Readability4J + JSoup
 - **Background**: WorkManager with Hilt integration
 
 ### Matching Pipeline (In Development)
