@@ -27,7 +27,7 @@ import javax.inject.Singleton
  * - Fall back to keyword matching (handled by caller)
  */
 @Singleton
-class EmbeddingRepository @Inject constructor(
+open class EmbeddingRepository @Inject constructor(
     private val embeddingEngine: EmbeddingEngine,
     private val embeddingDao: ArticleEmbeddingDao,
     private val articleDao: CachedArticleDao,
@@ -51,7 +51,7 @@ class EmbeddingRepository @Inject constructor(
      * @param articleUrl Article URL
      * @return Embedding as FloatArray or null if generation failed
      */
-    suspend fun getOrGenerateEmbedding(articleUrl: String): FloatArray? {
+    open suspend fun getOrGenerateEmbedding(articleUrl: String): FloatArray? {
         val modelVersion =userPreferencesRepository.embeddingModelVersion.first()
 
         // Check cache

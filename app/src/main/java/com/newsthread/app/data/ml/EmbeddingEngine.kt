@@ -16,7 +16,7 @@ import javax.inject.Singleton
  *  result.onFailure { error -> handle_error(error) }
  */
 @Singleton
-class EmbeddingEngine @Inject constructor(
+open class EmbeddingEngine @Inject constructor(
     private val tokenizer: BertTokenizerWrapper,
     private val modelManager: EmbeddingModelManager
 ) {
@@ -30,7 +30,7 @@ class EmbeddingEngine @Inject constructor(
      *@param text Article text (first ~1000 chars used)
      * @return 384-dimensional normalized embedding or failure
      */
-    fun generateEmbedding(text: String): Result<FloatArray> {
+    open suspend fun generateEmbedding(text: String): Result<FloatArray> {
         if (text.isBlank()) {
             return Result.failure(IllegalArgumentException("Text cannot be blank"))
         }

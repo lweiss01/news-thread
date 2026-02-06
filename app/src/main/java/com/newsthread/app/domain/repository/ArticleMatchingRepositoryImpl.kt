@@ -1,9 +1,11 @@
 package com.newsthread.app.data.repository
 
 import android.util.Log
+import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.MatchResultDao
 import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.local.entity.MatchResultEntity
 import com.newsthread.app.data.remote.NewsApiService
 import com.newsthread.app.data.remote.dto.toArticle
@@ -13,31 +15,48 @@ import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
+import com.newsthread.app.domain.similarity.MatchStrength
+import com.newsthread.app.domain.similarity.SimilarityMatcher
+import com.newsthread.app.domain.similarity.TimeWindowCalculator
 import com.newsthread.app.util.CacheConstants
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import java.net.URI
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of article matching with caching and entity extraction.
+ * Implementation of article matching with semantic similarity (Phase 4).
  *
- * Strategy:
+ * Strategy (prioritized):
  * 1. Check cache (MatchResultDao) for existing comparison.
  * 2. If valid cache exists, return immediately.
- * 3. If no cache, extract entities and search NewsAPI.
- * 4. Filter matches with relaxed thresholds (30% overlap, 15-85% title similarity).
- * 5. Save results to cache (MatchResultDao + CachedArticleDao).
+ * 3. Get source article embedding (Phase 3 infrastructure).
+ * 4. Feed-internal matching: compare against cached articles with embeddings.
+ * 5. If <3 matches and API quota available: search NewsAPI.
+ * 6. Fallback to keyword matching if embedding unavailable.
+ * 7. Save results to cache.
+ *
+ * Phase 4 enhancements:
+ * - Semantic similarity with cosine similarity on embeddings
+ * - Dynamic time windows based on article age
+ * - Feed-internal matching before API calls
+ * - Keyword fallback when embeddings fail
  */
 @Singleton
 class ArticleMatchingRepositoryImpl @Inject constructor(
     private val newsApiService: NewsApiService,
     private val sourceRatingRepository: SourceRatingRepository,
     private val matchResultDao: MatchResultDao,
-    private val cachedArticleDao: CachedArticleDao
+    private val cachedArticleDao: CachedArticleDao,
+    private val embeddingRepository: EmbeddingRepository,
+    private val embeddingDao: ArticleEmbeddingDao,
+    private val similarityMatcher: SimilarityMatcher,
+    private val timeWindowCalculator: TimeWindowCalculator
 ) : ArticleMatchingRepository {
 
     override suspend fun findSimilarArticles(article: Article): Flow<Result<ArticleComparison>> = flow {
@@ -67,58 +86,61 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 }
             }
 
-            // 2. Cache Miss - Perform Analysis
-            val titleEntities = extractEntities(article.title)
-            val descEntities = extractEntities(article.description ?: "")
-            val allEntities = (titleEntities + descEntities).distinct()
-
-            // Date Range (7 days)
+            // 2. Try to get source embedding for semantic matching
+            val sourceEmbedding = embeddingRepository.getOrGenerateEmbedding(article.url)
+            
+            // Calculate dynamic time window
             val articleDate = try { Instant.parse(article.publishedAt) } catch (e: Exception) { Instant.now() }
-            val fromDate = articleDate.minus(7, ChronoUnit.DAYS).toString()
-            val toDate = articleDate.plus(7, ChronoUnit.DAYS).toString()
+            val (fromDate, toDate) = timeWindowCalculator.calculateWindowStrings(articleDate)
 
-            val allMatches = mutableListOf<Article>()
+            val allMatches = mutableListOf<ScoredArticle>()
             val visitedUrls = mutableSetOf<String>()
             visitedUrls.add(article.url) // Don't match self
 
-            // --- STAGE 1: Precision Search (Top 3 Entities) ---
-            if (allEntities.isNotEmpty()) {
-                val query1 = allEntities.take(3).joinToString(" ")
-                safeLogD("Stage 1 (Precision) Query: $query1")
-                val matches1 = searchAndMatch(query1, article, allEntities, fromDate, toDate, visitedUrls)
-                allMatches.addAll(matches1)
-                safeLogD("Stage 1 found ${matches1.size} matches")
-            }
+            if (sourceEmbedding != null) {
+                // 3. Semantic matching path (Phase 4)
+                safeLogD("Using semantic matching for: ${article.title.take(40)}...")
+                
+                // --- STAGE 1: Feed-Internal Matching (Free, no API calls) ---
+                val feedMatches = findFeedMatches(sourceEmbedding, article.url, visitedUrls)
+                allMatches.addAll(feedMatches)
+                safeLogD("Feed-internal matching found ${feedMatches.size} matches")
 
-            // --- STAGE 2: Recall Search (Top Entity + "News") ---
-            // If we have fewer than 3 matches, try broader search
-            if (allMatches.size < 3 && allEntities.isNotEmpty()) {
-                val query2 = "${allEntities.first()} News"
-                safeLogD("Stage 2 (Recall) Query: $query2")
-                val matches2 = searchAndMatch(query2, article, allEntities, fromDate, toDate, visitedUrls)
-                allMatches.addAll(matches2)
-                safeLogD("Stage 2 found ${matches2.size} matches")
-            }
-
-            // --- STAGE 3: Fallback (Title Keywords) ---
-            // If still fewer than 3 matches, try title keywords
-            if (allMatches.size < 3) {
-                val titleTokens = tokenize(article.title).filter { it !in getStopWords() }
-                if (titleTokens.isNotEmpty()) {
-                    val query3 = titleTokens.take(4).joinToString(" ")
-                    safeLogD("Stage 3 (Fallback) Query: $query3")
-                    val matches3 = searchAndMatch(query3, article, allEntities, fromDate, toDate, visitedUrls)
-                    allMatches.addAll(matches3)
-                    safeLogD("Stage 3 found ${matches3.size} matches")
+                // --- STAGE 2: NewsAPI Search (if needed and quota available) ---
+                if (allMatches.size < 3) {
+                    val titleEntities = extractEntities(article.title)
+                    val query = titleEntities.take(3).joinToString(" ").ifEmpty { article.title.take(50) }
+                    
+                    safeLogD("Searching NewsAPI for more matches: $query")
+                    val apiMatches = searchSemanticMatches(
+                        sourceEmbedding, query, article, fromDate, toDate, visitedUrls
+                    )
+                    allMatches.addAll(apiMatches)
+                    safeLogD("NewsAPI semantic matching found ${apiMatches.size} matches")
                 }
+            } else {
+                // 4. Fallback to keyword matching (embedding unavailable)
+                safeLogW("Embedding unavailable, falling back to keyword matching")
+                val keywordMatches = findKeywordMatches(article, fromDate, toDate, visitedUrls)
+                allMatches.addAll(keywordMatches.map { ScoredArticle(it, 0f) })
             }
 
-            val matchedArticles = allMatches.distinctBy { it.url } // Should be distinct already via visitedUrls, but safety first
+            // De-duplicate and sort by similarity score
+            val matchedArticles = allMatches
+                .distinctBy { it.article.url }
+                .sortedByDescending { it.score }
+                .map { it.article }
+            
             safeLogD("Total matches found: ${matchedArticles.size}")
 
-            // 3. Save to Cache
+            // 5. Save to Cache
             val matchUrls = matchedArticles.map { it.url }
             val matchJson = matchUrls.joinToString(prefix = "[", postfix = "]", separator = ",") { "\"$it\"" }
+            val scoresJson = allMatches
+                .distinctBy { it.article.url }
+                .sortedByDescending { it.score }
+                .map { it.score }
+                .joinToString(prefix = "[", postfix = "]", separator = ",")
             
             // Save articles first
             cachedArticleDao.insertAll(matchedArticles.map { it.toEntity(now) })
@@ -129,13 +151,14 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                     sourceArticleUrl = article.url,
                     matchedArticleUrlsJson = matchJson,
                     matchCount = matchedArticles.size,
-                    matchMethod = "entity_extraction_v2",
+                    matchMethod = if (sourceEmbedding != null) "semantic_similarity_v1" else "keyword_fallback",
                     computedAt = now,
-                    expiresAt = now + CacheConstants.MATCH_RESULT_TTL_MS
+                    expiresAt = now + CacheConstants.MATCH_RESULT_TTL_MS,
+                    matchScoresJson = scoresJson
                 )
             )
 
-            // 4. Return Result
+            // 6. Return Result
             val comparison = categorizeAndSort(article, matchedArticles)
             emit(Result.success(comparison))
 
@@ -146,6 +169,148 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             safeLogE("Error finding similar articles: ${e.message}", e)
             emit(Result.failure(e))
         }
+    }
+
+    /**
+     * Find matches within the cached feed articles using semantic similarity.
+     * This is free (no API calls) and should be tried first.
+     */
+    private suspend fun findFeedMatches(
+        sourceEmbedding: FloatArray,
+        sourceUrl: String,
+        visitedUrls: MutableSet<String>
+    ): List<ScoredArticle> {
+        val cachedArticles = cachedArticleDao.getAll()
+        val candidateUrls = cachedArticles
+            .filter { it.url != sourceUrl && it.url !in visitedUrls }
+            .map { it.url }
+        
+        if (candidateUrls.isEmpty()) return emptyList()
+
+        // Get embeddings for all candidates
+        val embeddings = embeddingDao.getByArticleUrls(candidateUrls)
+        val urlToArticle = cachedArticles.associateBy { it.url }
+
+        return embeddings
+            .filter { it.embeddingStatus == EmbeddingStatus.SUCCESS && it.embedding.isNotEmpty() }
+            .mapNotNull { entity ->
+                val candidateEmbedding = byteArrayToFloatArray(entity.embedding)
+                val similarity = similarityMatcher.cosineSimilarity(sourceEmbedding, candidateEmbedding)
+                
+                if (similarityMatcher.isMatch(similarity)) {
+                    visitedUrls.add(entity.articleUrl)
+                    val cachedArticle = urlToArticle[entity.articleUrl]
+                    cachedArticle?.let { ScoredArticle(it.toDomain(), similarity) }
+                } else null
+            }
+            .sortedByDescending { it.score }
+    }
+
+    /**
+     * Search NewsAPI and filter results using semantic similarity.
+     */
+    private suspend fun searchSemanticMatches(
+        sourceEmbedding: FloatArray,
+        query: String,
+        originalArticle: Article,
+        fromDate: String,
+        toDate: String,
+        visitedUrls: MutableSet<String>
+    ): List<ScoredArticle> {
+        try {
+            val response = newsApiService.searchArticles(
+                query = query,
+                language = "en",
+                sortBy = "relevancy",
+                from = fromDate,
+                to = toDate,
+                pageSize = 20
+            )
+
+            val candidates = response.articles
+                .mapNotNull { it.toArticle() }
+                .filter { it.url !in visitedUrls }
+                .distinctBy { it.url }
+
+            val matches = mutableListOf<ScoredArticle>()
+            
+            for (candidate in candidates) {
+                // Save candidate first so embedding can be generated
+                cachedArticleDao.insert(candidate.toEntity(System.currentTimeMillis()))
+                
+                // Generate embedding for candidate
+                val candidateEmbedding = embeddingRepository.getOrGenerateEmbedding(candidate.url)
+                
+                if (candidateEmbedding != null) {
+                    val similarity = similarityMatcher.cosineSimilarity(sourceEmbedding, candidateEmbedding)
+                    val strength = similarityMatcher.matchStrength(similarity)
+                    
+                    if (strength != MatchStrength.NONE) {
+                        visitedUrls.add(candidate.url)
+                        matches.add(ScoredArticle(candidate, similarity))
+                        safeLogD("Semantic match: ${candidate.title.take(40)}... (score: ${"%.2f".format(similarity)})")
+                    }
+                } else {
+                    // Fallback: use keyword matching for this candidate
+                    val allEntities = extractEntities(originalArticle.title) + extractEntities(originalArticle.description ?: "")
+                    val candidateEntities = extractEntities(candidate.title) + extractEntities(candidate.description ?: "")
+                    val overlap = allEntities.intersect(candidateEntities.toSet()).size.toFloat() / maxOf(allEntities.size, 1).toFloat()
+                    
+                    if (overlap >= 0.3f) { // 30% entity overlap as fallback
+                        visitedUrls.add(candidate.url)
+                        matches.add(ScoredArticle(candidate, overlap * 0.6f)) // Scale to approximate similarity score
+                    }
+                }
+            }
+            
+            return matches.sortedByDescending { it.score }
+        } catch (e: Exception) {
+            safeLogE("Search failed for query: $query", e)
+            return emptyList()
+        }
+    }
+
+    /**
+     * Keyword-based matching fallback when embeddings are unavailable.
+     * Uses the existing entity extraction and title similarity logic.
+     */
+    private suspend fun findKeywordMatches(
+        article: Article,
+        fromDate: String,
+        toDate: String,
+        visitedUrls: MutableSet<String>
+    ): List<Article> {
+        val titleEntities = extractEntities(article.title)
+        val descEntities = extractEntities(article.description ?: "")
+        val allEntities = (titleEntities + descEntities).distinct()
+
+        val allMatches = mutableListOf<Article>()
+
+        // Stage 1: Precision Search
+        if (allEntities.isNotEmpty()) {
+            val query1 = allEntities.take(3).joinToString(" ")
+            val matches1 = searchAndMatchKeywords(query1, article, allEntities, fromDate, toDate, visitedUrls)
+            allMatches.addAll(matches1)
+        }
+
+        // Stage 2: Recall Search
+        if (allMatches.size < 3 && allEntities.isNotEmpty()) {
+            val query2 = "${allEntities.first()} News"
+            val matches2 = searchAndMatchKeywords(query2, article, allEntities, fromDate, toDate, visitedUrls)
+            allMatches.addAll(matches2)
+        }
+
+        // Stage 3: Fallback
+        if (allMatches.size < 3) {
+            val titleTokens = tokenize(article.title).filter { it !in getStopWords() }
+            if (titleTokens.isNotEmpty()) {
+                val query3 = titleTokens.take(4).joinToString(" ")
+                val matches3 = searchAndMatchKeywords(query3, article, allEntities, fromDate, toDate, visitedUrls)
+                allMatches.addAll(matches3)
+            }
+        }
+
+        return allMatches.distinctBy { it.url }
     }
 
     private fun safeLogD(msg: String) {
@@ -212,7 +377,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         )
     }
 
-    private suspend fun searchAndMatch(
+    private suspend fun searchAndMatchKeywords(
         query: String,
         originalArticle: Article,
         allEntities: List<String>,
@@ -227,7 +392,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 sortBy = "relevancy",
                 from = fromDate,
                 to = toDate,
-                pageSize = 20 // Reduce page size for efficiency in multi-stage
+                pageSize = 20
             )
 
             val candidates = response.articles
@@ -236,35 +401,25 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 .distinctBy { it.url }
 
             val matched = candidates.filter { candidate ->
-            val candidateEntities = (extractEntities(candidate.title) + extractEntities(candidate.description ?: "")).distinct()
+                val candidateEntities = (extractEntities(candidate.title) + extractEntities(candidate.description ?: "")).distinct()
 
-            // RELAXED Thresholds (User Feedback Phase 2)
-            // 1. Entity Overlap: Lowered to 10% (Require at least some shared context, but be permissive)
-            val sharedEntities = allEntities.intersect(candidateEntities.toSet())
-            val entityOverlap = if (allEntities.isNotEmpty()) {
-                (sharedEntities.size.toDouble() / allEntities.size.toDouble()) * 100
-            } else 0.0
+                val sharedEntities = allEntities.intersect(candidateEntities.toSet())
+                val entityOverlap = if (allEntities.isNotEmpty()) {
+                    (sharedEntities.size.toDouble() / allEntities.size.toDouble()) * 100
+                } else 0.0
 
-            // 2. Title Similarity: Widened to 10-100%
-            // Allow low similarity (different phrasing) AND high similarity (syndication/identical match)
-            val titleSimilarity = calculateTitleSimilarity(originalArticle.title, candidate.title)
+                val titleSimilarity = calculateTitleSimilarity(originalArticle.title, candidate.title)
 
-            // 3. Duplicate detection: Only exclude exact URL matches (handled by visitedUrls) or truly identical titles + same source if needed.
-            // But for now, allow high similarity.
-            
-            val passes = (entityOverlap >= 10.0 || sharedEntities.isNotEmpty()) &&
-                    titleSimilarity >= 10.0 &&
-                    titleSimilarity <= 100.0
-            
-            // Log rejection for debugging
-            if (!passes) {
-                safeLogD("REJECTED: ${candidate.title} (Overlap: $entityOverlap, Sim: $titleSimilarity)")
-            } else {
-                 visitedUrls.add(candidate.url)
+                val passes = (entityOverlap >= 10.0 || sharedEntities.isNotEmpty()) &&
+                        titleSimilarity >= 10.0 &&
+                        titleSimilarity <= 100.0
+                
+                if (passes) {
+                    visitedUrls.add(candidate.url)
+                }
+
+                passes
             }
-
-            passes
-        }
             return matched
         } catch (e: Exception) {
             safeLogE("Search failed for query: $query", e)
@@ -279,18 +434,12 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         "would", "could", "should", "may", "might", "must", "can", "about",
         "says", "said", "after", "over", "what", "know", "this", "that",
         "news", "report", "breaking", "live", "least", "officials", "including",
-        "mum", "video", "photos", "watch", "today", "updates", // User noise words
-        "scoop", "exclusive", "analysis", "opinion", "review", "fact check", "live", "timeline" // Editorial prefixes
+        "mum", "video", "photos", "watch", "today", "updates",
+        "scoop", "exclusive", "analysis", "opinion", "review", "fact check", "live", "timeline"
     )
 
-    /**
-     * Extract entities from text (proper nouns and important words).
-     * Uses java.net.URI for domain extraction to enable local unit testing.
-     */
     internal fun extractEntities(text: String): List<String> {
         val entities = mutableListOf<String>()
-        // Improved Regex: Handle hyphens/underscores by replacing with space to split composite words
-        // e.g. "US-Russian" -> "US Russian"
         val cleanText = text.replace(Regex("[-_]"), " ")
         val words = cleanText.split(Regex("\\s+"))
         val stopWords = getStopWords()
@@ -298,17 +447,12 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         var currentEntity = mutableListOf<String>()
 
         words.forEach { word ->
-            // PRESERVE & and . for things like "S&P" or "U.S."
-            // Remove other symbols like quotes, commas, etc., but KEEP punctuation inside if it's part of a ticker
-            // A better cleaned word just trims edges?
-            // Let's stick to the working regex: allow alnum, &, .
             val cleanWord = word.replace(Regex("[^a-zA-Z0-9&.]"), "")
 
-            // Editorial Filter: Even if capitalized, if it's in stopwords, skip it.
             if (cleanWord.isNotEmpty() &&
                 cleanWord[0].isUpperCase() &&
                 cleanWord.lowercase() !in stopWords &&
-                cleanWord.length >= 2) { // Allow 2-letter caps like "US", "EU", "AI"
+                cleanWord.length >= 2) {
                 currentEntity.add(cleanWord)
             } else {
                 if (currentEntity.isNotEmpty()) {
@@ -321,8 +465,6 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             entities.add(currentEntity.joinToString(" "))
         }
 
-        // Also extract important single words (>3 letters)
-        // This captures "pact", "arms", "deal", "bond"
         val importantWords = cleanText
             .lowercase()
             .replace(Regex("[^a-z0-9&.\\s]"), "")
@@ -346,13 +488,11 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
     private fun tokenize(text: String): Set<String> {
         return text.lowercase()
-            .replace(Regex("[^a-z0-9\\s]"), " ") // Replace symbols with space
+            .replace(Regex("[^a-z0-9\\s]"), " ")
             .split("\\s+".toRegex())
-            .filter { it.length > 2 } // Lowered to 2 to match extraction
+            .filter { it.length > 2 }
             .toSet()
     }
-
-
 
     private fun findRatingForArticle(article: Article, ratingsMap: Map<String, SourceRating>): SourceRating? {
         val domain = extractDomain(article.url)
@@ -361,7 +501,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
     private fun extractDomain(url: String): String {
         return try {
-            val uri = URI(url) // Use java.net.URI instead of android.net.Uri
+            val uri = URI(url)
             val host = uri.host ?: ""
             host.lowercase().removePrefix("www.")
         } catch (e: Exception) {
@@ -369,14 +509,25 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun byteArrayToFloatArray(bytes: ByteArray): FloatArray {
+        if (bytes.isEmpty()) return floatArrayOf()
+        val buffer = ByteBuffer.wrap(bytes)
+        val floatBuffer = buffer.asFloatBuffer()
+        val floats = FloatArray(floatBuffer.remaining())
+        floatBuffer.get(floats)
+        return floats
+    }
+
     companion object {
         private const val TAG = "NewsThread"
     }
 }
 
+/** Article with similarity score for sorting */
+private data class ScoredArticle(val article: Article, val score: Float)
+
 // ========== Local Mappers for Caching (Private) ==========
 
-// Copied/Adapted from NewsRepository to avoid circular deps or visibility issues
 private fun CachedArticleEntity.toDomain(): Article {
     return Article(
         source = Source(

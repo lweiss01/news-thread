@@ -1,8 +1,13 @@
 package com.newsthread.app.data.repository
 
+import org.mockito.kotlin.mock
+
+import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.MatchResultDao
+import com.newsthread.app.data.local.entity.ArticleEmbeddingEntity
 import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.local.entity.MatchResultEntity
 import com.newsthread.app.data.remote.NewsApiService
 import com.newsthread.app.data.remote.dto.ArticleDto
@@ -13,6 +18,8 @@ import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.SourceRatingRepository
+import com.newsthread.app.domain.similarity.SimilarityMatcher
+import com.newsthread.app.domain.similarity.TimeWindowCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -22,6 +29,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.FloatBuffer
 
 class ArticleMatchingRepositoryTest {
 
@@ -30,6 +39,10 @@ class ArticleMatchingRepositoryTest {
     private lateinit var fakeSourceRatingRepository: FakeSourceRatingRepository
     private lateinit var fakeMatchResultDao: FakeMatchResultDao
     private lateinit var fakeCachedArticleDao: FakeCachedArticleDao
+    private lateinit var fakeEmbeddingRepository: FakeEmbeddingRepository
+    private lateinit var fakeEmbeddingDao: FakeEmbeddingDao
+    private lateinit var similarityMatcher: SimilarityMatcher
+    private lateinit var timeWindowCalculator: TimeWindowCalculator
 
     @Before
     fun setup() {
@@ -37,12 +50,20 @@ class ArticleMatchingRepositoryTest {
         fakeSourceRatingRepository = FakeSourceRatingRepository()
         fakeMatchResultDao = FakeMatchResultDao()
         fakeCachedArticleDao = FakeCachedArticleDao()
+        fakeEmbeddingRepository = FakeEmbeddingRepository()
+        fakeEmbeddingDao = FakeEmbeddingDao()
+        similarityMatcher = SimilarityMatcher()
+        timeWindowCalculator = TimeWindowCalculator()
 
         repository = ArticleMatchingRepositoryImpl(
             fakeNewsApiService,
             fakeSourceRatingRepository,
             fakeMatchResultDao,
-            fakeCachedArticleDao
+            fakeCachedArticleDao,
+            fakeEmbeddingRepository,
+            fakeEmbeddingDao,
+            similarityMatcher,
+            timeWindowCalculator
         )
     }
 
@@ -101,7 +122,7 @@ class ArticleMatchingRepositoryTest {
         // Verify
         assertTrue(result.isSuccess)
         val comparison = result.getOrThrow()
-        assertEquals(2, comparison.centerPerspective.size) // Default when no ratings
+        assertEquals(2, comparison.unratedPerspective.size) // Matches go to unrated if no ratings
         
         // Verify Network NOT called
         assertEquals(0, fakeNewsApiService.searchCallCount)
@@ -232,29 +253,12 @@ class ArticleMatchingRepositoryTest {
         }
 
         assertTrue(result.isSuccess)
-        assertEquals(1, result.getOrThrow().totalComparisons)
+        assertEquals(1, result.getOrThrow().unratedPerspective.size)
     }
 
 
 
 
-
-    @Test
-    fun `extractEntities ignores editorial prefixes (Scoop)`() {
-        // User Report: "Scoop: Plans for Iran nuclear talks are collapsing"
-        val title = "Scoop: Plans for Iran nuclear talks are collapsing, U.S. officials say"
-        val entities = repository.extractEntities(title)
-        
-        println("Extracted: $entities")
-        
-        // "Scoop" should be filtered out as noise/editorial
-        assertTrue("Should NOT contain Scoop", !entities.contains("Scoop"))
-        // Should contain "Iran"
-        assertTrue("Should contain Iran", entities.contains("Iran"))
-        // Should contain "US" or "U.S."
-        assertTrue("Should contain US", entities.any { it.contains("US") || it.contains("U.S.")})
-    }
- 
 
     @Test
     fun `extractEntities ignores editorial prefixes (Scoop)`() {
@@ -410,4 +414,56 @@ class FakeCachedArticleDao : CachedArticleDao {
     override suspend fun markExtractionFailed(url: String, failedAt: Long) {}
     override suspend fun clearExtractionFailure(url: String) {}
     override suspend fun isRetryEligible(url: String, minTimeSinceFailure: Long, now: Long): Boolean = false
+}
+
+
+class FakeEmbeddingRepository : EmbeddingRepository(
+    embeddingEngine = object : com.newsthread.app.data.ml.EmbeddingEngine(
+        tokenizer = object : com.newsthread.app.data.ml.BertTokenizerWrapper(mock()) {
+            override fun initialize(): Result<Unit> = Result.success(Unit)
+        },
+        modelManager = object : com.newsthread.app.data.ml.EmbeddingModelManager(mock()) {
+            override fun initialize(): Result<Unit> = Result.success(Unit)
+        }
+    ) {
+        override suspend fun generateEmbedding(text: String): Result<FloatArray> = Result.success(FloatArray(384))
+    },
+    embeddingDao = FakeEmbeddingDao(),
+    articleDao = FakeCachedArticleDao(),
+    userPreferencesRepository = object : com.newsthread.app.data.repository.UserPreferencesRepository(
+        mock<androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>>().apply {
+            // DataStore mock setup if needed
+        }
+    ) {
+        override val embeddingModelVersion: Flow<Int> = flowOf(1)
+    }
+) {
+    var embeddingToReturn: FloatArray? = null
+
+    override suspend fun getOrGenerateEmbedding(articleUrl: String): FloatArray? {
+        return embeddingToReturn
+    }
+}
+
+class FakeEmbeddingDao : ArticleEmbeddingDao {
+    val savedEmbeddings = mutableMapOf<String, ArticleEmbeddingEntity>()
+
+    override suspend fun insert(embedding: ArticleEmbeddingEntity) {
+        savedEmbeddings[embedding.articleUrl] = embedding
+    }
+
+    override suspend fun getByArticleUrl(articleUrl: String, modelVersion: Int): ArticleEmbeddingEntity? {
+        return savedEmbeddings[articleUrl]
+    }
+
+    override suspend fun getByArticleUrls(articleUrls: List<String>): List<ArticleEmbeddingEntity> {
+        return articleUrls.mapNotNull { savedEmbeddings[it] }
+    }
+
+    override suspend fun getAllValid(now: Long): List<ArticleEmbeddingEntity> = emptyList()
+    override suspend fun getFailedEmbeddings(): List<ArticleEmbeddingEntity> = emptyList()
+    override suspend fun markForRetry(articleUrl: String, timestamp: Long) {}
+    override suspend fun deleteExpired(now: Long) {}
+    override suspend fun deleteAll() {}
+    override suspend fun getCount(): Int = savedEmbeddings.size
 }

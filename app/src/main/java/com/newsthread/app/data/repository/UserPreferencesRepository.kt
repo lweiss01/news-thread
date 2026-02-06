@@ -11,14 +11,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class UserPreferencesRepository @Inject constructor(
+open class UserPreferencesRepository @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     /**
      * User's preference for when to fetch full article text.
      * Defaults to WIFI_ONLY (most conservative for new users).
      */
-    val articleFetchPreference: Flow<ArticleFetchPreference> = dataStore.data
+    open val articleFetchPreference: Flow<ArticleFetchPreference> = dataStore.data
         .map { prefs ->
             val ordinal = prefs[ARTICLE_FETCH_PREF_KEY] ?: ArticleFetchPreference.WIFI_ONLY.ordinal
             ArticleFetchPreference.entries[ordinal]
@@ -28,7 +28,7 @@ class UserPreferencesRepository @Inject constructor(
      * Current embedding model version (Phase 3).
      * Used to invalidate embeddings when model is upgraded.
      */
-    val embeddingModelVersion: Flow<Int> = dataStore.data
+    open val embeddingModelVersion: Flow<Int> = dataStore.data
         .map { prefs ->
             prefs[EMBEDDING_MODEL_VERSION_KEY] ?: 1  // Default to version 1
         }

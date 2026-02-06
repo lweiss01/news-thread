@@ -26,7 +26,8 @@ data class MatchResultEntity(
     val sourceArticleUrl: String,       // The article we found matches for
     val matchedArticleUrlsJson: String, // JSON array of matched article URLs
     val matchCount: Int,
-    val matchMethod: String,            // "entity_extraction", "embedding_similarity", "hybrid"
+    val matchMethod: String,            // "semantic_similarity_v1", "keyword_fallback", "hybrid"
     val computedAt: Long,
-    val expiresAt: Long
+    val expiresAt: Long,
+    val matchScoresJson: String = "[]"  // JSON array of similarity scores (parallel to matchedArticleUrlsJson)
 )

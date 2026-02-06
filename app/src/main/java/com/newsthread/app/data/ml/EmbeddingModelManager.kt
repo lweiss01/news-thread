@@ -23,7 +23,7 @@ import javax.inject.Singleton
  * - Thread-safe inference with synchronized block
  */
 @Singleton
-class EmbeddingModelManager @Inject constructor(
+open class EmbeddingModelManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var interpreter: Interpreter? = null
@@ -41,7 +41,7 @@ class EmbeddingModelManager @Inject constructor(
      * Load the TF Lite model from assets.
      * Called lazily on first inference request.
      */
-    fun initialize(): Result<Unit> {
+    open fun initialize(): Result<Unit> {
         synchronized(lock) {
             if (isInitialized) {
                 return Result.success(Unit)
@@ -90,7 +90,7 @@ class EmbeddingModelManager @Inject constructor(
      * @param attentionMask Attention mask (1 for real tokens, 0 for padding)
      * @return Normalized 384-dimensional embedding or failure
      */
-    fun generateEmbedding(
+    open fun generateEmbedding(
         inputIds: IntArray,
         attentionMask: IntArray
     ): Result<FloatArray> {

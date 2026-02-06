@@ -21,7 +21,7 @@ import javax.inject.Singleton
  * - Padding to max sequence length
  */
 @Singleton
-class BertTokenizerWrapper @Inject constructor(
+open class BertTokenizerWrapper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private var vocabMap: Map<String, Int>? = null
@@ -42,7 +42,7 @@ class BertTokenizerWrapper @Inject constructor(
      * Load vocabulary from assets.
      * Maps tokens to their integer IDs.
      */
-    fun initialize(): Result<Unit> {
+    open fun initialize(): Result<Unit> {
         synchronized(lock) {
             if (isInitialized) {
                 return Result.success(Unit)

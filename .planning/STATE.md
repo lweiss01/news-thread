@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-02)
+See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 3 - Embedding Engine
+**Current focus:** Phase 4 - Similarity Matching
 
 ## Current Position
 
-Phase: 3 of 7 (Embedding Engine)
+Phase: 4 of 7 (Similarity Matching)
 Plan: 0 of TBD in current phase
-Status: Phase 3 in progress (UAT ongoing)
-Last activity: 2026-02-05 — Executed Phase 3 Wave 1 & 2, started UAT
+Status: Phase 4 not yet planned
+Last activity: 2026-02-06 — Phase 3 verified complete, Unrated Sources feature added
 
-Progress: [████░░░░░░] ~40% (2.5/7 phases complete)
+Progress: [██████░░░░] ~43% (3/7 phases complete)
 
 ## Performance Metrics
 
@@ -106,9 +106,17 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Phase 2 verified complete, ready to plan Phase 3
-Resume with: `/gsd:plan-phase` to create Phase 3 plans
+Last session: 2026-02-06
+Stopped at: Phase 3 verified complete, ready to plan Phase 4
+Resume with: `/gsd:discuss-phase 4` to gather context for Phase 4
+
+### Session Notes (2026-02-06)
+- Fixed tensor shape mismatch bug in EmbeddingModelManager (runtime resizing)
+- Verified all 5 functional tests on device (FT-1 through FT-5)
+- Added "Unrated Sources" category to Compare Perspectives
+- Updated README.md to v0.4.0 with Phase 3 completion
+- Closed newsthread-1k5 issue (API quota resolved by caching)
+- Committed all changes to GitHub (3 commits)
 
 ### Session Notes (2026-02-05)
 - Verified Phase 2 complete (build verification deferred to local machine)
