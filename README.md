@@ -226,6 +226,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 - **0 (●)**: Center — Reuters, AP, BBC, The Hill
 - **+1 (►)**: Center-Right — WSJ (news), The Economist
 - **+2 (►►)**: Right — Fox News, Breitbart, Newsmax
+- **?**: **Unrated Perspectives** — Sources not yet rated appear with a queston mark; they are still matched and clustered, but without a bias position.
 
 ### Reliability Scale (1-5 stars)
 - **★★★★★**: Very High — Reuters, AP, BBC
