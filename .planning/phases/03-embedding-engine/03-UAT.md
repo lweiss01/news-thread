@@ -100,7 +100,7 @@
 
 ---
 
-### FT-2: Install & Launch Test ⚠
+### FT-2: Install & Launch Test ✅
 **Steps**: Install APK on device/emulator and launch app
 
 **What it validates**:
@@ -108,12 +108,12 @@
 - Database migration 3→4 runs successfully
 - No TF Lite initialization errors
 
-**Result**: PARTIAL PASS  
-**Notes**: App launched successfully, but showed warning: "This app isn't 16 KB compatible. libtensorflowlite_jni.so: LOAD segment not aligned". Filed issue newsthread-1k6.
+**Result**: PASS  
+**Notes**: App launched successfully, no 16KB alignment warning, story feed loaded correctly. (2026-02-06)
 
 ---
 
-### FT-3: Open Article Test (Critical)
+### FT-3: Open Article Test (Critical) ✅
 **Steps**: 
 1. Navigate to feed
 2. Open any article
@@ -125,12 +125,12 @@
 - Tokenizer loads vocab.txt
 - Background execution (UI responsive)
 
-**Result**: PENDING (requires device)  
-**Notes**: To be tested on local device
+**Result**: PASS  
+**Notes**: UI responsiveness was great, embeddings generated quickly. (2026-02-06)
 
 ---
 
-### FT-4: Logcat Verification (Recommended)
+### FT-4: Logcat Verification (Recommended) ✅
 **Command**: `adb logcat | grep -E "EmbeddingModelManager|BertTokenizer|EmbeddingEngine"`
 
 **Expected logs**:
@@ -138,12 +138,16 @@
 - "Vocabulary loaded: XXXXX tokens"
 - "Cached successful embedding for: <url>"
 
-**Result**: PENDING (requires device)  
-**Notes**: To be tested on local device
+**Result**: PASS (after fix)  
+**Notes**: 
+- Initial failure due to tensor shape mismatch (model exported with frozen [1,1] shapes)
+- Fixed by adding `interpreter.resizeInput()` calls at runtime
+- Now generates embeddings with correct L2 normalization (norm ≈ 1.0)
+- (2026-02-06)
 
 ---
 
-### FT-5: Database Inspector (Optional)
+### FT-5: Database Inspector (Optional) ✅
 **Steps**: 
 1. Android Studio → App Inspection → Database Inspector
 2. Query `article_embeddings` table
@@ -153,15 +157,16 @@
 - Columns: modelVersion, embeddingStatus, failureReason, lastAttemptAt
 - After opening article: embedding BLOB with status=SUCCESS
 
-**Result**: PENDING (requires device)  
-**Notes**: To be tested on local device
+**Result**: PASS  
+**Notes**: 4 successful embeddings saved after tensor fix. 1 failed embedding from before fix (MODEL_ERROR). (2026-02-06)
 
 ---
 
 ## Functional Test Summary
 
 - **Total Functional Tests**: 5
-- **Passed**: 1 (build verification structure validated)
-- **Pending**: 4 (requires device/emulator)
+- **Passed**: 5 (all tests pass after tensor shape fix)
+- **Bug Fixed**: Tensor shape mismatch in `EmbeddingModelManager.kt` (added runtime `resizeInput()` calls)
 
-**Recommendation**: Run FT-2, FT-3, and FT-4 (minimal flow: 5 minutes) on device to confirm Phase 3 works end-to-end before proceeding to Phase 4.
+**Phase 3 Status**: ✅ VERIFIED - Embedding engine fully operational
+

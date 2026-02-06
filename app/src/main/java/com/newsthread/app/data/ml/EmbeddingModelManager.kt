@@ -55,6 +55,24 @@ class EmbeddingModelManager @Inject constructor(
                 }
 
                 interpreter = Interpreter(modelBuffer, options)
+                
+                // Log input/output tensor details for debugging
+                val interp = interpreter!!
+                val inputCount = interp.inputTensorCount
+                val outputCount = interp.outputTensorCount
+                Log.d(TAG, "Model has $inputCount inputs, $outputCount outputs")
+                
+                for (i in 0 until inputCount) {
+                    val tensor = interp.getInputTensor(i)
+                    Log.d(TAG, "Input $i: shape=${tensor.shape().contentToString()}, " +
+                            "dtype=${tensor.dataType()}, numBytes=${tensor.numBytes()}")
+                }
+                for (i in 0 until outputCount) {
+                    val tensor = interp.getOutputTensor(i)
+                    Log.d(TAG, "Output $i: shape=${tensor.shape().contentToString()}, " +
+                            "dtype=${tensor.dataType()}, numBytes=${tensor.numBytes()}")
+                }
+                
                 isInitialized = true
                 Log.d(TAG, "TF Lite model loaded successfully: $MODEL_FILE")
                 Result.success(Unit)
@@ -88,7 +106,15 @@ class EmbeddingModelManager @Inject constructor(
                 val interpreter = this.interpreter
                     ?: return Result.failure(IllegalStateException("Interpreter not initialized"))
 
-                // Prepare input tensors
+                // Resize input tensors from frozen [1, 1] to actual [1, MAX_SEQUENCE_LENGTH]
+                // This is required because the model was exported with dynamic shapes frozen
+                interpreter.resizeInput(0, intArrayOf(1, MAX_SEQUENCE_LENGTH))
+                interpreter.resizeInput(1, intArrayOf(1, MAX_SEQUENCE_LENGTH))
+                interpreter.allocateTensors()
+                
+                Log.d(TAG, "Resized input tensors to [1, $MAX_SEQUENCE_LENGTH]")
+
+                // Prepare input tensors as 2D arrays [1, MAX_SEQUENCE_LENGTH]
                 val inputIdsBuffer = ByteBuffer.allocateDirect(MAX_SEQUENCE_LENGTH * 4).apply {
                     order(ByteOrder.nativeOrder())
                     inputIds.forEach { putInt(it) }
@@ -99,7 +125,7 @@ class EmbeddingModelManager @Inject constructor(
                     attentionMask.forEach { putInt(it) }
                 }
 
-                // Prepare output tensor
+                // Prepare output tensor - shape is [1, 384] = 384 floats
                 val outputBuffer = ByteBuffer.allocateDirect(EMBEDDING_DIM * 4).apply {
                     order(ByteOrder.nativeOrder())
                 }
@@ -122,6 +148,7 @@ class EmbeddingModelManager @Inject constructor(
                     }
                 }
 
+                Log.d(TAG, "Successfully generated embedding (norm=$norm)")
                 Result.success(embedding)
             } catch (e: Exception) {
                 Log.e(TAG, "Embedding generation failed", e)
