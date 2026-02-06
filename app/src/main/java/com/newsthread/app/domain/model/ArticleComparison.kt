@@ -8,7 +8,8 @@ data class ArticleComparison(
     val leftPerspective: List<Article>,
     val centerPerspective: List<Article>,
     val rightPerspective: List<Article>,
-    val unratedPerspective: List<Article> = emptyList()
+    val unratedPerspective: List<Article> = emptyList(),
+    val matchMethod: String = "unknown"
 ) {
     /**
      * Get all comparison articles grouped by bias

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 4 - Similarity Matching
+**Current focus:** Phase 6 - Background Processing
 
 ## Current Position
 
-Phase: 5 of 7 (Pipeline Integration)
+Phase: 6 of 7 (Background Processing)
 Plan: 0 of TBD in current phase
-Status: Phase 4 verified complete ✓
-Last activity: 2026-02-06 — Phase 4 verified complete (Similarity Engine + Persistence)
+Status: Phase 5 verified complete ✓
+Last activity: 2026-02-06 — Phase 5 verified complete (Pipeline Orchestration + UI Hints)
 
-Progress: [████████░░░░] ~57% (4/7 phases complete)
+Progress: [██████████░░] ~71% (5/7 phases complete)
 
 ## Performance Metrics
 
@@ -98,8 +98,10 @@ Recent decisions affecting current work:
 - ⚠ 16 KB alignment warning: `libtensorflowlite_jni.so` is not aligned. Filed `newsthread-1k6`.
 - 🛑 NewsAPI quota hit: Testing of article fetching/embedding blocked until reset.
 
-**Phase 4 (Similarity Matching):**
-- NewsAPI free tier limits reached for today.
+**Phase 4 & 5 (Matching Engine):**
+- [x] Similarity engine verified with 100% logic coverage
+- [x] Pipeline orchestration verified with GetSimilarArticlesUseCase tests
+- [x] UI hints implemented for "Perspectives limited" fallback
 
 **Phase 6 (Background Processing):**
 - OEM battery optimization behavior (Samsung/Xiaomi) needs physical device testing
@@ -107,16 +109,18 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-06
-Stopped at: Phase 4 verified complete, ready to plan Phase 5
-Resume with: `/gsd:discuss-phase 5` to gather context for Phase 5
+Stopped at: Phase 5 verified complete, ready to plan Phase 6
+Resume with: `/gsd:discuss-phase 6` to gather context for background processing
 
 ### Session Notes (2026-02-06)
-- Fixed tensor shape mismatch bug in EmbeddingModelManager (runtime resizing)
+- Implemented `GetSimilarArticlesUseCase` for end-to-end matching orchestration
+- Integrated `TextExtractionRepository` into the matching flow
+- Added tiered matching feedback (Semantic → Keyword fallback)
+- Implemented user hint: *"Perspectives are limited. Connect to WiFi for more perspectives."*
+- Verified `GetSimilarArticlesUseCase` with 100% test coverage
+- Rebuilt `ComparisonScreen` with context-aware loading and hint states
+- Fixed tensor shape mismatch bug in EmbeddingModelManager
 - Verified all 5 functional tests on device (FT-1 through FT-5)
-- Added "Unrated Sources" category to Compare Perspectives
-- Updated README.md to v0.4.0 with Phase 3 completion
-- Closed newsthread-1k5 issue (API quota resolved by caching)
-- Committed all changes to GitHub (3 commits)
 
 ### Session Notes (2026-02-05)
 - Verified Phase 2 complete (build verification deferred to local machine)

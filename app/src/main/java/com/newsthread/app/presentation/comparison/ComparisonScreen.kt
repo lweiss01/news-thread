@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,9 +80,10 @@ fun ComparisonScreen(
                 }
 
                 is ComparisonUiState.Success -> {
-                    val comparison = (uiState as ComparisonUiState.Success).comparison
+                    val state = uiState as ComparisonUiState.Success
                     ComparisonContent(
-                        comparison = comparison,
+                        comparison = state.comparison,
+                        hintMessage = state.hintMessage,
                         onArticleClick = { clickedArticle ->
                             val encodedUrl = URLEncoder.encode(clickedArticle.url, "UTF-8")
                             navController.navigate(ArticleDetailRoute.createRoute(encodedUrl))
@@ -116,6 +118,7 @@ fun ComparisonScreen(
 @Composable
 private fun ComparisonContent(
     comparison: com.newsthread.app.domain.model.ArticleComparison,
+    hintMessage: String?,
     onArticleClick: (Article) -> Unit
 ) {
     LazyColumn(
@@ -123,6 +126,13 @@ private fun ComparisonContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Fallback Hint (if present)
+        hintMessage?.let { hint ->
+            item {
+                ComparisonHint(message = hint)
+            }
+        }
+
         // Original Article
         item {
             Text(
@@ -207,6 +217,35 @@ private fun ComparisonContent(
                     onClick = { onArticleClick(article) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ComparisonHint(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
         }
     }
 }

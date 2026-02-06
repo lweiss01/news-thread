@@ -30,7 +30,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status
 
-**Version**: 0.5.0 (Alpha)
+**Version**: 0.5.1 (Alpha)
 **Status**: Active Development
 
 ### Completed
@@ -44,6 +44,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Bias symbols (◄◄ ◄ ● ► ►►) and reliability stars on every article
 - [x] Article detail view with in-app WebView reader
 - [x] Semantic article matching (Phase 4 integration)
+- [x] UI pipeline orchestration and matching hints (Phase 5)
 
 <details>
 <summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
@@ -77,7 +78,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 <details>
 <summary><b>Phase 3: Embedding Engine (Completed 2026-02-06) ✅ Verified</b></summary>
 
-- [x] TensorFlow Lite 2.16.1 integration with XNNPACK optimization
+- [x] TensorFlow Lite 2.17.0 integration with XNNPACK optimization (16KB aligned)
 - [x] all-MiniLM-L6-v2 quantized INT8 model (~23MB) bundled in assets
 - [x] BertTokenizerWrapper with 30,522 token vocabulary (WordPiece)
 - [x] EmbeddingModelManager with lazy loading and thread-safe inference
@@ -97,6 +98,16 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Mockito integration for high-fidelity repository unit tests
 - [x] **Verification**: 9/9 logic tests passed (100% logic coverage)
 </details>
+ 
+<details>
+<summary><b>Phase 5: Pipeline Integration (Completed 2026-02-06) ✅ Verified</b></summary>
+ 
+- [x] Introduced `GetSimilarArticlesUseCase` for "Fetch → Embed → Match" orchestration
+- [x] Added `matchMethod` persistence and state propagation
+- [x] Implemented user fallback hint: *"Perspectives are limited. Connect to WiFi for more perspectives."*
+- [x] Created `ComparisonHint` UI component for contextual feedback
+- [x] Verified end-to-end flow with unit tests for UseCase orchestration
+</details>
 
 ### In Development — Matching Engine Rebuild (7 Phases)
 
@@ -108,11 +119,11 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 | 2 | Text Extraction | ✅ **Complete** | Fetch and parse full article text from URLs |
 | 3 | Embedding Engine | ✅ **Complete** | On-device TF Lite sentence embeddings (384-dim) |
 | 4 | Similarity Matching | ✅ **Complete** | Cosine similarity, clustering, persistent scores |
-| 5 | Pipeline Integration | 📋 **Next** | End-to-end matching orchestration in UI |
-| 6 | Background Processing | 📋 Planned | WorkManager pre-computation during idle |
+| 5 | Pipeline Integration | ✅ **Complete** | End-to-end matching orchestration in UI |
+| 6 | Background Processing | 📋 **Next** | WorkManager pre-computation during idle |
 | 7 | UI Implementation | 📋 Planned | Bias spectrum visualization |
 
-**Progress:** Phase 1-4 complete — ~57% of matching engine milestone complete
+**Progress:** Phase 1-5 complete — ~71% of matching engine milestone complete
 
 **19 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
@@ -132,12 +143,13 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 | Decision | Rationale |
 |----------|-----------|
 | On-device NLP only, no backend | Privacy-first — all data stays on your device |
-| TF Lite with all-MiniLM-L6-v2 | ~25MB quantized model, optimized for sentence similarity |
+| TF Lite with all-MiniLM-L6-v2 | 2.17.0+ quantized model, optimized for sentence similarity and 16KB alignment |
 | Pre-compute matches in background | Results ready before user taps Compare |
 | Bias spectrum UI (not L/C/R buckets) | Continuous axis is more nuanced than three categories |
 | Readability4J + JSoup for text extraction | Parse article body from URLs with fallback strategy |
 | In-memory cosine similarity | Sufficient for <1K articles, no vector DB needed |
 | User-controlled article fetching | WiFi-only / always / never setting respects data usage |
+| 16KB Page Alignment | Native libraries aligned for Android 15 compatibility |
 
 ---
 

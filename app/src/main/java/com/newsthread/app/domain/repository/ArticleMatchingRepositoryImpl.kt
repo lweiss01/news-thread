@@ -79,7 +79,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                     // If we found all the articles referenced in the cache
                     if (cachedArticles.isNotEmpty()) {
                         safeLogD("Cache Hit: Found ${cachedArticles.size} matches for ${article.title.take(30)}...")
-                        val comparison = categorizeAndSort(article, cachedArticles)
+                        val comparison = categorizeAndSort(article, cachedArticles, cachedResult.matchMethod)
                         emit(Result.success(comparison))
                         return@flow
                     }
@@ -159,7 +159,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             )
 
             // 6. Return Result
-            val comparison = categorizeAndSort(article, matchedArticles)
+            val method = if (sourceEmbedding != null) "semantic_similarity_v1" else "keyword_fallback"
+            val comparison = categorizeAndSort(article, matchedArticles, method)
             emit(Result.success(comparison))
 
         } catch (e: Exception) {
@@ -339,7 +340,11 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun categorizeAndSort(original: Article, matches: List<Article>): ArticleComparison {
+    private suspend fun categorizeAndSort(
+        original: Article, 
+        matches: List<Article>,
+        matchMethod: String
+    ): ArticleComparison {
         val allRatings = sourceRatingRepository.getAllSources()
         val ratingsMap = allRatings.associateBy { it.domain }
 
@@ -373,7 +378,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             leftPerspective = sortByDateProximity(leftArticles).take(5),
             centerPerspective = sortByDateProximity(centerArticles).take(5),
             rightPerspective = sortByDateProximity(rightArticles).take(5),
-            unratedPerspective = sortByDateProximity(unratedArticles).take(5)
+            unratedPerspective = sortByDateProximity(unratedArticles).take(5),
+            matchMethod = matchMethod
         )
     }
 
