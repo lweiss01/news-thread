@@ -284,15 +284,25 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 
 ## Screenshots 📸
  
-### The Journey to Android 15 & Beyond 🚀
-
-| Feature | Status | Visual |
-|---------|--------|--------|
-| **News Feed** | ⚡ Live | [Feed Screenshot](screenshots/16kb_warning.png) *(Placeholder)* |
-| **Perspective Engine** | 🧠 Phase 5 | [Comparison Screenshot](screenshots/16kb_warning.png) *(Placeholder)* |
-| **Android 15 Compatibility** | ✅ Fixed | ![16KB Warning Captured](screenshots/16kb_warning.png) |
-
-> **Note:** We are currently updating our high-fidelity mockups for Version 0.5! Check back soon for the new UI reveal.
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <img src="screenshots/newsthread_feed.png" width="100%" alt="Android app screen showing the news feed with bias ratings and reliability stars">
+      <br><b>News Feed v0.5</b><br>
+      Real-time headlines with aggregated bias indicators.
+    </td>
+    <td width="33%" align="center">
+      <img src="screenshots/compare_perspectives_screen.png" width="100%" alt="Android app screen displaying the Perspective Comparison spectrum with articles clustered from Left to Right">
+      <br><b>Perspective spectrum</b><br>
+      Semantic clustering of stories along a political axis.
+    </td>
+    <td width="33%" align="center">
+      <img src="screenshots/16kb_warning.png" width="100%" alt="Android 15 system popup warning about a 16KB alignment issue in native libraries">
+      <br><b>The 16KB Villain</b><br>
+      The Android 15 error we officially conquered.
+    </td>
+  </tr>
+</table>
 
 ---
 
