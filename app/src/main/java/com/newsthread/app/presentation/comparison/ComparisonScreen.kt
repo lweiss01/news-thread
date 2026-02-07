@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import java.net.URLEncoder
 
@@ -117,107 +118,108 @@ fun ComparisonScreen(
 
 @Composable
 private fun ComparisonContent(
-    comparison: com.newsthread.app.domain.model.ArticleComparison,
+    comparison: ArticleComparison,
     hintMessage: String?,
     onArticleClick: (Article) -> Unit
 ) {
+    // Capture colors outside LazyListScope (which is not @Composable)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val outlineColor = MaterialTheme.colorScheme.outline
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(bottom = 16.dp), // Add bottom padding for list
+        verticalArrangement = Arrangement.spacedBy(0.dp) // Reset default spacing, manage manually
     ) {
-        // Fallback Hint (if present)
+        // 1. Bias Spectrum Rail (Sticky or just top item)
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(bottom = 8.dp)
+            ) {
+                // Collect only rated articles for visualization
+                val allPerspectives = comparison.leftPerspective + 
+                                      comparison.centerPerspective + 
+                                      comparison.rightPerspective +
+                                      comparison.unratedPerspective
+                
+                val ratedArticles = allPerspectives.filter { comparison.ratings[it.url] != null }
+
+                if (ratedArticles.isNotEmpty()) {
+                    Text(
+                        text = "Bias Spectrum",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                    )
+                    
+                    BiasSpectrumRail(
+                        articles = ratedArticles,
+                        ratings = comparison.ratings,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                    )
+                    
+                    HorizontalDivider()
+                }
+            }
+        }
+
+        // 2. Hint Message
         hintMessage?.let { hint ->
             item {
-                ComparisonHint(message = hint)
+                Box(modifier = Modifier.padding(16.dp)) {
+                    ComparisonHint(message = hint)
+                }
             }
         }
 
-        // Original Article
+        // 3. Original Article
         item {
-            Text(
-                text = "Original Article",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ComparisonArticleCard(
+             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(
+                    text = "Original Story",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            MatchedArticleCard(
                 article = comparison.originalArticle,
-                onClick = { onArticleClick(comparison.originalArticle) }
+                rating = comparison.ratings[comparison.originalArticle.url],
+                similarityScore = 1.0f, // Original
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
 
-        // Left Perspective
-        if (comparison.leftPerspective.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                PerspectiveHeader(
-                    title = "Left Perspective (◄◄)",
-                    count = comparison.leftPerspective.size,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            items(comparison.leftPerspective) { article ->
-                ComparisonArticleCard(
-                    article = article,
-                    onClick = { onArticleClick(article) }
-                )
-            }
-        }
-
-        // Center Perspective
-        if (comparison.centerPerspective.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                PerspectiveHeader(
-                    title = "Center Perspective (●)",
-                    count = comparison.centerPerspective.size,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-            items(comparison.centerPerspective) { article ->
-                ComparisonArticleCard(
-                    article = article,
-                    onClick = { onArticleClick(article) }
-                )
+        // 4. Perspectives List
+        
+        // Helper to render section
+        fun renderSection(title: String, articles: List<Article>, color: androidx.compose.ui.graphics.Color) {
+            if (articles.isNotEmpty()) {
+                item {
+                    PerspectiveHeader(title = title, count = articles.size, color = color)
+                }
+                items(articles) { article ->
+                    MatchedArticleCard(
+                        article = article,
+                        rating = comparison.ratings[article.url],
+                        similarityScore = 0.0f, // TODO: threaded score if available
+                        modifier = Modifier
+                    )
+                }
             }
         }
 
-        // Right Perspective
-        if (comparison.rightPerspective.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                PerspectiveHeader(
-                    title = "Right Perspective (►►)",
-                    count = comparison.rightPerspective.size,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
-            items(comparison.rightPerspective) { article ->
-                ComparisonArticleCard(
-                    article = article,
-                    onClick = { onArticleClick(article) }
-                )
-            }
-        }
-
-        // Unrated Sources
-        if (comparison.unratedPerspective.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                PerspectiveHeader(
-                    title = "Unrated Sources",
-                    count = comparison.unratedPerspective.size,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-            items(comparison.unratedPerspective) { article ->
-                ComparisonArticleCard(
-                    article = article,
-                    onClick = { onArticleClick(article) }
-                )
-            }
-        }
+        renderSection("Left Perspective", comparison.leftPerspective, primaryColor)
+        renderSection("Center Perspective", comparison.centerPerspective, tertiaryColor)
+        renderSection("Right Perspective", comparison.rightPerspective, secondaryColor)
+        renderSection("Related Stories", comparison.unratedPerspective, outlineColor)
     }
 }
 
@@ -259,84 +261,20 @@ private fun PerspectiveHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(color.copy(alpha = 0.1f))
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = color
         )
-        Text(
-            text = "$count articles",
-            style = MaterialTheme.typography.bodyMedium,
-            color = color
-        )
-    }
-}
-
-@Composable
-private fun ComparisonArticleCard(
-    article: Article,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            // Source name
-            Text(
-                text = article.source.name ?: "Unknown Source",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Title
-            Text(
-                text = article.title,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Medium
-            )
-
-            // Description
-            article.description?.let { description ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Image (smaller than feed)
-            article.urlToImage?.let { imageUrl ->
-                Spacer(modifier = Modifier.height(8.dp))
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
+        Spacer(modifier = Modifier.width(8.dp))
+        Badge(containerColor = color.copy(alpha = 0.1f), contentColor = color) {
+            Text(text = count.toString(), modifier = Modifier.padding(horizontal = 4.dp))
         }
+        Spacer(modifier = Modifier.weight(1f))
+        HorizontalDivider(modifier = Modifier.width(120.dp), color = color.copy(alpha = 0.2f))
     }
 }

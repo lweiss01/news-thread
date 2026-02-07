@@ -373,13 +373,22 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             }
         }
 
+        // Collect ratings for all matched articles (and original)
+        val articleRatings = (matches + original).associate { article ->
+             article.url to findRatingForArticle(article, ratingsMap)
+        }.filterValues { it != null }
+        // Safe cast to non-null map since we filtered
+        @Suppress("UNCHECKED_CAST")
+        val finalRatings = articleRatings as Map<String, SourceRating>
+
         return ArticleComparison(
             originalArticle = original,
             leftPerspective = sortByDateProximity(leftArticles).take(5),
             centerPerspective = sortByDateProximity(centerArticles).take(5),
             rightPerspective = sortByDateProximity(rightArticles).take(5),
             unratedPerspective = sortByDateProximity(unratedArticles).take(5),
-            matchMethod = matchMethod
+            matchMethod = matchMethod,
+            ratings = finalRatings
         )
     }
 

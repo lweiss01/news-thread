@@ -90,6 +90,13 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider()
 
+            // Ratings & Reliability Section
+            Spacer(modifier = Modifier.height(16.dp))
+            RatingsLegendSection()
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+
             // Debug Section
             Spacer(modifier = Modifier.height(16.dp))
             DebugSection(

@@ -74,4 +74,8 @@ data class SourceRating(
             else -> "Unknown reliability"
         }
     }
+
+    fun isHighReliability() = finalReliabilityScore >= 4
+    fun isMediumReliability() = finalReliabilityScore == 3
+    fun isLowReliability() = finalReliabilityScore <= 2 && finalReliabilityScore > 0
 }
