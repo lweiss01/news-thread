@@ -1,4 +1,4 @@
-# NewsThread
+# NewsThread 🧵
 
 **Follow the thread of every story**
 
@@ -9,21 +9,21 @@ A native Android news reader that shows how different media sources cover the sa
 
 ---
 
-## What Makes NewsThread Different
+## What Makes NewsThread Different ✨
 
-### Bias-Aware News Reading
+### Bias-Aware News Reading ⚖️
 - **Integrated bias ratings** on every article from three respected organizations
 - Visual indicators showing Left (◄◄), Center-Left (◄), Center (●), Center-Right (►), Right (►►)
 - Reliability ratings (1-5 stars) from trusted fact-checking organizations
 - 50+ major news sources rated and categorized
 
-### Perspective Comparison
+### Perspective Comparison 🔍
 Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer — articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
 
-### On-Device NLP Matching
+### On-Device NLP Matching 🧠
 The matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. No backend server, no data leaves your phone. The app extracts article text, generates semantic embeddings (384-dimensional vectors), and finds genuinely related stories — replacing keyword-based matching with real semantic understanding.
 
-### Privacy-First Design
+### Privacy-First Design 🛡️
 - All processing happens on-device (no backend server)
 - No tracking, no ads, no data selling
 - Works offline with cached articles
@@ -31,7 +31,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ---
 
-## Current Status
+## Current Status 🚀
 
 **Version**: 0.5.1 (Alpha)
 **Status**: Active Development
@@ -132,31 +132,31 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 
 ### Planned (Future Milestones)
 
-- [ ] Story tracking — follow developing stories over days/weeks
-- [ ] Timeline visualization — see the evolution of a story thread over time
-- [ ] Google Sign-In and Google Drive backup
-- [ ] Reading analytics — track your bias exposure over time
-- [ ] Filter bubble warnings when reading habits become one-sided
-- [ ] Interactive bias spectrum (tap/drag to filter by bias range)
+- [ ] 📈 Story tracking — follow developing stories over weeks
+- [ ] ⏳ Timeline visualization — see the evolution of a story
+- [ ] 🔑 Google Sign-In and Google Drive backup
+- [ ] 📊 Reading analytics — track your bias exposure
+- [ ] ⚠️ Filter bubble warnings when habits become one-sided
+- [ ] 🖱️ Interactive bias spectrum (tap/drag to filter)
 
 ---
 
-## Key Technical Decisions
+## Key Technical Decisions ⚙️
 
 | Decision | Rationale |
 |----------|-----------|
-| On-device NLP only, no backend | Privacy-first — all data stays on your device |
-| TF Lite with all-MiniLM-L6-v2 | 2.17.0+ quantized model, optimized for sentence similarity and 16KB alignment |
-| Pre-compute matches in background | Results ready before user taps Compare |
-| Bias spectrum UI (not L/C/R buckets) | Continuous axis is more nuanced than three categories |
-| Readability4J + JSoup for text extraction | Parse article body from URLs with fallback strategy |
-| In-memory cosine similarity | Sufficient for <1K articles, no vector DB needed |
-| User-controlled article fetching | WiFi-only / always / never setting respects data usage |
-| 16KB Page Alignment | Native libraries aligned for Android 15 compatibility |
+| 🔒 **On-device NLP only** | Privacy-first — all data stays on your device |
+| 🤖 **TF Lite with all-MiniLM-L6-v2** | 2.17.0+ quantized model for 16KB alignment |
+| ⚡ **Pre-compute matches** | Results ready before user taps Compare |
+| 🎨 **Bias spectrum UI** | Continuous axis is more nuanced than buckets |
+| ✂️ **Readability4J + JSoup** | Parse article body from URLs with fallback |
+| 📐 **In-memory cosine similarity** | Fast and lightweight for mobile |
+| 📶 **User-controlled fetching** | WiFi-only / always / never setting |
+| 🧱 **16KB Page Alignment** | Android 15 compatibility |
 
 ---
 
-## Architecture
+## Architecture 🏗️
 
 ### Clean Architecture Layers
 
@@ -210,7 +210,7 @@ Article Feed
 
 ---
 
-## Source Bias Rating System
+## Source Bias Rating System 📊
 
 > **Disclaimer**
 >
@@ -242,7 +242,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 
 ---
 
-## Getting Started
+## Getting Started 🛠️
 
 ### Prerequisites
 - Android Studio Hedgehog or newer
@@ -272,32 +272,17 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 
 ---
 
-## Screenshots
+## Screenshots 📸
+ 
+### The Journey to Android 15 & Beyond 🚀
 
-### Current (v0.2)
+| Feature | Status | Visual |
+|---------|--------|--------|
+| **News Feed** | ⚡ Live | [Feed Screenshot](screenshots/16kb_warning.png) *(Placeholder)* |
+| **Perspective Engine** | 🧠 Phase 5 | [Comparison Screenshot](screenshots/16kb_warning.png) *(Placeholder)* |
+| **Android 15 Compatibility** | ✅ Fixed | ![16KB Warning Captured](screenshots/16kb_warning.png) |
 
-<table>
-  <tr>
-    <td width="45%">
-      <img src="screenshots/feed-v0.2.png" width="100%" alt="NewsThread Feed">
-    </td>
-    <td width="10%"></td>
-    <td width="45%">
-      <img src="screenshots/article-v0.2.png" width="100%" alt="NewsThread Article View">
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <b>News Feed with Bias Ratings</b><br>
-      Real-time news with bias symbols and reliability stars on every article
-    </td>
-    <td></td>
-    <td align="center">
-      <b>Article Detail View</b><br>
-      In-app WebView reader for seamless article reading
-    </td>
-  </tr>
-</table>
+> **Note:** We are currently updating our high-fidelity mockups for Version 0.5! Check back soon for the new UI reveal.
 
 ---
 
