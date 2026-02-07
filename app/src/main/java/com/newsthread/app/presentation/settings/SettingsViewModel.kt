@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.newsthread.app.data.repository.QuotaRepository
 import com.newsthread.app.data.repository.UserPreferencesRepository
 import com.newsthread.app.domain.model.ArticleFetchPreference
+import com.newsthread.app.domain.model.SyncStrategy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,6 +36,31 @@ class SettingsViewModel @Inject constructor(
                 initialValue = ArticleFetchPreference.WIFI_ONLY
             )
 
+    // Background Sync Preferences
+    val backgroundSyncEnabled: StateFlow<Boolean> =
+        userPreferencesRepository.backgroundSyncEnabled
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = true
+            )
+
+    val syncStrategy: StateFlow<SyncStrategy> =
+        userPreferencesRepository.syncStrategy
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = SyncStrategy.BALANCED
+            )
+
+    val meteredSyncAllowed: StateFlow<Boolean> =
+        userPreferencesRepository.meteredSyncAllowed
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = false
+            )
+
     /**
      * Updates the article fetch preference.
      * Persists to DataStore immediately.
@@ -44,6 +70,24 @@ class SettingsViewModel @Inject constructor(
     fun setArticleFetchPreference(preference: ArticleFetchPreference) {
         viewModelScope.launch {
             userPreferencesRepository.setArticleFetchPreference(preference)
+        }
+    }
+
+    fun setBackgroundSyncEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setBackgroundSyncEnabled(enabled)
+        }
+    }
+
+    fun setSyncStrategy(strategy: SyncStrategy) {
+        viewModelScope.launch {
+            userPreferencesRepository.setSyncStrategy(strategy)
+        }
+    }
+
+    fun setMeteredSyncAllowed(allowed: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setMeteredSyncAllowed(allowed)
         }
     }
 

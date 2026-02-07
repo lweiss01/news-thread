@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,12 +30,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.newsthread.app.domain.model.ArticleFetchPreference
+import com.newsthread.app.domain.model.SyncStrategy
 
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val fetchPreference by viewModel.articleFetchPreference.collectAsStateWithLifecycle()
+    val backgroundSyncEnabled by viewModel.backgroundSyncEnabled.collectAsStateWithLifecycle()
+    val syncStrategy by viewModel.syncStrategy.collectAsStateWithLifecycle()
+    val meteredSyncAllowed by viewModel.meteredSyncAllowed.collectAsStateWithLifecycle()
     val rateLimitCleared by viewModel.rateLimitCleared.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -66,6 +71,20 @@ fun SettingsScreen(
             ArticleFetchPreferenceSection(
                 currentPreference = fetchPreference,
                 onPreferenceChanged = viewModel::setArticleFetchPreference
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Background Sync Section
+            BackgroundSyncSection(
+                syncEnabled = backgroundSyncEnabled,
+                onSyncEnabledChanged = viewModel::setBackgroundSyncEnabled,
+                syncStrategy = syncStrategy,
+                onSyncStrategyChanged = viewModel::setSyncStrategy,
+                meteredAllowed = meteredSyncAllowed,
+                onMeteredAllowedChanged = viewModel::setMeteredSyncAllowed
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -199,4 +218,127 @@ private fun ArticleFetchPreference.description(): String = when (this) {
     ArticleFetchPreference.ALWAYS -> "Fetch full article text on any network connection"
     ArticleFetchPreference.WIFI_ONLY -> "Only fetch on WiFi to save mobile data (recommended)"
     ArticleFetchPreference.NEVER -> "Never fetch full text, use article summaries only"
+}
+
+@Composable
+private fun BackgroundSyncSection(
+    syncEnabled: Boolean,
+    onSyncEnabledChanged: (Boolean) -> Unit,
+    syncStrategy: SyncStrategy,
+    onSyncStrategyChanged: (SyncStrategy) -> Unit,
+    meteredAllowed: Boolean,
+    onMeteredAllowedChanged: (Boolean) -> Unit
+) {
+    Column {
+        Text(
+            text = "Background Sync",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Keep article analysis up to date in the background",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Main Toggle
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onSyncEnabledChanged(!syncEnabled) }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Allow Background Analysis",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            Switch(
+                checked = syncEnabled,
+                onCheckedChange = onSyncEnabledChanged
+            )
+        }
+
+        if (syncEnabled) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Sync Strategy",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+
+            SyncStrategy.entries.forEach { strategy ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSyncStrategyChanged(strategy) }
+                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = syncStrategy == strategy,
+                        onClick = { onSyncStrategyChanged(strategy) }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = strategy.displayName(),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = strategy.description(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Metered Data Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onMeteredAllowedChanged(!meteredAllowed) }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Use Mobile Data",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = "Allow syncing when not on WiFi. Data costs may apply.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                Switch(
+                    checked = meteredAllowed,
+                    onCheckedChange = onMeteredAllowedChanged
+                )
+            }
+        }
+    }
+}
+
+private fun SyncStrategy.displayName(): String = when (this) {
+    SyncStrategy.PERFORMANCE -> "Performance"
+    SyncStrategy.BALANCED -> "Balanced"
+    SyncStrategy.POWER_SAVER -> "Power Saver"
+}
+
+private fun SyncStrategy.description(): String = when (this) {
+    SyncStrategy.PERFORMANCE -> "Updates every 15 mins (Battery > 15%)"
+    SyncStrategy.BALANCED -> "Updates every 15 mins (Battery > 30%)"
+    SyncStrategy.POWER_SAVER -> "Updates every hour (Charging or > 80%)"
 }
