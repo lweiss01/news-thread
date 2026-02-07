@@ -19,6 +19,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Pipeline Integration** - End-to-end orchestration with use cases
 - [x] **Phase 6: Background Processing** - WorkManager pre-computation
 - [x] **Phase 7: UI Implementation** - Bias spectrum visualization
+- [ ] **Phase 8: Tracking Foundation** - Database & UI for followed stories
+- [ ] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
+- [ ] **Phase 10: Notifications & Updates** - Background alerts for thread updates
 
 ## Phase Details
 
@@ -34,6 +37,33 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 07-01-PLAN.md — Bias Spectrum UI Components
 - [x] 07-UAT.md — User Acceptance Testing (Verification)
 
+### Phase 8: Tracking Foundation
+**Goal**: Core data structures and UI for following stories
+
+**Status**: Planned
+
+**Plans**:
+- [ ] 08-01: Data Layer (TrackedStory Entity, Dao, Repository)
+- [ ] 08-02: UI Integration (Follow Button, Tracking Screen)
+
+### Phase 9: Story Grouping Logic
+**Goal**: Automatically match new articles to tracked stories
+
+**Status**: Planned
+
+**Plans**:
+- [ ] 09-01: Clustering Logic (Matching incoming feed to tracked clusters)
+- [ ] 09-02: Thread Visualization (Displaying updates over time)
+
+### Phase 10: Notifications & Updates
+**Goal**: Notify users of significant developments in tracked stories
+
+**Status**: Planned
+
+**Plans**:
+- [ ] 10-01: Update Worker (Background check for thread updates)
+- [ ] 10-02: Notifications (System notifications and deep links)
+
 ## Progress
 
 **Execution Order:**
@@ -48,3 +78,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 5. Pipeline Integration | 2/2 | Complete | 2026-02-06 |
 | 6. Background Processing | 3/3 | Complete | 2026-02-07 |
 | 7. UI Implementation | 2/2 | Complete | 2026-02-07 |
+| 8. Tracking Foundation | 0/2 | Planned | - |
+| 9. Story Grouping Logic | 0/2 | Planned | - |
+| 10. Notifications | 0/2 | Planned | - |

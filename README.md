@@ -145,8 +145,11 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 | 5 | Pipeline Integration | ✅ **Complete** | End-to-end matching orchestration in UI |
 | 6 | Background Processing | ✅ **Complete** | WorkManager pre-computation during idle |
 | 7 | UI Implementation | ✅ **Complete** | Bias spectrum visualization |
+| 8 | Tracking Foundation | 📋 **Next** | Database & UI for followed stories |
+| 9 | Story Grouping Logic | 📅 Planned | Auto-grouping new articles to threads |
+| 10 | Notifications | 📅 Planned | Background alerts for thread updates |
 
-**Progress:** Phase 1-7 complete — 100% of matching engine milestone complete
+**Progress:** Phase 1-7 complete — 100% of matching engine milestone complete. Starting **Story Tracking** milestone (Phase 8-10).
 
 **26 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
