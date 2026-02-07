@@ -21,18 +21,18 @@ When a user reads an article, they can instantly see how the same story is cover
 
 ### Active
 
-- [ ] On-device NLP matching engine using TF Lite (MobileBERT or similar) for topic extraction and embedding-based similarity
-- [ ] Full article text extraction from URLs (fetch + parse with readability algorithm)
-- [ ] User setting to control article text fetching (WiFi-only, always, never)
-- [ ] Background pre-computation of story matches when feed loads
-- [ ] Feed-internal matching (cluster articles already in the feed)
-- [ ] NewsAPI search to find additional coverage from sources not in the feed
+- [x] On-device NLP matching engine using TF Lite (MobileBERT or similar) for topic extraction and embedding-based similarity
+- [x] Full article text extraction from URLs (fetch + parse with readability algorithm)
+- [x] User setting to control article text fetching (WiFi-only, always, never)
+- [x] Background pre-computation of story matches when feed loads
+- [x] Feed-internal matching (cluster articles already in the feed)
+- [x] NewsAPI search to find additional coverage from sources not in the feed
 - [ ] Bias spectrum UI — articles plotted along a left-to-right visual axis
-- [ ] Local caching layer for articles and match results
-- [ ] NewsAPI rate limit detection and graceful handling (backoff, user feedback)
-- [ ] Fix entity extraction bugs (mixed case entities, acronyms like GOP/FDA)
-- [ ] Fix API endpoint duplication in NewsApiService
-- [ ] Fix hardcoded 3-day matching window (make configurable or multi-window)
+- [x] Local caching layer for articles and match results
+- [x] NewsAPI rate limit detection and graceful handling (backoff, user feedback)
+- [x] Fix entity extraction bugs (mixed case entities, acronyms like GOP/FDA)
+- [x] Fix API endpoint duplication in NewsApiService
+- [x] Fix hardcoded 3-day matching window (make configurable or multi-window)
 
 ### Out of Scope
 
@@ -81,5 +81,5 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-1k6 | 16 KB Page Size Alignment | Open | Align TF Lite JNI libraries for Android 15+ |
 
 ---
-*Last updated: 2026-02-06*
+*Last updated: 2026-02-07*
 

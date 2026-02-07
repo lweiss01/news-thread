@@ -48,6 +48,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Article detail view with in-app WebView reader
 - [x] Semantic article matching (Phase 4 integration)
 - [x] UI pipeline orchestration and matching hints (Phase 5)
+- [x] Background processing and sync settings (Phase 6)
 
 <details>
 <summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
@@ -112,6 +113,16 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Verified end-to-end flow with unit tests for UseCase orchestration
 </details>
 
+<details>
+<summary><b>Phase 6: Background Processing (Completed 2026-02-07) ✅ Verified</b></summary>
+
+- [x] WorkManager infrastructure with Hilt injection and custom Configuration
+- [x] `ArticleAnalysisWorker` for background pre-computation of top 20 articles
+- [x] `BackgroundWorkScheduler` observing user preferences (Sync Enabled, Strategy, Metered)
+- [x] Settings UI with "Performance", "Balanced", "Power Saver" strategies
+- [x] Data usage warnings for metered network syncing
+</details>
+
 ### In Development — Matching Engine Rebuild (7 Phases)
 
 The legacy matching logic has been replaced. We are now integrating the new pipeline into the UI:
@@ -123,12 +134,12 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 | 3 | Embedding Engine | ✅ **Complete** | On-device TF Lite sentence embeddings (384-dim) |
 | 4 | Similarity Matching | ✅ **Complete** | Cosine similarity, clustering, persistent scores |
 | 5 | Pipeline Integration | ✅ **Complete** | End-to-end matching orchestration in UI |
-| 6 | Background Processing | 📋 **Next** | WorkManager pre-computation during idle |
-| 7 | UI Implementation | 📋 Planned | Bias spectrum visualization |
+| 6 | Background Processing | ✅ **Complete** | WorkManager pre-computation during idle |
+| 7 | UI Implementation | 📋 **Next** | Bias spectrum visualization |
 
-**Progress:** Phase 1-5 complete — ~71% of matching engine milestone complete
+**Progress:** Phase 1-6 complete — ~85% of matching engine milestone complete
 
-**19 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
+**22 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
 ### Planned (Future Milestones)
 
