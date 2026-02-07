@@ -196,7 +196,17 @@ util/                 # Utilities (DatabaseSeeder, etc.)
 - **ML**: TensorFlow Lite with all-MiniLM-L6-v2 for on-device sentence embeddings
 - **Text Extraction**: Readability4J + JSoup
 - **Background**: WorkManager with Hilt integration
+ 
+### Tooling & AI-Augmentation 🤖
 
+NewsThread was built using a hybrid AI-augmented workflow, moving from foundational boilerplate to complex architectural engineering.
+
+* **[Android Studio](https://developer.android.com/studio)** — The primary forge for development.
+* **[Antigravity](https://antigravity.google/)** — The agentic partner for complex phases (Orchestration, on-device NLP, and 16KB system fixes).
+* **[Claude Code](https://claude.ai/code)** — The foundational spark used for initial prototyping and Phase 1-2 UI/Repository boilerplate.
+* **[GSD (Getting Shit Done)](https://github.com/glittercowboy/get-shit-done)** — The workflow framework providing structured research, planning, and execution cycles.
+* **[Beads](https://github.com/steveyegge/beads)** — Local system management and daemon integration.
+ 
 ### Matching Pipeline (In Development)
 
 ```
