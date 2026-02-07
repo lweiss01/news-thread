@@ -2,7 +2,7 @@
 
 ## Overview
 
-NewsThread is replacing its keyword-based article matching with on-device NLP using TensorFlow Lite embeddings and semantic similarity. This roadmap delivers a complete matching pipeline from foundation (data models and caching) through core NLP components (text extraction, embeddings, similarity matching) to user-facing features (background pre-computation and bias spectrum UI). The work follows the natural technical dependency chain while tackling highest-risk components early.
+NewsThread has successfully replaced its keyword-based article matching with on-device NLP using TensorFlow Lite embeddings and semantic similarity. The project has now moved into the **Story Tracking** milestone, which allows users to follow developing news threads over time, automatically clustering new articles into existing threads and notifying users of significant updates.
 
 ## Phases
 
@@ -67,7 +67,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|

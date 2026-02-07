@@ -132,9 +132,9 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Settings legend for ratings and reliability
 </details>
 
-### In Development — Matching Engine Rebuild (7 Phases)
+### In Development — Story Tracking (Phases 8-10)
 
-The legacy matching logic has been replaced. We are now integrating the new pipeline into the UI:
+The matching engine rebuild is complete. We are now building the Story Tracking feature:
 
 | Phase | Name | Status | What It Does |
 |-------|------|--------|-------------|
@@ -155,7 +155,6 @@ The legacy matching logic has been replaced. We are now integrating the new pipe
 
 ### Planned (Future Milestones)
 
-- [ ] 📈 Story tracking — follow developing stories over weeks
 - [ ] ⏳ Timeline visualization — see the evolution of a story
 - [ ] 🔑 Google Sign-In and Google Drive backup
 - [ ] 📊 Reading analytics — track your bias exposure
