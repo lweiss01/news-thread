@@ -92,3 +92,4 @@ nul
 # TensorFlow Lite model files (too large for version control)
 *.tflite
 **/assets/vocab.txt
+.gemini/
