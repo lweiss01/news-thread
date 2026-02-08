@@ -5,7 +5,7 @@
 > [!IMPORTANT]
 > **Sign up at [NewsThread.io](https://newsthread.io)** to be notified when the app officially launches!
 
-A native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. Built with an offline-first, privacy-first design, all processing happens on your device.
+A native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. Built with an offline-first, privacy-first design, and all processing happens on your device.
 
 ---
 
