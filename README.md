@@ -49,6 +49,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Semantic article matching (Phase 4 integration)
 - [x] UI pipeline orchestration and matching hints (Phase 5)
 - [x] Background processing and sync settings (Phase 6)
+- [x] Bias spectrum visualization (Phase 7)
+- [x] Story tracking foundation and UI (Phase 8)
 
 <details>
 <summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
@@ -132,6 +134,20 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Settings legend for ratings and reliability
 </details>
 
+<details>
+<summary><b>Phase 8: Tracking Foundation (Completed 2026-02-08) ✅ Verified</b></summary>
+
+- [x] **Database Schema**: Added `stories` table and `cached_articles` fields (`isTracked`, `storyId`)
+- [x] **Story Tracking Logic**: Implementation of `TrackingRepository` with 1,000-story limit enforcement
+- [x] **Tracking Persistence**: Articles in tracked stories are exempted from automatic cache expiration
+- [x] **UI Integration**: 
+    - Long-press context menu on Feed articles to "Follow Story"
+    - Bookmark icon in Article Detail view to toggle tracking
+    - Dedicated "Tracking" tab with clustering views
+- [x] **Usability**: Implemented full-card clickability for tracked story items
+- [x] **Verification**: `TrackingRepositoryTest` passed with 100% logic coverage
+</details>
+
 ### In Development — Story Tracking (Phases 8-10)
 
 The matching engine rebuild is complete. We are now building the Story Tracking feature:
@@ -145,11 +161,11 @@ The matching engine rebuild is complete. We are now building the Story Tracking 
 | 5 | Pipeline Integration | ✅ **Complete** | End-to-end matching orchestration in UI |
 | 6 | Background Processing | ✅ **Complete** | WorkManager pre-computation during idle |
 | 7 | UI Implementation | ✅ **Complete** | Bias spectrum visualization |
-| 8 | Tracking Foundation | 📋 **Next** | Database & UI for followed stories |
-| 9 | Story Grouping Logic | 📅 Planned | Auto-grouping new articles to threads |
+| 8 | Tracking Foundation | ✅ **Complete** | Database & UI for followed stories |
+| 9 | Story Grouping Logic | 📋 **Next** | Auto-grouping new articles to threads |
 | 10 | Notifications | 📅 Planned | Background alerts for thread updates |
 
-**Progress:** Phase 1-7 complete — 100% of matching engine milestone complete. Starting **Story Tracking** milestone (Phase 8-10).
+**Progress:** Phase 1-8 complete — 80% of current roadmap complete. Moving to **Story Grouping Logic** (Phase 9).
 
 **26 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
