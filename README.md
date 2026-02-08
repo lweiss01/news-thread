@@ -18,7 +18,7 @@ A native Android news reader that shows how different media sources cover the sa
 - 50+ major news sources rated and categorized
 
 ### Perspective Comparison 🔍
-Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer — articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
+Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer: articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
 
 ### On-Device NLP Matching 🧠
 The matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. No backend server, no data leaves your phone. The app extracts article text, generates semantic embeddings (384-dimensional vectors), and finds genuinely related stories — replacing keyword-based matching with real semantic understanding.
@@ -223,11 +223,11 @@ util/                 # Utilities (DatabaseSeeder, etc.)
 
 NewsThread was built using a hybrid AI-augmented workflow, moving from foundational boilerplate to complex architectural engineering.
 
-* **[Android Studio](https://developer.android.com/studio)** — The primary forge for development.
-* **[Antigravity](https://antigravity.google/)** — The agentic partner for complex phases (Orchestration, on-device NLP, and 16KB system fixes).
-* **[Claude Code](https://claude.ai/code)** — The foundational spark used for initial prototyping and Phase 1-2 UI/Repository boilerplate.
-* **[GSD (Getting Shit Done)](https://github.com/glittercowboy/get-shit-done)** — The workflow framework providing structured research, planning, and execution cycles.
-* **[Beads](https://github.com/steveyegge/beads)** — Local system management and daemon integration.
+* **[Android Studio](https://developer.android.com/studio)**: The primary forge for development.
+* **[Antigravity](https://antigravity.google/)**: The agentic partner for complex phases (Orchestration, on-device NLP, and 16KB system fixes).
+* **[Claude Code](https://claude.ai/code)**: The foundational spark used for initial prototyping and Phase 1-2 UI/Repository boilerplate.
+* **[GSD (Getting Shit Done)](https://github.com/glittercowboy/get-shit-done)**: The workflow framework providing structured research, planning, and execution cycles.
+* **[Beads](https://github.com/steveyegge/beads)**: Local system management and daemon integration.
  
 ### Matching Pipeline (In Development)
 
@@ -251,9 +251,9 @@ Article Feed
 NewsThread uses a **consensus approach** combining three respected media bias organizations:
 
 ### Rating Sources
-1. **AllSides** — Community-driven bias ratings
-2. **Ad Fontes Media** — Interactive Media Bias Chart
-3. **Media Bias/Fact Check** — Detailed factual reporting analysis
+1. **AllSides**: Community-driven bias ratings
+2. **Ad Fontes Media**: Interactive Media Bias Chart
+3. **Media Bias/Fact Check**: Detailed factual reporting analysis
 
 ### Bias Scale
 - **-2 (◄◄)**: Left — CNN, MSNBC, HuffPost
@@ -361,7 +361,7 @@ Built by a senior information security data analyst who believes we need better 
 
 ---
 
-**[Join the Waitlist](https://newsthread.io)** — Be the first to know when the app launches.
+**[Join the Waitlist](https://newsthread.io)**: Be the first to know when the app launches.
 
 ---
 

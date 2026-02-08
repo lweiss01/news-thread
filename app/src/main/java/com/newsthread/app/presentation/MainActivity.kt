@@ -35,6 +35,7 @@ import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
 import com.newsthread.app.util.DatabaseSeeder
 import com.newsthread.app.domain.model.Article
 import java.net.URLDecoder
+import java.net.URLEncoder
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -96,7 +97,14 @@ fun NewsThreadApp() {
             }
 
             composable(Screen.Tracking.route) {
-                TrackingScreen()
+                TrackingScreen(
+                    onArticleClick = { url ->
+                        val encodedUrl = URLEncoder.encode(url, "UTF-8")
+                        navController.navigate(
+                            ArticleDetailRoute.createRoute(encodedUrl)
+                        )
+                    }
+                )
             }
 
             composable(Screen.Settings.route) {

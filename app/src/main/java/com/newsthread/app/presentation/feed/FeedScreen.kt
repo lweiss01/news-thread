@@ -14,13 +14,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import com.newsthread.app.presentation.common.ArticleCard
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -66,7 +70,8 @@ sealed interface FeedUiState {
 class FeedViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
     private val sourceRatingRepository: SourceRatingRepository,
-    private val quotaRepository: QuotaRepository
+    private val quotaRepository: QuotaRepository,
+    private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase // NEW
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -134,6 +139,13 @@ class FeedViewModel @Inject constructor(
             }
         }
     }
+
+    // NEW: Follow story
+    fun followStory(article: Article) {
+        viewModelScope.launch {
+            followStoryUseCase(article)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,7 +208,8 @@ fun FeedScreen(
                                 navController.navigate(
                                     ArticleDetailRoute.createRoute(encodedUrl)
                                 )
-                            }
+                            },
+                            onLongClick = { viewModel.followStory(article) } // Quick action for now
                         )
                     }
                 }
@@ -222,98 +235,4 @@ fun FeedScreen(
     }
 }
 
-@Composable
-private fun ArticleCard(
-    article: Article,
-    sourceRatings: Map<String, SourceRating>, // NEW: Accept ratings map!
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Source name with badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = article.source.name ?: "Unknown Source",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                // NEW: Instant lookup, no suspend call!
-                val rating = findRatingForArticle(article, sourceRatings)
-                if (rating != null) {
-                    SourceBadge(sourceRating = rating)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Title
-            Text(
-                text = article.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            // Description
-            article.description?.let { description ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Image
-            article.urlToImage?.let { imageUrl ->
-                Spacer(modifier = Modifier.height(8.dp))
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-    }
-}
-
-// NEW: Helper function to find rating
-private fun findRatingForArticle(
-    article: Article,
-    sourceRatings: Map<String, SourceRating>
-): SourceRating? {
-    // Try exact domain match first
-    val domain = extractDomain(article.url)
-    return sourceRatings[domain] ?:
-    // Try source ID if no domain match
-    article.source.id?.let { sourceRatings[it] }
-}
-
-// NEW: Extract domain from URL
-private fun extractDomain(url: String): String {
-    return try {
-        val uri = android.net.Uri.parse(url)
-        uri.host?.lowercase() ?: ""
-    } catch (e: Exception) {
-        ""
-    }
-}
+// ArticleCard moved to com.newsthread.app.presentation.common.ArticleCard

@@ -4,6 +4,8 @@ import com.newsthread.app.data.repository.ArticleMatchingRepositoryImpl
 import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
 import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
+import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.data.repository.TrackingRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -13,6 +15,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindTrackingRepository(
+        trackingRepositoryImpl: TrackingRepositoryImpl
+    ): TrackingRepository
 
     @Binds
     @Singleton

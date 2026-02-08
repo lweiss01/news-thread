@@ -16,6 +16,7 @@ import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.FeedCacheEntity
 import com.newsthread.app.data.local.entity.MatchResultEntity
 import com.newsthread.app.data.local.entity.SourceRatingEntity
+import com.newsthread.app.data.local.entity.StoryEntity
 
 /**
  * Main Room database for NewsThread.
@@ -31,9 +32,10 @@ import com.newsthread.app.data.local.entity.SourceRatingEntity
         CachedArticleEntity::class,
         ArticleEmbeddingEntity::class,
         MatchResultEntity::class,
-        FeedCacheEntity::class
+        FeedCacheEntity::class,
+        StoryEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -44,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun articleEmbeddingDao(): ArticleEmbeddingDao
     abstract fun matchResultDao(): MatchResultDao
     abstract fun feedCacheDao(): FeedCacheDao
+    abstract fun storyDao(): com.newsthread.app.data.local.dao.StoryDao
 
     companion object {
         @Volatile
@@ -155,6 +158,30 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 4 to 5.
+         * Phase 8: Tracking Foundation.
+         * Adds stories table and tracking columns to cached_articles.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create stories table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `stories` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                // Update cached_articles (Soft FK)
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN isTracked INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN storyId TEXT DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -162,7 +189,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
 
                 INSTANCE = instance

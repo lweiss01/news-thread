@@ -48,4 +48,9 @@ object DatabaseModule {
     fun provideFeedCacheDao(database: AppDatabase): FeedCacheDao {
         return database.feedCacheDao()
     }
+
+    @Provides
+    fun provideStoryDao(database: AppDatabase): com.newsthread.app.data.local.dao.StoryDao {
+        return database.storyDao() // Assuming you added abstract fun storyDao(): StoryDao to AppDatabase
+    }
 }

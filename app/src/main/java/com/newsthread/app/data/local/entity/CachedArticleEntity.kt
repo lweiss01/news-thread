@@ -28,5 +28,9 @@ data class CachedArticleEntity(
     val expiresAt: Long,            // fetchedAt + TTL_MS
     // Extraction retry tracking (per 02-CONTEXT.md: "Retry once on next view")
     val extractionFailedAt: Long? = null,  // Timestamp of last extraction failure, null if never failed
-    val extractionRetryCount: Int = 0      // 0=never tried/succeeded, 1=failed once (eligible for retry), 2+=permanently failed
+    val extractionRetryCount: Int = 0,     // 0=never tried/succeeded, 1=failed once (eligible for retry), 2+=permanently failed
+
+    // Phase 8: Tracking
+    val isTracked: Boolean = false,
+    val storyId: String? = null            // Soft FK to StoryEntity
 )

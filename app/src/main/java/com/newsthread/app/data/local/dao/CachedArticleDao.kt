@@ -33,7 +33,7 @@ interface CachedArticleDao {
     @Query("UPDATE cached_articles SET fullText = :fullText WHERE url = :url")
     suspend fun updateFullText(url: String, fullText: String)
 
-    @Query("DELETE FROM cached_articles WHERE expiresAt < :now")
+    @Query("DELETE FROM cached_articles WHERE expiresAt < :now AND isTracked = 0")
     suspend fun deleteExpired(now: Long = System.currentTimeMillis())
 
     @Query("SELECT COUNT(*) FROM cached_articles")
@@ -110,4 +110,14 @@ interface CachedArticleDao {
         minTimeSinceFailure: Long = 5 * 60 * 1000L,
         now: Long = System.currentTimeMillis()
     ): Boolean
+
+    // Phase 8: Tracking
+    @Query("UPDATE cached_articles SET isTracked = :isTracked, storyId = :storyId WHERE url = :url")
+    suspend fun updateTrackingStatus(url: String, isTracked: Boolean, storyId: String?)
+
+    @Query("UPDATE cached_articles SET isTracked = 0, storyId = NULL WHERE storyId = :storyId")
+    suspend fun clearTrackingForStory(storyId: String)
+
+    @Query("SELECT isTracked FROM cached_articles WHERE url = :url")
+    suspend fun isArticleTracked(url: String): Boolean
 }

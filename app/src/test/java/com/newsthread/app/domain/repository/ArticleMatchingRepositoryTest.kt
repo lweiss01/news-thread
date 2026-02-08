@@ -414,6 +414,22 @@ class FakeCachedArticleDao : CachedArticleDao {
     override suspend fun markExtractionFailed(url: String, failedAt: Long) {}
     override suspend fun clearExtractionFailure(url: String) {}
     override suspend fun isRetryEligible(url: String, minTimeSinceFailure: Long, now: Long): Boolean = false
+
+    override suspend fun updateTrackingStatus(url: String, isTracked: Boolean, storyId: String?) {
+        savedArticles[url]?.let {
+            savedArticles[url] = it.copy(isTracked = isTracked, storyId = storyId)
+        }
+    }
+
+    override suspend fun clearTrackingForStory(storyId: String) {
+        savedArticles.values.filter { it.storyId == storyId }.forEach {
+            savedArticles[it.url] = it.copy(isTracked = false, storyId = null)
+        }
+    }
+
+    override suspend fun isArticleTracked(url: String): Boolean {
+        return savedArticles[url]?.isTracked == true
+    }
 }
 
 
