@@ -1,7 +1,7 @@
 ---
 name: gsd:execute-phase
-description: Execute all plans in a phase with wave-based parallelization
-argument-hint: "<phase-number> [--gaps-only]"
+description: Execute all plans in a phase using wave-based parallel execution. Orchestrator stays lean by delegating plan execution to subagents.
+argument-hint: "<phase-number>"
 allowed-tools:
   - Read
   - Write
@@ -10,334 +10,692 @@ allowed-tools:
   - Grep
   - Bash
   - Task
-  - TodoWrite
   - AskUserQuestion
 ---
 
-<objective>
-Execute all plans in a phase using wave-based parallel execution.
+<purpose>
+Execute all plans in a phase using wave-based parallel execution. Orchestrator stays lean by delegating plan execution to subagents.
+</purpose>
 
-Orchestrator stays lean: discover plans, analyze dependencies, group into waves, spawn subagents, collect results. Each subagent loads the full execute-plan context and handles its own plan.
+<core_principle>
+The orchestrator's job is coordination, not execution. Each subagent loads the full execute-plan context itself. Orchestrator discovers plans, analyzes dependencies, groups into waves, spawns agents, handles checkpoints, collects results.
+</core_principle>
 
-Context budget: ~15% orchestrator, 100% fresh per subagent.
-</objective>
-
-<execution_context>
-@~/.claude/get-shit-done/references/ui-brand.md
-@~/.claude/get-shit-done/workflows/execute-phase.md
-</execution_context>
-
-<context>
-Phase: $ARGUMENTS
-
-**Flags:**
-- `--gaps-only` — Execute only gap closure plans (plans with `gap_closure: true` in frontmatter). Use after verify-work creates fix plans.
-
-@.planning/ROADMAP.md
-@.planning/STATE.md
-</context>
+<required_reading>
+Read STATE.md before any operation to load project context.
+Read config.json for planning behavior settings.
+</required_reading>
 
 <process>
-0. **Resolve Model Profile**
 
-   Read model profile for agent spawning:
-   ```bash
-   MODEL_PROFILE=$(cat .planning/config.json 2>/dev/null | grep -o '"model_profile"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "balanced")
+<step name="resolve_model_profile" priority="first">
+Read model profile for agent spawning:
+
+```bash
+MODEL_PROFILE=$(cat .planning/config.json 2>/dev/null | grep -o '"model_profile"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"' || echo "balanced")
+```
+
+Default to "balanced" if not set.
+
+**Model lookup table:**
+
+| Agent | quality | balanced | budget |
+|-------|---------|----------|--------|
+| gsd-executor | opus | sonnet | sonnet |
+| gsd-verifier | sonnet | sonnet | haiku |
+| general-purpose | — | — | — |
+
+Store resolved models for use in Task calls below.
+</step>
+
+<step name="load_project_state">
+Before any operation, read project state:
+
+```bash
+cat .planning/STATE.md 2>/dev/null
+```
+
+**If file exists:** Parse and internalize:
+- Current position (phase, plan, status)
+- Accumulated decisions (constraints on this execution)
+- Blockers/concerns (things to watch for)
+
+**If file missing but .planning/ exists:**
+```
+STATE.md missing but planning artifacts exist.
+Options:
+1. Reconstruct from existing artifacts
+2. Continue without project state (may lose accumulated context)
+```
+
+**If .planning/ doesn't exist:** Error - project not initialized.
+
+**Load planning config:**
+
+```bash
+# Check if planning docs should be committed (default: true)
+COMMIT_PLANNING_DOCS=$(cat .planning/config.json 2>/dev/null | grep -o '"commit_docs"[[:space:]]*:[[:space:]]*[^,}]*' | grep -o 'true\|false' || echo "true")
+# Auto-detect gitignored (overrides config)
+git check-ignore -q .planning 2>/dev/null && COMMIT_PLANNING_DOCS=false
+```
+
+Store `COMMIT_PLANNING_DOCS` for use in git operations.
+
+**Load parallelization config:**
+
+```bash
+# Check if parallelization is enabled (default: true)
+PARALLELIZATION=$(cat .planning/config.json 2>/dev/null | grep -o '"parallelization"[[:space:]]*:[[:space:]]*[^,}]*' | grep -o 'true\|false' || echo "true")
+```
+
+Store `PARALLELIZATION` for use in wave execution step. When `false`, plans within a wave execute sequentially instead of in parallel.
+
+**Load git branching config:**
+
+```bash
+# Get branching strategy (default: none)
+BRANCHING_STRATEGY=$(cat .planning/config.json 2>/dev/null | grep -o '"branching_strategy"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/' || echo "none")
+
+# Get templates
+PHASE_BRANCH_TEMPLATE=$(cat .planning/config.json 2>/dev/null | grep -o '"phase_branch_template"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/' || echo "gsd/phase-{phase}-{slug}")
+MILESTONE_BRANCH_TEMPLATE=$(cat .planning/config.json 2>/dev/null | grep -o '"milestone_branch_template"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/' || echo "gsd/{milestone}-{slug}")
+```
+
+Store `BRANCHING_STRATEGY` and templates for use in branch creation step.
+</step>
+
+<step name="handle_branching">
+Create or switch to appropriate branch based on branching strategy.
+
+**Skip if strategy is "none":**
+
+```bash
+if [ "$BRANCHING_STRATEGY" = "none" ]; then
+  # No branching, continue on current branch
+  exit 0
+fi
+```
+
+**For "phase" strategy — create phase branch:**
+
+```bash
+if [ "$BRANCHING_STRATEGY" = "phase" ]; then
+  # Get phase name from directory (e.g., "03-authentication" → "authentication")
+  PHASE_NAME=$(basename "$PHASE_DIR" | sed 's/^[0-9]*-//')
+
+  # Create slug from phase name
+  PHASE_SLUG=$(echo "$PHASE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+
+  # Apply template
+  BRANCH_NAME=$(echo "$PHASE_BRANCH_TEMPLATE" | sed "s/{phase}/$PADDED_PHASE/g" | sed "s/{slug}/$PHASE_SLUG/g")
+
+  # Create or switch to branch
+  git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+
+  echo "Branch: $BRANCH_NAME (phase branching)"
+fi
+```
+
+**For "milestone" strategy — create/switch to milestone branch:**
+
+```bash
+if [ "$BRANCHING_STRATEGY" = "milestone" ]; then
+  # Get current milestone info from ROADMAP.md
+  MILESTONE_VERSION=$(grep -oE 'v[0-9]+\.[0-9]+' .planning/ROADMAP.md | head -1 || echo "v1.0")
+  MILESTONE_NAME=$(grep -A1 "## .*$MILESTONE_VERSION" .planning/ROADMAP.md | tail -1 | sed 's/.*- //' | cut -d'(' -f1 | tr -d ' ' || echo "milestone")
+
+  # Create slug
+  MILESTONE_SLUG=$(echo "$MILESTONE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+
+  # Apply template
+  BRANCH_NAME=$(echo "$MILESTONE_BRANCH_TEMPLATE" | sed "s/{milestone}/$MILESTONE_VERSION/g" | sed "s/{slug}/$MILESTONE_SLUG/g")
+
+  # Create or switch to branch (same branch for all phases in milestone)
+  git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
+
+  echo "Branch: $BRANCH_NAME (milestone branching)"
+fi
+```
+
+**Report branch status:**
+
+```
+Branching: {strategy} → {branch_name}
+```
+
+**Note:** All subsequent plan commits go to this branch. User handles merging based on their workflow.
+</step>
+
+<step name="validate_phase">
+Confirm phase exists and has plans:
+
+```bash
+# Match both zero-padded (05-*) and unpadded (5-*) folders
+PADDED_PHASE=$(printf "%02d" ${PHASE_ARG} 2>/dev/null || echo "${PHASE_ARG}")
+PHASE_DIR=$(ls -d .planning/phases/${PADDED_PHASE}-* .planning/phases/${PHASE_ARG}-* 2>/dev/null | head -1)
+if [ -z "$PHASE_DIR" ]; then
+  echo "ERROR: No phase directory matching '${PHASE_ARG}'"
+  exit 1
+fi
+
+PLAN_COUNT=$(ls -1 "$PHASE_DIR"/*-PLAN.md 2>/dev/null | wc -l | tr -d ' ')
+if [ "$PLAN_COUNT" -eq 0 ]; then
+  echo "ERROR: No plans found in $PHASE_DIR"
+  exit 1
+fi
+```
+
+Report: "Found {N} plans in {phase_dir}"
+</step>
+
+<step name="discover_plans">
+List all plans and extract metadata:
+
+```bash
+# Get all plans
+ls -1 "$PHASE_DIR"/*-PLAN.md 2>/dev/null | sort
+
+# Get completed plans (have SUMMARY.md)
+ls -1 "$PHASE_DIR"/*-SUMMARY.md 2>/dev/null | sort
+```
+
+For each plan, read frontmatter to extract:
+- `wave: N` - Execution wave (pre-computed)
+- `autonomous: true/false` - Whether plan has checkpoints
+- `gap_closure: true/false` - Whether plan closes gaps from verification/UAT
+
+Build plan inventory:
+- Plan path
+- Plan ID (e.g., "03-01")
+- Wave number
+- Autonomous flag
+- Gap closure flag
+- Completion status (SUMMARY exists = complete)
+
+**Filtering:**
+- Skip completed plans (have SUMMARY.md)
+- If `--gaps-only` flag: also skip plans where `gap_closure` is not `true`
+
+If all plans filtered out, report "No matching incomplete plans" and exit.
+</step>
+
+<step name="group_by_wave">
+Read `wave` from each plan's frontmatter and group by wave number:
+
+```bash
+# For each plan, extract wave from frontmatter
+for plan in $PHASE_DIR/*-PLAN.md; do
+  wave=$(grep "^wave:" "$plan" | cut -d: -f2 | tr -d ' ')
+  autonomous=$(grep "^autonomous:" "$plan" | cut -d: -f2 | tr -d ' ')
+  echo "$plan:$wave:$autonomous"
+done
+```
+
+**Group plans:**
+```
+waves = {
+  1: [plan-01, plan-02],
+  2: [plan-03, plan-04],
+  3: [plan-05]
+}
+```
+
+**No dependency analysis needed.** Wave numbers are pre-computed during `/gsd:plan-phase`.
+
+Report wave structure with context:
+```
+## Execution Plan
+
+**Phase {X}: {Name}** — {total_plans} plans across {wave_count} waves
+
+| Wave | Plans | What it builds |
+|------|-------|----------------|
+| 1 | 01-01, 01-02 | {from plan objectives} |
+| 2 | 01-03 | {from plan objectives} |
+| 3 | 01-04 [checkpoint] | {from plan objectives} |
+
+```
+
+The "What it builds" column comes from skimming plan names/objectives. Keep it brief (3-8 words).
+</step>
+
+<step name="execute_waves">
+Execute each wave in sequence. Autonomous plans within a wave run in parallel **only if `PARALLELIZATION=true`**.
+
+**If `PARALLELIZATION=false`:** Execute plans within each wave sequentially (one at a time). This prevents side effects from concurrent operations like tests, linting, and code generation.
+
+**For each wave:**
+
+1. **Describe what's being built (BEFORE spawning):**
+
+   Read each plan's `<objective>` section. Extract what's being built and why it matters.
+
+   **Output:**
+   ```
+   ---
+
+   ## Wave {N}
+
+   **{Plan ID}: {Plan Name}**
+   {2-3 sentences: what this builds, key technical approach, why it matters in context}
+
+   **{Plan ID}: {Plan Name}** (if parallel)
+   {same format}
+
+   Spawning {count} agent(s)...
+
+   ---
    ```
 
-   Default to "balanced" if not set.
+   **Examples:**
+   - Bad: "Executing terrain generation plan"
+   - Good: "Procedural terrain generator using Perlin noise — creates height maps, biome zones, and collision meshes. Required before vehicle physics can interact with ground."
 
-   **Model lookup table:**
+2. **Read files and spawn agents:**
 
-   | Agent | quality | balanced | budget |
-   |-------|---------|----------|--------|
-   | gsd-executor | opus | sonnet | sonnet |
-   | gsd-verifier | sonnet | sonnet | haiku |
+   Before spawning, read file contents. The `@` syntax does not work across Task() boundaries - content must be inlined.
 
-   Store resolved models for use in Task calls below.
-
-1. **Validate phase exists**
-   - Find phase directory matching argument
-   - Count PLAN.md files
-   - Error if no plans found
-
-2. **Discover plans**
-   - List all *-PLAN.md files in phase directory
-   - Check which have *-SUMMARY.md (already complete)
-   - If `--gaps-only`: filter to only plans with `gap_closure: true`
-   - Build list of incomplete plans
-
-3. **Group by wave**
-   - Read `wave` from each plan's frontmatter
-   - Group plans by wave number
-   - Report wave structure to user
-
-4. **Execute waves**
-   For each wave in order:
-   - Spawn `gsd-executor` for each plan in wave (parallel Task calls)
-   - Wait for completion (Task blocks)
-   - Verify SUMMARYs created and spot-check claims
-   - Proceed to next wave
-
-5. **Aggregate results**
-   - Collect summaries from all plans
-   - Report phase completion status
-
-6. **Commit any orchestrator corrections**
-   Check for uncommitted changes before verification:
    ```bash
-   git status --porcelain
+   # Read each plan in the wave
+   PLAN_CONTENT=$(cat "{plan_path}")
+   STATE_CONTENT=$(cat .planning/STATE.md)
+   CONFIG_CONTENT=$(cat .planning/config.json 2>/dev/null)
    ```
 
-   **If changes exist:** Orchestrator made corrections between executor completions. Stage and commit them individually:
-   ```bash
-   # Stage each modified file individually (never use git add -u, git add ., or git add -A)
-   git status --porcelain | grep '^ M' | cut -c4- | while read file; do
-     git add "$file"
-   done
-   git commit -m "fix({phase}): orchestrator corrections"
+   **If `PARALLELIZATION=true` (default):** Use Task tool with multiple parallel calls.
+   
+   **If `PARALLELIZATION=false`:** Spawn agents one at a time, waiting for each to complete before starting the next. This ensures no concurrent file modifications or build operations.
+
+   Each agent gets prompt with inlined content:
+
+   ```
+   <objective>
+   Execute plan {plan_number} of phase {phase_number}-{phase_name}.
+
+   Commit each task atomically. Create SUMMARY.md. Update STATE.md.
+   </objective>
+
+   <execution_context>
+   @.agent/GSD/workflows/execute-plan.md
+   @.agent/GSD/templates/summary.md
+   @.agent/GSD/references/checkpoints.md
+   @.agent/GSD/references/tdd.md
+   </execution_context>
+
+   <context>
+   Plan:
+   {plan_content}
+
+   Project state:
+   {state_content}
+
+   Config (if exists):
+   {config_content}
+   </context>
+
+   <success_criteria>
+   - [ ] All tasks executed
+   - [ ] Each task committed individually
+   - [ ] SUMMARY.md created in plan directory
+   - [ ] STATE.md updated with position and decisions
+   </success_criteria>
    ```
 
-   **If clean:** Continue to verification.
+2. **Wait for all agents in wave to complete:**
 
-7. **Verify phase goal**
-   Check config: `WORKFLOW_VERIFIER=$(cat .planning/config.json 2>/dev/null | grep -o '"verifier"[[:space:]]*:[[:space:]]*[^,}]*' | grep -o 'true\|false' || echo "true")`
+   Task tool blocks until each agent finishes. All parallel agents return together.
 
-   **If `workflow.verifier` is `false`:** Skip to step 8 (treat as passed).
+3. **Report completion and what was built:**
 
-   **Otherwise:**
-   - Spawn `gsd-verifier` subagent with phase directory and goal
-   - Verifier checks must_haves against actual codebase (not SUMMARY claims)
-   - Creates VERIFICATION.md with detailed report
-   - Route by status:
-     - `passed` → continue to step 8
-     - `human_needed` → present items, get approval or feedback
-     - `gaps_found` → present gaps, offer `/gsd:plan-phase {X} --gaps`
+   For each completed agent:
+   - Verify SUMMARY.md exists at expected path
+   - Read SUMMARY.md to extract what was built
+   - Note any issues or deviations
 
-8. **Update roadmap and state**
-   - Update ROADMAP.md, STATE.md
+   **Output:**
+   ```
+   ---
 
-9. **Update requirements**
-   Mark phase requirements as Complete:
-   - Read ROADMAP.md, find this phase's `Requirements:` line (e.g., "AUTH-01, AUTH-02")
-   - Read REQUIREMENTS.md traceability table
-   - For each REQ-ID in this phase: change Status from "Pending" to "Complete"
-   - Write updated REQUIREMENTS.md
-   - Skip if: REQUIREMENTS.md doesn't exist, or phase has no Requirements line
+   ## Wave {N} Complete
 
-10. **Commit phase completion**
-    Check `COMMIT_PLANNING_DOCS` from config.json (default: true).
-    If false: Skip git operations for .planning/ files.
-    If true: Bundle all phase metadata updates in one commit:
-    - Stage: `git add .planning/ROADMAP.md .planning/STATE.md`
-    - Stage REQUIREMENTS.md if updated: `git add .planning/REQUIREMENTS.md`
-    - Commit: `docs({phase}): complete {phase-name} phase`
+   **{Plan ID}: {Plan Name}**
+   {What was built — from SUMMARY.md deliverables}
+   {Notable deviations or discoveries, if any}
 
-11. **Offer next steps**
-    - Route to next action (see `<offer_next>`)
-</process>
+   **{Plan ID}: {Plan Name}** (if parallel)
+   {same format}
 
-<offer_next>
-Output this markdown directly (not as a code block). Route based on status:
+   {If more waves: brief note on what this enables for next wave}
 
-| Status | Route |
-|--------|-------|
-| `gaps_found` | Route C (gap closure) |
-| `human_needed` | Present checklist, then re-route based on approval |
-| `passed` + more phases | Route A (next phase) |
-| `passed` + last phase | Route B (milestone complete) |
+   ---
+   ```
+
+   **Examples:**
+   - Bad: "Wave 2 complete. Proceeding to Wave 3."
+   - Good: "Terrain system complete — 3 biome types, height-based texturing, physics collision meshes. Vehicle physics (Wave 3) can now reference ground surfaces."
+
+4. **Handle failures:**
+
+   If any agent in wave fails:
+   - Report which plan failed and why
+   - Ask user: "Continue with remaining waves?" or "Stop execution?"
+   - If continue: proceed to next wave (dependent plans may also fail)
+   - If stop: exit with partial completion report
+
+5. **Execute checkpoint plans between waves:**
+
+   See `<checkpoint_handling>` for details.
+
+6. **Proceed to next wave**
+
+</step>
+
+<step name="checkpoint_handling">
+Plans with `autonomous: false` require user interaction.
+
+**Detection:** Check `autonomous` field in frontmatter.
+
+**Execution flow for checkpoint plans:**
+
+1. **Spawn agent for checkpoint plan:**
+   ```
+   Task(prompt="{subagent-task-prompt}", subagent_type="gsd-executor", model="{executor_model}")
+   ```
+
+2. **Agent runs until checkpoint:**
+   - Executes auto tasks normally
+   - Reaches checkpoint task (e.g., `type="checkpoint:human-verify"`) or auth gate
+   - Agent returns with structured checkpoint (see checkpoint-return.md template)
+
+3. **Agent return includes (structured format):**
+   - Completed Tasks table with commit hashes and files
+   - Current task name and blocker
+   - Checkpoint type and details for user
+   - What's awaited from user
+
+4. **Orchestrator presents checkpoint to user:**
+
+   Extract and display the "Checkpoint Details" and "Awaiting" sections from agent return:
+   ```
+   ## Checkpoint: [Type]
+
+   **Plan:** 03-03 Dashboard Layout
+   **Progress:** 2/3 tasks complete
+
+   [Checkpoint Details section from agent return]
+
+   [Awaiting section from agent return]
+   ```
+
+5. **User responds:**
+   - "approved" / "done" → spawn continuation agent
+   - Description of issues → spawn continuation agent with feedback
+   - Decision selection → spawn continuation agent with choice
+
+6. **Spawn continuation agent (NOT resume):**
+
+   Use the continuation-prompt.md template:
+   ```
+   Task(
+     prompt=filled_continuation_template,
+     subagent_type="gsd-executor",
+     model="{executor_model}"
+   )
+   ```
+
+   Fill template with:
+   - `{completed_tasks_table}`: From agent's checkpoint return
+   - `{resume_task_number}`: Current task from checkpoint
+   - `{resume_task_name}`: Current task name from checkpoint
+   - `{user_response}`: What user provided
+   - `{resume_instructions}`: Based on checkpoint type (see continuation-prompt.md)
+
+7. **Continuation agent executes:**
+   - Verifies previous commits exist
+   - Continues from resume point
+   - May hit another checkpoint (repeat from step 4)
+   - Or completes plan
+
+8. **Repeat until plan completes or user stops**
+
+**Why fresh agent instead of resume:**
+Resume relies on Claude Code's internal serialization which breaks with parallel tool calls.
+Fresh agents with explicit state are more reliable and maintain full context.
+
+**Checkpoint in parallel context:**
+If a plan in a parallel wave has a checkpoint:
+- Spawn as normal
+- Agent pauses at checkpoint and returns with structured state
+- Other parallel agents may complete while waiting
+- Present checkpoint to user
+- Spawn continuation agent with user response
+- Wait for all agents to finish before next wave
+</step>
+
+<step name="aggregate_results">
+After all waves complete, aggregate results:
+
+```markdown
+## Phase {X}: {Name} Execution Complete
+
+**Waves executed:** {N}
+**Plans completed:** {M} of {total}
+
+### Wave Summary
+
+| Wave | Plans | Status |
+|------|-------|--------|
+| 1 | plan-01, plan-02 | ✓ Complete |
+| CP | plan-03 | ✓ Verified |
+| 2 | plan-04 | ✓ Complete |
+| 3 | plan-05 | ✓ Complete |
+
+### Plan Details
+
+1. **03-01**: [one-liner from SUMMARY.md]
+2. **03-02**: [one-liner from SUMMARY.md]
+...
+
+### Issues Encountered
+[Aggregate from all SUMMARYs, or "None"]
+```
+</step>
+
+<step name="verify_phase_goal">
+Verify phase achieved its GOAL, not just completed its TASKS.
+
+**Spawn verifier:**
+
+```
+Task(
+  prompt="Verify phase {phase_number} goal achievement.
+
+Phase directory: {phase_dir}
+Phase goal: {goal from ROADMAP.md}
+
+Check must_haves against actual codebase. Create VERIFICATION.md.
+Verify what actually exists in the code.",
+  subagent_type="gsd-verifier",
+  model="{verifier_model}"
+)
+```
+
+**Read verification status:**
+
+```bash
+grep "^status:" "$PHASE_DIR"/*-VERIFICATION.md | cut -d: -f2 | tr -d ' '
+```
+
+**Route by status:**
+
+| Status | Action |
+|--------|--------|
+| `passed` | Continue to update_roadmap |
+| `human_needed` | Present items to user, get approval or feedback |
+| `gaps_found` | Present gap summary, offer `/gsd:plan-phase {phase} --gaps` |
+
+**If passed:**
+
+Phase goal verified. Proceed to update_roadmap.
+
+**If human_needed:**
+
+```markdown
+## ✓ Phase {X}: {Name} — Human Verification Required
+
+All automated checks passed. {N} items need human testing:
+
+### Human Verification Checklist
+
+{Extract from VERIFICATION.md human_verification section}
 
 ---
 
-**Route A: Phase verified, more phases remain**
+**After testing:**
+- "approved" → continue to update_roadmap
+- Report issues → will route to gap closure planning
+```
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► PHASE {Z} COMPLETE ✓
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If user approves → continue to update_roadmap.
+If user reports issues → treat as gaps_found.
 
-**Phase {Z}: {Name}**
+**If gaps_found:**
 
-{Y} plans executed
-Goal verified ✓
+Present gaps and offer next command:
 
-───────────────────────────────────────────────────────────────
+```markdown
+## ⚠ Phase {X}: {Name} — Gaps Found
 
-## ▶ Next Up
-
-**Phase {Z+1}: {Name}** — {Goal from ROADMAP.md}
-
-/gsd:discuss-phase {Z+1} — gather context and clarify approach
-
-<sub>/clear first → fresh context window</sub>
-
-───────────────────────────────────────────────────────────────
-
-**Also available:**
-- /gsd:plan-phase {Z+1} — skip discussion, plan directly
-- /gsd:verify-work {Z} — manual acceptance testing before continuing
-
-───────────────────────────────────────────────────────────────
-
----
-
-**Route B: Phase verified, milestone complete**
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► MILESTONE COMPLETE 🎉
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**v1.0**
-
-{N} phases completed
-All phase goals verified ✓
-
-───────────────────────────────────────────────────────────────
-
-## ▶ Next Up
-
-**Audit milestone** — verify requirements, cross-phase integration, E2E flows
-
-/gsd:audit-milestone
-
-<sub>/clear first → fresh context window</sub>
-
-───────────────────────────────────────────────────────────────
-
-**Also available:**
-- /gsd:verify-work — manual acceptance testing
-- /gsd:complete-milestone — skip audit, archive directly
-
-───────────────────────────────────────────────────────────────
-
----
-
-**Route C: Gaps found — need additional planning**
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► PHASE {Z} GAPS FOUND ⚠
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-**Phase {Z}: {Name}**
-
-Score: {N}/{M} must-haves verified
-Report: .planning/phases/{phase_dir}/{phase}-VERIFICATION.md
+**Score:** {N}/{M} must-haves verified
+**Report:** {phase_dir}/{phase}-VERIFICATION.md
 
 ### What's Missing
 
-{Extract gap summaries from VERIFICATION.md}
+{Extract gap summaries from VERIFICATION.md gaps section}
 
-───────────────────────────────────────────────────────────────
+---
 
 ## ▶ Next Up
 
 **Plan gap closure** — create additional plans to complete the phase
 
-/gsd:plan-phase {Z} --gaps
+`/gsd:plan-phase {X} --gaps`
 
-<sub>/clear first → fresh context window</sub>
-
-───────────────────────────────────────────────────────────────
-
-**Also available:**
-- cat .planning/phases/{phase_dir}/{phase}-VERIFICATION.md — see full report
-- /gsd:verify-work {Z} — manual testing before planning
-
-───────────────────────────────────────────────────────────────
+<sub>`/clear` first → fresh context window</sub>
 
 ---
 
-After user runs /gsd:plan-phase {Z} --gaps:
-1. Planner reads VERIFICATION.md gaps
-2. Creates plans 04, 05, etc. to close gaps
-3. User runs /gsd:execute-phase {Z} again
-4. Execute-phase runs incomplete plans (04, 05...)
-5. Verifier runs again → loop until passed
-</offer_next>
+**Also available:**
+- `cat {phase_dir}/{phase}-VERIFICATION.md` — see full report
+- `/gsd:verify-work {X}` — manual testing before planning
+```
 
-<wave_execution>
-**Parallel spawning:**
+User runs `/gsd:plan-phase {X} --gaps` which:
+1. Reads VERIFICATION.md gaps
+2. Creates additional plans (04, 05, etc.) with `gap_closure: true` to close gaps
+3. User then runs `/gsd:execute-phase {X} --gaps-only`
+4. Execute-phase runs only gap closure plans (04-05)
+5. Verifier runs again after new plans complete
 
-Before spawning, read file contents. The `@` syntax does not work across Task() boundaries.
+User stays in control at each decision point.
+</step>
+
+<step name="update_roadmap">
+Update ROADMAP.md to reflect phase completion:
 
 ```bash
-# Read each plan and STATE.md
-PLAN_01_CONTENT=$(cat "{plan_01_path}")
-PLAN_02_CONTENT=$(cat "{plan_02_path}")
-PLAN_03_CONTENT=$(cat "{plan_03_path}")
-STATE_CONTENT=$(cat .planning/STATE.md)
+# Mark phase complete
+# Update completion date
+# Update status
 ```
 
-Spawn all plans in a wave with a single message containing multiple Task calls, with inlined content:
+**Check planning config:**
 
+If `COMMIT_PLANNING_DOCS=false` (set in load_project_state):
+- Skip all git operations for .planning/ files
+- Planning docs exist locally but are gitignored
+- Log: "Skipping planning docs commit (commit_docs: false)"
+- Proceed to offer_next step
+
+If `COMMIT_PLANNING_DOCS=true` (default):
+- Continue with git operations below
+
+Commit phase completion (roadmap, state, verification):
+```bash
+git add .planning/ROADMAP.md .planning/STATE.md .planning/phases/{phase_dir}/*-VERIFICATION.md
+git add .planning/REQUIREMENTS.md  # if updated
+git commit -m "docs(phase-{X}): complete phase execution"
 ```
-Task(prompt="Execute plan at {plan_01_path}\n\nPlan:\n{plan_01_content}\n\nProject state:\n{state_content}", subagent_type="gsd-executor", model="{executor_model}")
-Task(prompt="Execute plan at {plan_02_path}\n\nPlan:\n{plan_02_content}\n\nProject state:\n{state_content}", subagent_type="gsd-executor", model="{executor_model}")
-Task(prompt="Execute plan at {plan_03_path}\n\nPlan:\n{plan_03_content}\n\nProject state:\n{state_content}", subagent_type="gsd-executor", model="{executor_model}")
+</step>
+
+<step name="offer_next">
+Present next steps based on milestone status:
+
+**If more phases remain:**
+```
+## Next Up
+
+**Phase {X+1}: {Name}** — {Goal}
+
+`/gsd:plan-phase {X+1}`
+
+<sub>`/clear` first for fresh context</sub>
 ```
 
-All three run in parallel. Task tool blocks until all complete.
+**If milestone complete:**
+```
+MILESTONE COMPLETE!
 
-**No polling.** No background agents. No TaskOutput loops.
-</wave_execution>
+All {N} phases executed.
 
-<checkpoint_handling>
-Plans with `autonomous: false` have checkpoints. The execute-phase.md workflow handles the full checkpoint flow:
-- Subagent pauses at checkpoint, returns structured state
-- Orchestrator presents to user, collects response
-- Spawns fresh continuation agent (not resume)
+`/gsd:complete-milestone`
+```
+</step>
 
-See `@~/.claude/get-shit-done/workflows/execute-phase.md` step `checkpoint_handling` for complete details.
-</checkpoint_handling>
+</process>
 
-<deviation_rules>
-During execution, handle discoveries automatically:
+<context_efficiency>
+Orchestrator: ~10-15% context (frontmatter, spawning, results).
+Subagents: Fresh 200k each (full workflow + execution).
+No polling (Task blocks). No context bleed.
+</context_efficiency>
 
-1. **Auto-fix bugs** - Fix immediately, document in Summary
-2. **Auto-add critical** - Security/correctness gaps, add and document
-3. **Auto-fix blockers** - Can't proceed without fix, do it and document
-4. **Ask about architectural** - Major structural changes, stop and ask user
+<failure_handling>
+**Subagent fails mid-plan:**
+- SUMMARY.md won't exist
+- Orchestrator detects missing SUMMARY
+- Reports failure, asks user how to proceed
 
-Only rule 4 requires user intervention.
-</deviation_rules>
+**Dependency chain breaks:**
+- Wave 1 plan fails
+- Wave 2 plans depending on it will likely fail
+- Orchestrator can still attempt them (user choice)
+- Or skip dependent plans entirely
 
-<commit_rules>
-**Per-Task Commits:**
+**All agents in wave fail:**
+- Something systemic (git issues, permissions, etc.)
+- Stop execution
+- Report for manual investigation
 
-After each task completes:
-1. Stage only files modified by that task
-2. Commit with format: `{type}({phase}-{plan}): {task-name}`
-3. Types: feat, fix, test, refactor, perf, chore
-4. Record commit hash for SUMMARY.md
+**Checkpoint fails to resolve:**
+- User can't approve or provides repeated issues
+- Ask: "Skip this plan?" or "Abort phase execution?"
+- Record partial progress in STATE.md
+</failure_handling>
 
-**Plan Metadata Commit:**
+<resumption>
+**Resuming interrupted execution:**
 
-After all tasks in a plan complete:
-1. Stage plan artifacts only: PLAN.md, SUMMARY.md
-2. Commit with format: `docs({phase}-{plan}): complete [plan-name] plan`
-3. NO code files (already committed per-task)
+If phase execution was interrupted (context limit, user exit, error):
 
-**Phase Completion Commit:**
+1. Run `/gsd:execute-phase {phase}` again
+2. discover_plans finds completed SUMMARYs
+3. Skips completed plans
+4. Resumes from first incomplete plan
+5. Continues wave-based execution
 
-After all plans in phase complete (step 7):
-1. Stage: ROADMAP.md, STATE.md, REQUIREMENTS.md (if updated), VERIFICATION.md
-2. Commit with format: `docs({phase}): complete {phase-name} phase`
-3. Bundles all phase-level state updates in one commit
-
-**NEVER use:**
-- `git add .`
-- `git add -A`
-- `git add src/` or any broad directory
-
-**Always stage files individually.**
-</commit_rules>
-
-<success_criteria>
-- [ ] All incomplete plans in phase executed
-- [ ] Each plan has SUMMARY.md
-- [ ] Phase goal verified (must_haves checked against codebase)
-- [ ] VERIFICATION.md created in phase directory
-- [ ] STATE.md reflects phase completion
-- [ ] ROADMAP.md updated
-- [ ] REQUIREMENTS.md updated (phase requirements marked Complete)
-- [ ] User informed of next steps
-</success_criteria>
+**STATE.md tracks:**
+- Last completed plan
+- Current wave
+- Any pending checkpoints
+</resumption>

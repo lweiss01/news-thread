@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Pipeline Integration** - End-to-end orchestration with use cases
 - [x] **Phase 6: Background Processing** - WorkManager pre-computation
 - [x] **Phase 7: UI Implementation** - Bias spectrum visualization
-- [ ] **Phase 8: Tracking Foundation** - Database & UI for followed stories
+- [x] **Phase 8: Tracking Foundation** - Database & UI for followed stories
 - [ ] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
 - [ ] **Phase 10: Notifications & Updates** - Background alerts for thread updates
 
@@ -78,6 +78,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Pipeline Integration | 2/2 | Complete | 2026-02-06 |
 | 6. Background Processing | 3/3 | Complete | 2026-02-07 |
 | 7. UI Implementation | 2/2 | Complete | 2026-02-07 |
-| 8. Tracking Foundation | 0/2 | Planned | - |
+| 8. Tracking Foundation | 2/2 | Complete | 2026-02-08 |
 | 9. Story Grouping Logic | 0/2 | Planned | - |
 | 10. Notifications | 0/2 | Planned | - |

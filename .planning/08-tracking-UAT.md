@@ -26,5 +26,4 @@
 - [x] **Check:** `TrackingRepositoryTest` passes, confirming the 1,000 story limit is enforced.
 
 ## Usability Improvements
-- [ ] **Fix:** Made entire story card clickable in Tracking screen (User Report: "Story blurb only clickable"). 
-    > **Note:** Code fix applied, but manual verification paused due to API rate limit (2026-02-08).
+- [x] **Fix:** Made entire story card clickable in Tracking screen (User Report: "Story blurb only clickable"). Verified by user (2026-02-08).
