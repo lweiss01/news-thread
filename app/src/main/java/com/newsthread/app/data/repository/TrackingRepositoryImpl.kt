@@ -1,20 +1,30 @@
 package com.newsthread.app.data.repository
 
+import android.content.Context
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.StoryDao
 import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.data.local.entity.StoryEntity
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.worker.StoryUpdateWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TrackingRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val storyDao: StoryDao,
-    private val articleDao: CachedArticleDao
+    private val articleDao: CachedArticleDao,
+    private val embeddingDao: ArticleEmbeddingDao
 ) : TrackingRepository {
 
     override fun getTrackedStories(): Flow<List<StoryWithArticles>> {
@@ -39,18 +49,15 @@ class TrackingRepositoryImpl @Inject constructor(
         storyDao.insertStory(story)
 
         // 3. Update Article (Soft FK)
-        // We assume the article is already in cache (or we should upsert it, 
-        // but for now we update the existing record or fail if not found/fetch it)
-        // Since we are following from Feed/Detail, it likely exists in cache 
-        // or we need to ensure it's there.
-        // For logic simplicity: Update the specific article's tracking info.
-        
-        // IMPORTANT: We need to make sure the article exists in the DB. 
-        // If it was just fetched from API and not cached yet, this might fail solely by update.
-        // So we should check if it exists, if not, verify if we can insert it.
-        // However, the cleanest way is just to update the 'isTracked' flag.
-        
         articleDao.updateTrackingStatus(article.url, true, storyId)
+        
+        // Phase 9: Trigger immediate background matching for newly followed story
+        try {
+            val request = OneTimeWorkRequestBuilder<StoryUpdateWorker>().build()
+            WorkManager.getInstance(context).enqueue(request)
+        } catch (e: Exception) {
+            // Log but don't fail the follow action
+        }
         
         return Result.success(Unit)
     }
@@ -67,5 +74,38 @@ class TrackingRepositoryImpl @Inject constructor(
     override suspend fun isArticleTracked(url: String): Boolean {
         // We need a method in Dao to check this efficienty
         return articleDao.isArticleTracked(url)
+    }
+
+    // Phase 9: Story Grouping
+    override suspend fun getStoryArticleEmbeddings(storyId: String): List<FloatArray> {
+        val embeddings = embeddingDao.getEmbeddingsForStory(storyId)
+        return embeddings.map { entity ->
+            bytesToFloatArray(entity.embedding)
+        }
+    }
+
+    override suspend fun addArticleToStory(
+        articleUrl: String, 
+        storyId: String, 
+        isNovel: Boolean, 
+        hasNewPerspective: Boolean
+    ) {
+        articleDao.assignArticleToStory(articleUrl, storyId, isNovel, hasNewPerspective)
+        storyDao.updateStoryTimestamp(storyId, System.currentTimeMillis())
+    }
+
+    override suspend fun markStoryUpdated(storyId: String) {
+        storyDao.updateStoryTimestamp(storyId, System.currentTimeMillis())
+    }
+
+    override suspend fun markStoryViewed(storyId: String) {
+        storyDao.markStoryViewed(storyId)
+    }
+
+    private fun bytesToFloatArray(bytes: ByteArray): FloatArray {
+        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val floats = FloatArray(bytes.size / 4)
+        buffer.asFloatBuffer().get(floats)
+        return floats
     }
 }

@@ -39,4 +39,16 @@ interface ArticleEmbeddingDao {
 
     @Query("UPDATE article_embeddings SET embeddingStatus = 'PENDING', lastAttemptAt = :timestamp WHERE articleUrl = :articleUrl")
     suspend fun markForRetry(articleUrl: String, timestamp: Long)
+
+    // Phase 9: Story Grouping
+    /**
+     * Get embeddings for articles belonging to a story.
+     */
+    @Query("""
+        SELECT ae.* FROM article_embeddings ae
+        INNER JOIN cached_articles ca ON ae.articleUrl = ca.url
+        WHERE ca.storyId = :storyId
+        AND ae.embeddingStatus = 'SUCCESS'
+    """)
+    suspend fun getEmbeddingsForStory(storyId: String): List<ArticleEmbeddingEntity>
 }

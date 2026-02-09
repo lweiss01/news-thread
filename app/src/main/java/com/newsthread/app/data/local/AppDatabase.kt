@@ -25,6 +25,8 @@ import com.newsthread.app.data.local.entity.StoryEntity
  * Version 2: Add cache tables (cached_articles, article_embeddings, match_results, feed_cache)
  * Version 3: Add extraction retry tracking columns (extractionFailedAt, extractionRetryCount)
  * Version 4: Add embedding versioning and status tracking (modelVersion, embeddingStatus, failureReason, lastAttemptAt)
+ * Version 5: Phase 8 Tracking Foundation (stories table, isTracked/storyId on cached_articles)
+ * Version 6: Phase 9 Story Grouping (lastViewedAt on stories)
  */
 @Database(
     entities = [
@@ -35,7 +37,7 @@ import com.newsthread.app.data.local.entity.StoryEntity
         FeedCacheEntity::class,
         StoryEntity::class
     ],
-    version = 5,
+    version = 7,
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -53,6 +55,18 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         private const val DATABASE_NAME = "newsthread_database"
+
+        /**
+         * Migration from version 6 to 7.
+         * Phase 9: Story Visualization Refinements.
+         * Adds isNovel and hasNewPerspective columns to cached_articles.
+         */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN isNovel INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN hasNewPerspective INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         /**
          * Migration from version 1 to 2.
@@ -182,6 +196,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 5 to 6.
+         * Phase 9: Story Grouping.
+         * Adds lastViewedAt column to stories table for unread count tracking.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE stories ADD COLUMN lastViewedAt INTEGER NOT NULL DEFAULT 0")
+                // Set lastViewedAt = updatedAt for existing stories
+                db.execSQL("UPDATE stories SET lastViewedAt = updatedAt WHERE lastViewedAt = 0")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -189,7 +216,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build()
 
                 INSTANCE = instance

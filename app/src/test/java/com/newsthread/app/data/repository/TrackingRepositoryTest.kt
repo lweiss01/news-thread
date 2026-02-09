@@ -1,5 +1,6 @@
 package com.newsthread.app.data.repository
 
+import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.StoryDao
 import com.newsthread.app.data.local.entity.StoryEntity
@@ -23,12 +24,15 @@ class TrackingRepositoryTest {
     @Mock
     private lateinit var articleDao: CachedArticleDao
 
+    @Mock
+    private lateinit var embeddingDao: ArticleEmbeddingDao
+
     private lateinit var repository: TrackingRepositoryImpl
 
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        repository = TrackingRepositoryImpl(storyDao, articleDao)
+        repository = TrackingRepositoryImpl(storyDao, articleDao, embeddingDao)
     }
 
     @Test

@@ -90,7 +90,7 @@ fun NewsThreadApp() {
         NavHost(
             navController = navController,
             startDestination = Screen.Feed.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             composable(Screen.Feed.route) {
                 FeedScreen(navController = navController)

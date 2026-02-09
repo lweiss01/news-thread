@@ -9,5 +9,6 @@ data class StoryEntity(
     val id: String, // UUID
     val title: String,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val lastViewedAt: Long = System.currentTimeMillis() // Phase 9: for unread count
 )

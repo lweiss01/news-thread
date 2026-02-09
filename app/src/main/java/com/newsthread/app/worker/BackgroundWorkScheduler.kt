@@ -42,6 +42,9 @@ class BackgroundWorkScheduler @Inject constructor(
                     scheduleWork(enabled, strategy, meteredAllowed)
                 }
         }
+        
+        // Phase 9: Always schedule story updates (independent of sync preferences)
+        scheduleStoryUpdates()
     }
 
     private fun scheduleWork(
@@ -80,6 +83,28 @@ class BackgroundWorkScheduler @Inject constructor(
         workManager.enqueueUniquePeriodicWork(
             WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
+    /**
+     * Phase 9: Schedule periodic story update worker
+     * Runs every 2 hours to match new articles to tracked stories.
+     */
+    private fun scheduleStoryUpdates() {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        val request = PeriodicWorkRequestBuilder<StoryUpdateWorker>(
+            2, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            StoryUpdateWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
             request
         )
     }

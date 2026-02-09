@@ -18,31 +18,30 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Article comparison finds related articles and categorizes by bias (left/center/right) — existing (low quality)
 - ✓ Navigation scaffolding with Feed, Tracking, Settings tabs — existing
 - ✓ Hilt DI, MVVM architecture, Flow-based state management — existing
+- ✓ On-device NLP matching engine using TF Lite (MobileBERT or similar)
+- ✓ Full article text extraction from URLs (fetch + parse with readability algorithm)
+- ✓ User setting to control article text fetching (WiFi-only, always, never)
+- ✓ Background pre-computation of story matches when feed loads
+- ✓ Feed-internal matching (cluster articles already in the feed)
+- ✓ NewsAPI search to find additional coverage from sources not in the feed
+- ✓ Bias spectrum UI — articles plotted along a left-to-right visual axis
+- ✓ Local caching layer for articles and match results
+- ✓ NewsAPI rate limit detection and graceful handling
+- ✓ Story grouping logic (auto-match, novelty detection)
+- ✓ Thread visualization (timeline, badges, unread state)
 
 ### Active
 
-- [x] On-device NLP matching engine using TF Lite (MobileBERT or similar) for topic extraction and embedding-based similarity
-- [x] Full article text extraction from URLs (fetch + parse with readability algorithm)
-- [x] User setting to control article text fetching (WiFi-only, always, never)
-- [x] Background pre-computation of story matches when feed loads
-- [x] Feed-internal matching (cluster articles already in the feed)
-- [x] NewsAPI search to find additional coverage from sources not in the feed
-- [ ] Bias spectrum UI — articles plotted along a left-to-right visual axis
-- [x] Local caching layer for articles and match results
-- [x] NewsAPI rate limit detection and graceful handling (backoff, user feedback)
-- [x] Fix entity extraction bugs (mixed case entities, acronyms like GOP/FDA)
-- [x] Fix API endpoint duplication in NewsApiService
-- [x] Fix hardcoded 3-day matching window (make configurable or multi-window)
+- [ ] Real-time push notifications for story updates (Phase 10)
+- [ ] Timeline visualization — see the evolution of a story (Future)
 
 ### Out of Scope
 
 - Server-side backend — all processing stays on-device
 - Google Drive backup integration — deferred, not related to matching
 - Firebase authentication — deferred, not related to matching
-- Story tracking feature — deferred to future milestone
 - Settings screen beyond article fetch preference — deferred
 - Alternative news APIs (GNews, Newscatcher) — stick with NewsAPI for now
-- Real-time push notifications for story updates
 
 ## Context
 
@@ -67,11 +66,11 @@ When a user reads an article, they can instantly see how the same story is cover
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| On-device NLP only, no backend | Privacy-first design, user controls all data | — Pending |
-| TF Lite with MobileBERT for embeddings | Standard approach for on-device sentence similarity on Android | — Pending |
-| Pre-compute matches in background | User shouldn't wait when tapping compare — matches ready ahead of time | — Pending |
-| Bias spectrum UI over L/C/R buckets | More nuanced than three categories, shows where each source actually falls | — Pending |
-| User-controlled article text fetching | Respects data usage preferences, WiFi-only option for bandwidth savings | — Pending |
+| On-device NLP only, no backend | Privacy-first design, user controls all data | — Validated |
+| TF Lite with MobileBERT for embeddings | Standard approach for on-device sentence similarity on Android | — Validated |
+| Pre-compute matches in background | User shouldn't wait when tapping compare — matches ready ahead of time | — Validated |
+| Bias spectrum UI over L/C/R buckets | More nuanced than three categories, shows where each source actually falls | — Validated |
+| User-controlled article text fetching | Respects data usage preferences, WiFi-only option for bandwidth savings | — Validated |
 
 ## Beads Issues
 
@@ -79,7 +78,12 @@ When a user reads an article, they can instantly see how the same story is cover
 |----|-------|--------|----------|
 | newsthread-1k5 | API Quota Investigation | Closed | Resolved by aggressive caching implementation |
 | newsthread-1k6 | 16 KB Page Size Alignment | Closed | Resolved by TF Lite 2.17.0 upgrade and XNNPACK optimization |
+| newsthread-cjl | Allow untracking from Story Page | Open | Add UI action to clear bookmark in detail view |
+| newsthread-ops | Compare Perspectives shows unrelated stories | Open | Investigate matching threshold/logic |
+| newsthread-a83 | Compare Perspectives misses related stories | Open | Tune recall/search strategy |
+| newsthread-4ql | Add track hint tooltip | Open | UX improvement for discovery |
+| newsthread-6pr | Reduce unused space above titles | Closed | Fixed in MainActivity (NavHost padding) |
 
 ---
-*Last updated: 2026-02-07*
+*Last updated: 2026-02-08*
 

@@ -12,4 +12,10 @@ interface TrackingRepository {
     suspend fun unfollowStory(storyId: String)
     
     suspend fun isArticleTracked(url: String): Boolean
+
+    // Phase 9: Story Grouping
+    suspend fun getStoryArticleEmbeddings(storyId: String): List<FloatArray>
+    suspend fun addArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean)
+    suspend fun markStoryUpdated(storyId: String)
+    suspend fun markStoryViewed(storyId: String)
 }

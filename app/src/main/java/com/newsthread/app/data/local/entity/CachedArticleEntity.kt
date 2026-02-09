@@ -32,5 +32,9 @@ data class CachedArticleEntity(
 
     // Phase 8: Tracking
     val isTracked: Boolean = false,
-    val storyId: String? = null            // Soft FK to StoryEntity
+    val storyId: String? = null,           // Soft FK to StoryEntity
+
+    // Phase 9: Story Grouping & Visualization
+    val isNovel: Boolean = false,          // True if article contains new information (low similarity to cluster centroid)
+    val hasNewPerspective: Boolean = false // True if article is from a bias category not previously represented
 )

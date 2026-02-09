@@ -430,6 +430,17 @@ class FakeCachedArticleDao : CachedArticleDao {
     override suspend fun isArticleTracked(url: String): Boolean {
         return savedArticles[url]?.isTracked == true
     }
+
+    // Phase 9: Story grouping support
+    override suspend fun getRecentUnassignedArticlesWithEmbeddings(since: Long): List<CachedArticleEntity> {
+        return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
+    }
+
+    override suspend fun assignArticleToStory(articleUrl: String, storyId: String) {
+        savedArticles[articleUrl]?.let {
+            savedArticles[articleUrl] = it.copy(storyId = storyId, isTracked = true)
+        }
+    }
 }
 
 
@@ -482,4 +493,7 @@ class FakeEmbeddingDao : ArticleEmbeddingDao {
     override suspend fun deleteExpired(now: Long) {}
     override suspend fun deleteAll() {}
     override suspend fun getCount(): Int = savedEmbeddings.size
+
+    // Phase 9: Story grouping support
+    override suspend fun getEmbeddingsForStory(storyId: String): List<ArticleEmbeddingEntity> = emptyList()
 }

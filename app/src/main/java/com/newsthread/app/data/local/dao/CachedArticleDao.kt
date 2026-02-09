@@ -120,4 +120,25 @@ interface CachedArticleDao {
 
     @Query("SELECT isTracked FROM cached_articles WHERE url = :url")
     suspend fun isArticleTracked(url: String): Boolean
+
+    // Phase 9: Story Grouping
+    /**
+     * Get recent articles that have embeddings but are not yet assigned to a story.
+     * Used by StoryUpdateWorker to find candidates for matching.
+     */
+    @Query("""
+        SELECT ca.* FROM cached_articles ca
+        INNER JOIN article_embeddings ae ON ca.url = ae.articleUrl
+        WHERE ca.storyId IS NULL
+        AND ca.fetchedAt > :since
+        AND ae.embeddingStatus = 'SUCCESS'
+        ORDER BY ca.fetchedAt DESC
+    """)
+    suspend fun getRecentUnassignedArticlesWithEmbeddings(since: Long): List<CachedArticleEntity>
+
+    /**
+     * Assign article to a story (updates storyId, isTracked, isNovel, and hasNewPerspective).
+     */
+    @Query("UPDATE cached_articles SET storyId = :storyId, isTracked = 1, isNovel = :isNovel, hasNewPerspective = :hasNewPerspective WHERE url = :articleUrl")
+    suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean)
 }

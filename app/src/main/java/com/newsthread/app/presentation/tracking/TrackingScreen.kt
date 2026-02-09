@@ -1,26 +1,48 @@
 package com.newsthread.app.presentation.tracking
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.newsthread.app.data.local.dao.StoryWithArticles
-import com.newsthread.app.presentation.common.ArticleCard
-import com.newsthread.app.domain.model.Article
+import com.newsthread.app.data.local.entity.CachedArticleEntity
 import java.text.SimpleDateFormat
 import java.util.*
+
+// Phase 7 bias spectrum colors (consistent with rest of app)
+private val biasColors = mapOf(
+    -2 to Color(0xFF1565C0), // Far Left - Deep Blue
+    -1 to Color(0xFF42A5F5), // Left - Light Blue
+    0 to Color(0xFF9E9E9E),  // Center - Gray
+    1 to Color(0xFFEF5350),  // Right - Light Red
+    2 to Color(0xFFB71C1C)   // Far Right - Deep Red
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,30 +51,48 @@ fun TrackingScreen(
     viewModel: TrackingViewModel = hiltViewModel()
 ) {
     val stories by viewModel.trackedStories.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val lastRefreshed by viewModel.lastRefreshed.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Tracked Stories") }
-            )
+            Column {
+                TopAppBar(
+                    title = { Text("Tracked Stories") }
+                )
+                if (lastRefreshed != null) {
+                    Text(
+                        text = "Last checked: ${getRelativeTime(lastRefreshed!!)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     ) { padding ->
-        if (stories.isEmpty()) {
-            EmptyTrackingState(modifier = Modifier.padding(padding))
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(stories, key = { it.story.id }) { storyWithArticles ->
-                    StoryItem(
-                        storyWithArticles = storyWithArticles,
-                        onUnfollow = { viewModel.unfollowStory(it) },
-                        onArticleClick = onArticleClick
-                    )
+        SwipeRefresh(
+            state = rememberSwipeRefreshState(isRefreshing),
+            onRefresh = { viewModel.refresh() },
+            modifier = Modifier.padding(padding)
+        ) {
+            if (stories.isEmpty()) {
+                EmptyTrackingState(modifier = Modifier.fillMaxSize())
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(stories, key = { it.story.id }) { storyWithArticles ->
+                        EnhancedStoryCard(
+                            storyWithArticles = storyWithArticles,
+                            onUnfollow = { viewModel.unfollowStory(it) },
+                            onArticleClick = onArticleClick,
+                            onMarkViewed = { viewModel.markStoryViewed(it) }
+                        )
+                    }
                 }
             }
         }
@@ -62,7 +102,7 @@ fun TrackingScreen(
 @Composable
 fun EmptyTrackingState(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -88,65 +128,210 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun StoryItem(
+fun EnhancedStoryCard(
     storyWithArticles: StoryWithArticles,
     onUnfollow: (String) -> Unit,
-    onArticleClick: (String) -> Unit
+    onArticleClick: (String) -> Unit,
+    onMarkViewed: (String) -> Unit
 ) {
-    val mainArticle = storyWithArticles.articles.firstOrNull()
+    var expanded by remember { mutableStateOf(false) }
+    val unreadCount = storyWithArticles.unreadCount
+    
+    // Phase 9: Separate original article from updates
+    val sortedArticles = remember(storyWithArticles.articles) {
+        storyWithArticles.articles.sortedBy { it.fetchedAt }
+    }
+    val originalArticle = sortedArticles.firstOrNull()
+    val updates = sortedArticles.drop(1).sortedByDescending { it.fetchedAt }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(
-                if (mainArticle != null) {
-                    Modifier.clickable { onArticleClick(mainArticle.url) }
-                } else {
-                    Modifier
-                }
-            )
+            .clickable {
+                expanded = !expanded
+                if (expanded) onMarkViewed(storyWithArticles.story.id)
+            }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Header row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = storyWithArticles.story.title,
                         style = MaterialTheme.typography.titleMedium
                     )
-                    Text(
-                        text = "Tracked since ${formatDate(storyWithArticles.story.createdAt)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    
+                    // Original Source
+                    originalArticle?.let { article ->
+                        Text(
+                            text = "Original: ${article.sourceName} • ${formatDate(article.fetchedAt)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary, // Changed to primary to indicate clickable
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .clickable { onArticleClick(article.url) }
+                        )
+                    }
+
+                    // Unread badge
+                    if (unreadCount > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NewReleases,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "$unreadCount new update${if (unreadCount > 1) "s" else ""}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else if (updates.isNotEmpty()) {
+                         Text(
+                            text = "${updates.size} update${if (updates.size != 1) "s" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
-                IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Unfollow"
-                    )
+                
+                Row {
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (expanded) "Collapse" else "Expand"
+                        )
+                    }
+                    IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Unfollow"
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // For Phase 8, we just list the articles under the story
-            // Mapping CachedArticleEntity to Domain Article is needed here if we re-use ArticleCard
-            storyWithArticles.articles.forEach { cachedArticle ->
-                // Simplified view for now, or we can map it
-                Text(
-                    text = cachedArticle.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-                // TODO: Make this clickable to open article
+            // Expandable timeline
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (updates.isEmpty()) {
+                        Text(
+                            text = "No updates yet. Check back later.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        updates.forEach { article ->
+                            ArticleTimelineItem(
+                                article = article,
+                                isNew = article.fetchedAt > storyWithArticles.story.lastViewedAt,
+                                onClick = { onArticleClick(article.url) }
+                            )
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+fun ArticleTimelineItem(
+    article: CachedArticleEntity,
+    isNew: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        // Source indicator dot
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .size(8.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape
+                )
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = article.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isNew) FontWeight.Bold else FontWeight.Normal
+            )
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text(
+                    text = article.sourceName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // Novelty Badges
+                if (article.isNovel) {
+                    SuggestionChip(
+                        onClick = { },
+                        label = { Text("New Info", style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.height(24.dp),
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                
+                if (article.hasNewPerspective) {
+                    SuggestionChip(
+                        onClick = { },
+                        label = { Text("New Perspective", style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.height(24.dp),
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun getRelativeTime(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    return when {
+        diff < 60_000 -> "Just now"
+        diff < 3600_000 -> "${diff / 60_000} mins ago"
+        else -> SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(timestamp))
     }
 }
 

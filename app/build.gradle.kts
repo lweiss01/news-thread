@@ -141,6 +141,9 @@ dependencies {
     // Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // Accompanist (Phase 9: SwipeRefresh)
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
+
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation("com.google.firebase:firebase-auth-ktx")

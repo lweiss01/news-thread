@@ -148,9 +148,23 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] **Verification**: `TrackingRepositoryTest` passed with 100% logic coverage
 </details>
 
-### In Development — Story Tracking (Phases 8-10)
+<details>
+<summary><b>Phase 9: Story Grouping Logic (Completed 2026-02-08) ✅ Verified</b></summary>
 
-The matching engine rebuild is complete. We are now building the Story Tracking feature:
+- [x] **StoryUpdateWorker**: Background matching of new articles to tracked stories
+- [x] **Tiered Matching Logic**: Strong matches (≥0.70) auto-add, weak matches (0.50-0.69) flagged
+- [x] **Novelty Detection**: `isNovel` flag for articles with low similarity to existing cluster
+- [x] **Perspective Tracking**: `hasNewPerspective` flag for first article from a bias group
+- [x] **UI Enhancements**: 
+    - Unread badges ("3 new updates")
+    - Expandable timeline in Story Card
+    - "Last checked" timestamp and Pull-to-Refresh
+    - Clickable "Original Article" source
+</details>
+
+### In Development — Notifications (Phase 10)
+
+The matching engine and story tracking are complete. We are now planning the Notifications system:
 
 | Phase | Name | Status | What It Does |
 |-------|------|--------|-------------|
@@ -162,12 +176,12 @@ The matching engine rebuild is complete. We are now building the Story Tracking 
 | 6 | Background Processing | ✅ **Complete** | WorkManager pre-computation during idle |
 | 7 | UI Implementation | ✅ **Complete** | Bias spectrum visualization |
 | 8 | Tracking Foundation | ✅ **Complete** | Database & UI for followed stories |
-| 9 | Story Grouping Logic | 📋 **Next** | Auto-grouping new articles to threads |
-| 10 | Notifications | 📅 Planned | Background alerts for thread updates |
+| 9 | Story Grouping Logic | ✅ **Complete** | Auto-grouping new articles to threads |
+| 10 | Notifications | 📋 **Next** | Background alerts for thread updates |
 
-**Progress:** Phase 1-8 complete — 80% of current roadmap complete. Moving to **Story Grouping Logic** (Phase 9).
+**Progress:** Phase 1-9 complete — 90% of current roadmap complete. Moving to **Notifications** (Phase 10).
 
-**26 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
+**30 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
 ### Planned (Future Milestones)
 
