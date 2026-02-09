@@ -344,7 +344,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
       Real-time headlines with aggregated bias indicators.
     </td>
     <td width="33%" align="center">
-      <img src="screenshots/compare_perspectives_screen.png" width="100%" alt="Android app screen displaying the Perspective Comparison spectrum with articles clustered from Left to Right">
+      <img src="screenshots/compare_perspectives_bias_spectrum_4.png" width="100%" alt="Android app screen displaying the Perspective Comparison spectrum with articles clustered from Left to Right">
       <br><b>Perspective spectrum</b><br>
       Semantic clustering of stories along a political axis.
     </td>
