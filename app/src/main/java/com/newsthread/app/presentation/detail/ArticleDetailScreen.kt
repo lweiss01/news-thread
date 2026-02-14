@@ -36,7 +36,8 @@ class ArticleDetailViewModel @Inject constructor(
     private val embeddingRepository: EmbeddingRepository,
     private val isArticleTrackedUseCase: com.newsthread.app.domain.usecase.IsArticleTrackedUseCase,
     private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase,
-    private val unfollowStoryUseCase: com.newsthread.app.domain.usecase.UnfollowStoryUseCase
+    private val unfollowStoryUseCase: com.newsthread.app.domain.usecase.UnfollowStoryUseCase,
+    private val trackingRepository: com.newsthread.app.domain.repository.TrackingRepository
 ) : ViewModel() {
 
     private val _isTracked = kotlinx.coroutines.flow.MutableStateFlow(false)
@@ -54,20 +55,12 @@ class ArticleDetailViewModel @Inject constructor(
 
     fun toggleTracking(article: Article) = viewModelScope.launch {
         if (_isTracked.value) {
-            // For now, to unfollow, we need storyId. The use case requires storyId.
-            // But from article detail we only have article URL.
-            // The repository implementation of unfollowStory requires storyId.
-            // We need to look up storyId or change repo to allow unfollow by article URL.
-            // For Phase 8 MVP: We will implement basic follow. Unfollowing might need ID lookup.
-            // Simplified: Unfollow logic needs work unless we look it up.
-            // Let's rely on IsArticleTrackedUseCase returning true/false.
-            
-            // NOTE: Unfollow from detail is tricky without storyId.
-            // We'll skip implementation of UNFOLLOW from Detail for now (Phase 8), 
-            // or implement lookup in ViewModel.
-            // Let's prioritize FOLLOW from Detail. 
-            // If already tracked, maybe show "Tracked" toast or disable button?
-            // User requested: "Follow button".
+            // Updated Phase 9.5-05: Proper Untrack Action
+            val storyId = getStoryId(article.url)
+            if (storyId != null) {
+                unfollowStoryUseCase(storyId)
+                _isTracked.value = false
+            }
         } else {
             followStoryUseCase.invoke(article).onSuccess {
                 _isTracked.value = true
@@ -75,6 +68,10 @@ class ArticleDetailViewModel @Inject constructor(
                 // handle error
             }
         }
+    }
+    
+    private suspend fun getStoryId(url: String): String? {
+        return trackingRepository.getStoryId(url)
     }
 }
 

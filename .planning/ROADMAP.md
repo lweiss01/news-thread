@@ -20,7 +20,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Background Processing** - WorkManager pre-computation
 - [x] **Phase 7: UI Implementation** - Bias spectrum visualization
 - [x] **Phase 8: Tracking Foundation** - Database & UI for followed stories
-- [ ] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
+- [x] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
+- [ ] **Phase 9.5: Quality & Stability** - Fix matching key bugs and feed quality issues
 - [ ] **Phase 10: Notifications & Updates** - Background alerts for thread updates
 
 ## Phase Details
@@ -40,20 +41,29 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 8: Tracking Foundation
 **Goal**: Core data structures and UI for following stories
 
-**Status**: Planned
+**Status**: Complete (2026-02-08)
 
-**Plans**:
-- [ ] 08-01: Data Layer (TrackedStory Entity, Dao, Repository)
-- [ ] 08-02: UI Integration (Follow Button, Tracking Screen)
+**Delivered**:
+- [x] 08-01-PLAN.md — Data Layer
+- [x] 08-02-PLAN.md — UI Integration
 
 ### Phase 9: Story Grouping Logic
 **Goal**: Automatically match new articles to tracked stories
 
+**Status**: Complete (2026-02-08)
+
+**Delivered**:
+- [x] 09-01-PLAN.md — Clustering Logic
+- [x] 09-02-PLAN.md — Thread Visualization
+
+### Phase 9.5: Quality & Stability
+**Goal**: Resolve critical quality issues (matching, feed spam, untracked updates) before pushing notifications
+
 **Status**: Planned
 
 **Plans**:
-- [ ] 09-01: Clustering Logic (Matching incoming feed to tracked clusters)
-- [ ] 09-02: Thread Visualization (Displaying updates over time)
+- [ ] 09.5-01: Matching Logic & Updates Fix (Fix critical bugs newsthread-a83, newsthread-ops, no updates issue)
+- [ ] 09.5-02: Feed Quality & UI Cleanup (Filter spam, fix badges, trusted sources logic)
 
 ### Phase 10: Notifications & Updates
 **Goal**: Notify users of significant developments in tracked stories
@@ -79,5 +89,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Background Processing | 3/3 | Complete | 2026-02-07 |
 | 7. UI Implementation | 2/2 | Complete | 2026-02-07 |
 | 8. Tracking Foundation | 2/2 | Complete | 2026-02-08 |
-| 9. Story Grouping Logic | 0/2 | Planned | - |
+| 9. Story Grouping Logic | 2/2 | Complete | 2026-02-08 |
+| 9.5. Quality & Stability | 0/2 | Planned | - |
 | 10. Notifications | 0/2 | Planned | - |

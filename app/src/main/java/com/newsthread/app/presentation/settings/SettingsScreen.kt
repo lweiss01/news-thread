@@ -100,7 +100,8 @@ fun SettingsScreen(
             // Debug Section
             Spacer(modifier = Modifier.height(16.dp))
             DebugSection(
-                onClearRateLimit = viewModel::clearRateLimit
+                onClearRateLimit = viewModel::clearRateLimit,
+                onForceSync = viewModel::forceStorySync
             )
         }
     }
@@ -171,7 +172,8 @@ private fun FetchPreferenceOption(
 
 @Composable
 private fun DebugSection(
-    onClearRateLimit: () -> Unit
+    onClearRateLimit: () -> Unit,
+    onForceSync: () -> Unit
 ) {
     Column {
         Text(
@@ -189,12 +191,31 @@ private fun DebugSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Force Sync Button
+        Button(
+            onClick = onForceSync,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Force Story Sync Now")
+        }
+        Text(
+            text = "Triggers immediate background matching for all stories.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+             modifier = Modifier.padding(bottom = 12.dp)
+        )
+
         Button(
             onClick = onClearRateLimit,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+            ),
+             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Clear Rate Limit")
         }

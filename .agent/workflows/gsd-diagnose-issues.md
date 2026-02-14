@@ -1,16 +1,16 @@
 ---
 name: gsd:diagnose-issues
-description: Orchestrate parallel debug agents to investigate UAT gaps and find root causes
-argument-hint: ""
+description: Orchestrate parallel debug agents to investigate UAT gaps and find root causes.  After UAT finds gaps, spawn one debug agent per gap. Each agent investigates autonomously with symptoms pre-filled f...
 allowed-tools:
   - Read
   - Write
   - Edit
-  - Glob
-  - Grep
   - Bash
+  - Grep
+  - Glob
   - Task
   - AskUserQuestion
+  - SlashCommand
 ---
 
 <purpose>
@@ -171,21 +171,9 @@ For each gap in the Gaps section, add artifacts and missing fields:
 
 Update status in frontmatter to "diagnosed".
 
-**Check planning config:**
-
-```bash
-COMMIT_PLANNING_DOCS=$(cat .planning/config.json 2>/dev/null | grep -o '"commit_docs"[[:space:]]*:[[:space:]]*[^,}]*' | grep -o 'true\|false' || echo "true")
-git check-ignore -q .planning 2>/dev/null && COMMIT_PLANNING_DOCS=false
-```
-
-**If `COMMIT_PLANNING_DOCS=false`:** Skip git operations
-
-**If `COMMIT_PLANNING_DOCS=true` (default):**
-
 Commit the updated UAT.md:
 ```bash
-git add ".planning/phases/XX-name/{phase}-UAT.md"
-git commit -m "docs({phase}): add root causes from diagnosis"
+node ./.gemini/get-shit-done/bin/gsd-tools.js commit "docs({phase}): add root causes from diagnosis" --files ".planning/phases/XX-name/{phase}-UAT.md"
 ```
 </step>
 
@@ -244,3 +232,4 @@ Agents only diagnose—plan-phase --gaps handles fixes (no fix application).
 - [ ] Debug sessions saved to ${DEBUG_DIR}/
 - [ ] Hand off to verify-work for automatic planning
 </success_criteria>
+

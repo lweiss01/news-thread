@@ -25,8 +25,13 @@ class TrackingViewModel @Inject constructor(
     application: Application,
     getTrackedStoriesUseCase: GetTrackedStoriesUseCase,
     private val unfollowStoryUseCase: UnfollowStoryUseCase,
-    private val trackingRepository: TrackingRepository
+    private val trackingRepository: TrackingRepository,
+    private val sourceRatingRepository: com.newsthread.app.domain.repository.SourceRatingRepository // NEW
 ) : AndroidViewModel(application) {
+
+    // NEW: Pre-load all source ratings
+    private val _sourceRatings = MutableStateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>>(emptyMap())
+    val sourceRatings: StateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>> = _sourceRatings.asStateFlow()
 
     val trackedStories: StateFlow<List<StoryWithArticles>> = getTrackedStoriesUseCase()
         .stateIn(
@@ -39,9 +44,42 @@ class TrackingViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    init {
+        loadSourceRatings()
+    }
+    
+    // NEW: Load all source ratings once
+    private fun loadSourceRatings() {
+        viewModelScope.launch {
+            try {
+                sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
+                    // Create map: domain -> rating AND sourceId -> rating
+                    val ratingsMap = mutableMapOf<String, com.newsthread.app.domain.model.SourceRating>()
+                    ratings.forEach { rating ->
+                        if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
+                        if (rating.sourceId.isNotBlank()) ratingsMap[rating.sourceId] = rating
+                    }
+                    _sourceRatings.value = ratingsMap
+                }
+            } catch (e: Exception) {
+                // Log error
+            }
+        }
+    }
+
     // Phase 9: Last refresh time
-    private val _lastRefreshed = MutableStateFlow<Long?>(null)
-    val lastRefreshed: StateFlow<Long?> = _lastRefreshed.asStateFlow()
+    private val _lastRefreshed = MutableStateFlow(System.currentTimeMillis())
+    val lastRefreshed: StateFlow<Long> = _lastRefreshed.asStateFlow()
+
+    fun getOriginalStoryUrl(storyId: String): String? {
+        // Find the story in the current list and return its oldest article's URL
+        val storyWithArticles = trackedStories.value.find { it.story.id == storyId } ?: return null
+        return storyWithArticles.articles.minByOrNull { it.fetchedAt }?.url
+    }
+    
+    fun getLastUpdated(storyId: String): Long? {
+         return trackedStories.value.find { it.story.id == storyId }?.story?.updatedAt
+    }
 
     fun unfollowStory(storyId: String) {
         viewModelScope.launch {

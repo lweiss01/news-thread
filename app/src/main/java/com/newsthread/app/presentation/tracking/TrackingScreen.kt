@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
@@ -53,6 +53,7 @@ fun TrackingScreen(
     val stories by viewModel.trackedStories.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val lastRefreshed by viewModel.lastRefreshed.collectAsState()
+    val sourceRatings by viewModel.sourceRatings.collectAsState()
 
     Scaffold(
         topBar = {
@@ -88,6 +89,7 @@ fun TrackingScreen(
                     items(stories, key = { it.story.id }) { storyWithArticles ->
                         EnhancedStoryCard(
                             storyWithArticles = storyWithArticles,
+                            sourceRatings = sourceRatings,
                             onUnfollow = { viewModel.unfollowStory(it) },
                             onArticleClick = onArticleClick,
                             onMarkViewed = { viewModel.markStoryViewed(it) }
@@ -130,6 +132,7 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
 @Composable
 fun EnhancedStoryCard(
     storyWithArticles: StoryWithArticles,
+    sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>,
     onUnfollow: (String) -> Unit,
     onArticleClick: (String) -> Unit,
     onMarkViewed: (String) -> Unit
@@ -168,14 +171,32 @@ fun EnhancedStoryCard(
                     // Original Source
                     originalArticle?.let { article ->
                         Text(
-                            text = "Original: ${article.sourceName} • ${formatDate(article.fetchedAt)}",
+                            text = "Original: ${article.sourceName}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary, // Changed to primary to indicate clickable
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(top = 4.dp)
                                 .clickable { onArticleClick(article.url) }
                         )
+                        
+                        // Phase 9.5-05: Source Badge
+                        val rating = sourceRatings[article.sourceId ?: ""] ?: sourceRatings[article.sourceName]
+                        if (rating != null) {
+                            com.newsthread.app.presentation.comparison.ReliabilityBadge(
+                                rating = rating,
+                                modifier = Modifier.padding(start = 8.dp),
+                                size = 16.dp
+                            )
+                        }
                     }
+                    
+                    // Explicit Last Updated (Phase 9.5 Fix)
+                    Text(
+                        text = "Checked: ${getRelativeTime(storyWithArticles.story.updatedAt)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
 
                     // Unread badge
                     if (unreadCount > 0) {
@@ -215,8 +236,9 @@ fun EnhancedStoryCard(
                     }
                     IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
                         Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Unfollow"
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = "Unfollow (Tracked)",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -266,61 +288,36 @@ fun ArticleTimelineItem(
         // Source indicator dot
         Box(
             modifier = Modifier
-                .padding(top = 6.dp)
+                .padding(top = 4.dp, end = 12.dp)
                 .size(8.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (isNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                     shape = CircleShape
                 )
         )
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
+
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = article.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isNew) FontWeight.Bold else FontWeight.Normal
-            )
-            
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = article.sourceName,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                // Novelty Badges
-                if (article.isNovel) {
-                    SuggestionChip(
-                        onClick = { },
-                        label = { Text("New Info", style = MaterialTheme.typography.labelSmall) },
-                        modifier = Modifier.height(24.dp),
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
-                
-                if (article.hasNewPerspective) {
-                    SuggestionChip(
-                        onClick = { },
-                        label = { Text("New Perspective", style = MaterialTheme.typography.labelSmall) },
-                        modifier = Modifier.height(24.dp),
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            labelColor = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    )
-                }
+                Text(
+                    text = getRelativeTime(article.fetchedAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
             }
+            Text(
+                text = article.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isNew) FontWeight.SemiBold else FontWeight.Normal
+            )
         }
     }
 }
@@ -328,14 +325,11 @@ fun ArticleTimelineItem(
 private fun getRelativeTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
+    
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3600_000 -> "${diff / 60_000} mins ago"
-        else -> SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(timestamp))
+        diff < 60000 -> "Just now"
+        diff < 3600000 -> "${diff / 60000}m ago"
+        diff < 86400000 -> "${diff / 3600000}h ago"
+        else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
-}
-
-private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-    return sdf.format(Date(timestamp))
 }

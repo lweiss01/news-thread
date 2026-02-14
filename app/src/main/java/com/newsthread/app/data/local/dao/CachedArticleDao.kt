@@ -21,10 +21,10 @@ interface CachedArticleDao {
     @Query("SELECT * FROM cached_articles WHERE url IN (:urls)")
     suspend fun getByUrls(urls: List<String>): List<CachedArticleEntity>
 
-    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC")
+    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 20")
     fun getAllFlow(): Flow<List<CachedArticleEntity>>
 
-    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC")
+    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 20")
     suspend fun getAll(): List<CachedArticleEntity>
 
     @Query("SELECT * FROM cached_articles WHERE sourceId = :sourceId ORDER BY publishedAt DESC")
@@ -141,4 +141,7 @@ interface CachedArticleDao {
      */
     @Query("UPDATE cached_articles SET storyId = :storyId, isTracked = 1, isNovel = :isNovel, hasNewPerspective = :hasNewPerspective WHERE url = :articleUrl")
     suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean)
+
+    @Query("SELECT storyId FROM cached_articles WHERE url = :articleUrl")
+    suspend fun getStoryIdForArticle(articleUrl: String): String?
 }

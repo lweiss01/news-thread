@@ -58,6 +58,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.data.local.dao.StoryWithArticles
 import javax.inject.Inject
 
 sealed interface FeedUiState {
@@ -71,7 +73,8 @@ class FeedViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
     private val sourceRatingRepository: SourceRatingRepository,
     private val quotaRepository: QuotaRepository,
-    private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase // NEW
+    private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase,
+    private val trackingRepository: TrackingRepository // NEW
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -88,9 +91,15 @@ class FeedViewModel @Inject constructor(
     private val _rateLimitMinutesRemaining = MutableStateFlow(0)
     val rateLimitMinutesRemaining: StateFlow<Int> = _rateLimitMinutesRemaining.asStateFlow()
 
+    // NEW: Map of article URL -> story ID for quick lookup
+    private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
+
     init {
         loadHeadlines()
-        loadSourceRatings() // NEW!
+        loadSourceRatings()
+        // Phase 8: Load tracked stories to show bookmark status
+        loadTrackedStories()
         checkRateLimitState()
     }
 
@@ -111,8 +120,12 @@ class FeedViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
-                    // Create map: domain -> rating
-                    val ratingsMap = ratings.associateBy { it.domain }
+                    // Create map: domain -> rating AND sourceId -> rating
+                    val ratingsMap = mutableMapOf<String, SourceRating>()
+                    ratings.forEach { rating ->
+                        if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
+                        if (rating.sourceId.isNotBlank()) ratingsMap[rating.sourceId] = rating
+                    }
                     _sourceRatings.value = ratingsMap
                 }
             } catch (e: Exception) {
@@ -140,13 +153,34 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    // NEW: Follow story
-    fun followStory(article: Article) {
+    private fun loadTrackedStories() {
         viewModelScope.launch {
-            followStoryUseCase(article)
+             trackingRepository.getTrackedStories().collect { stories ->
+                 val map = mutableMapOf<String, String>()
+                 stories.forEach { storyWithArticles ->
+                     storyWithArticles.articles.forEach { article ->
+                         map[article.url] = storyWithArticles.story.id
+                     }
+                 }
+                 _trackedStoriesMap.value = map
+             }
         }
     }
-}
+
+    // NEW: Toggle Follow (Follow/Unfollow)
+    fun toggleFollow(article: Article) {
+        viewModelScope.launch {
+            val storyId = _trackedStoriesMap.value[article.url]
+            if (storyId != null) {
+                // Already tracked -> Unfollow
+                trackingRepository.unfollowStory(storyId)
+            } else {
+                // Not tracked -> Follow
+                followStoryUseCase(article)
+            }
+        }
+    }
+} // End of FeedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,7 +189,8 @@ fun FeedScreen(
     navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle() // NEW!
+    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle()
+    val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle() // NEW
     val isRateLimited by viewModel.isRateLimited.collectAsStateWithLifecycle()
     val rateLimitMinutes by viewModel.rateLimitMinutesRemaining.collectAsStateWithLifecycle()
 
@@ -198,6 +233,8 @@ fun FeedScreen(
                         ArticleCard(
                             article = article,
                             sourceRatings = sourceRatings,
+                            isTracked = trackedStoriesMap.containsKey(article.url),
+                            onBookmarkClick = { viewModel.toggleFollow(article) },
                             onClick = {
                                 // Save article to navigation state
                                 navController.currentBackStackEntry
@@ -208,8 +245,7 @@ fun FeedScreen(
                                 navController.navigate(
                                     ArticleDetailRoute.createRoute(encodedUrl)
                                 )
-                            },
-                            onLongClick = { viewModel.followStory(article) } // Quick action for now
+                            }
                         )
                     }
                 }

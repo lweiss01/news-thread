@@ -1,33 +1,40 @@
 ---
 name: gsd:progress
-description: Check project progress, show context, and route to next action (execute or plan)
+description: Check project progress, summarize recent work and what's ahead, then intelligently route to the next action — either executing an existing plan or creating the next one. Provides situational awaren...
 allowed-tools:
   - Read
+  - Write
+  - Edit
   - Bash
   - Grep
   - Glob
+  - Task
+  - AskUserQuestion
   - SlashCommand
 ---
 
-<objective>
-Check project progress, summarize recent work and what's ahead, then intelligently route to the next action - either executing an existing plan or creating the next one.
+<purpose>
+Check project progress, summarize recent work and what's ahead, then intelligently route to the next action — either executing an existing plan or creating the next one. Provides situational awareness before continuing work.
+</purpose>
 
-Provides situational awareness before continuing work.
-</objective>
-
+<required_reading>
+Read all files referenced by the invoking prompt's execution_context before starting.
+</required_reading>
 
 <process>
 
-<step name="verify">
-**Verify planning structure exists:**
-
-Use Bash (not Glob) to check—Glob respects .gitignore but .planning/ is often gitignored:
+<step name="init_context">
+**Load progress context (with file contents to avoid redundant reads):**
 
 ```bash
-test -d .planning && echo "exists" || echo "missing"
+INIT=$(node ./.gemini/get-shit-done/bin/gsd-tools.js init progress --include state,roadmap,project,config)
 ```
 
-If no `.planning/` directory:
+Extract from init JSON: `project_exists`, `roadmap_exists`, `state_exists`, `phases`, `current_phase`, `next_phase`, `milestone_version`, `completed_count`, `phase_count`, `paused_at`.
+
+**File contents (from --include):** `state_content`, `roadmap_content`, `project_content`, `config_content`. These are null if files don't exist.
+
+If `project_exists` is false (no `.planning/` directory):
 
 ```
 No planning structure found.
@@ -47,50 +54,79 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/gsd:new-project`.
 </step>
 
 <step name="load">
-**Load full project context:**
+**Use project context from INIT:**
 
-- Read `.planning/STATE.md` for living memory (position, decisions, issues)
-- Read `.planning/ROADMAP.md` for phase structure and objectives
-- Read `.planning/PROJECT.md` for current state (What This Is, Core Value, Requirements)
-- Read `.planning/config.json` for settings (model_profile, workflow toggles)
-  </step>
+All file contents are already loaded via `--include` in init_context step:
+- `state_content` — living memory (position, decisions, issues)
+- `roadmap_content` — phase structure and objectives
+- `project_content` — current state (What This Is, Core Value, Requirements)
+- `config_content` — settings (model_profile, workflow toggles)
+
+No additional file reads needed.
+</step>
+
+<step name="analyze_roadmap">
+**Get comprehensive roadmap analysis (replaces manual parsing):**
+
+```bash
+ROADMAP=$(node ./.gemini/get-shit-done/bin/gsd-tools.js roadmap analyze)
+```
+
+This returns structured JSON with:
+- All phases with disk status (complete/partial/planned/empty/no_directory)
+- Goal and dependencies per phase
+- Plan and summary counts per phase
+- Aggregated stats: total plans, summaries, progress percent
+- Current and next phase identification
+
+Use this instead of manually reading/parsing ROADMAP.md.
+</step>
 
 <step name="recent">
 **Gather recent work context:**
 
 - Find the 2-3 most recent SUMMARY.md files
-- Extract from each: what was accomplished, key decisions, any issues logged
+- Use `summary-extract` for efficient parsing:
+  ```bash
+  node ./.gemini/get-shit-done/bin/gsd-tools.js summary-extract <path> --fields one_liner
+  ```
 - This shows "what we've been working on"
   </step>
 
 <step name="position">
-**Parse current position:**
+**Parse current position from init context and roadmap analysis:**
 
-- From STATE.md: current phase, plan number, status
-- Calculate: total plans, completed plans, remaining plans
-- Note any blockers or concerns
-- Check for CONTEXT.md: For phases without PLAN.md files, check if `{phase}-CONTEXT.md` exists in phase directory
-- Count pending todos: `ls .planning/todos/pending/*.md 2>/dev/null | wc -l`
+- Use `current_phase` and `next_phase` from roadmap analyze
+- Use phase-level `has_context` and `has_research` flags from analyze
+- Note `paused_at` if work was paused (from init context)
+- Count pending todos: use `init todos` or `list-todos`
 - Check for active debug sessions: `ls .planning/debug/*.md 2>/dev/null | grep -v resolved | wc -l`
   </step>
 
 <step name="report">
-**Present rich status report:**
+**Generate progress bar from gsd-tools, then present rich status report:**
+
+```bash
+# Get formatted progress bar
+PROGRESS_BAR=$(node ./.gemini/get-shit-done/bin/gsd-tools.js progress bar --raw)
+```
+
+Present:
 
 ```
 # [Project Name]
 
-**Progress:** [████████░░] 8/10 plans complete
+**Progress:** {PROGRESS_BAR}
 **Profile:** [quality/balanced/budget]
 
 ## Recent Work
-- [Phase X, Plan Y]: [what was accomplished - 1 line]
-- [Phase X, Plan Z]: [what was accomplished - 1 line]
+- [Phase X, Plan Y]: [what was accomplished - 1 line from summary-extract]
+- [Phase X, Plan Z]: [what was accomplished - 1 line from summary-extract]
 
 ## Current Position
 Phase [N] of [total]: [phase-name]
 Plan [M] of [phase-total]: [status]
-CONTEXT: [✓ if CONTEXT.md exists | - if not]
+CONTEXT: [✓ if has_context | - if not]
 
 ## Key Decisions Made
 - [decision 1 from STATE.md]
@@ -107,7 +143,7 @@ CONTEXT: [✓ if CONTEXT.md exists | - if not]
 (Only show this section if count > 0)
 
 ## What's Next
-[Next phase/plan objective from ROADMAP]
+[Next phase/plan objective from roadmap analyze]
 ```
 
 </step>
@@ -164,7 +200,7 @@ Read its `<objective>` section.
 
 `/gsd:execute-phase {phase}`
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 ```
@@ -183,11 +219,11 @@ Check if `{phase}-CONTEXT.md` exists in phase directory.
 ## ▶ Next Up
 
 **Phase {N}: {Name}** — {Goal from ROADMAP.md}
-<sub>✓ Context gathered, ready to plan</sub>
+*(✓ Context gathered, ready to plan)*
 
 `/gsd:plan-phase {phase-number}`
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 ```
@@ -203,7 +239,7 @@ Check if `{phase}-CONTEXT.md` exists in phase directory.
 
 `/gsd:discuss-phase {phase}` — gather context and clarify approach
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 
@@ -229,7 +265,7 @@ UAT.md exists with gaps (diagnosed issues). User needs to plan fixes.
 
 `/gsd:plan-phase {phase} --gaps`
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 
@@ -276,7 +312,7 @@ Read ROADMAP.md to get the next phase's name and goal.
 
 `/gsd:discuss-phase {Z+1}` — gather context and clarify approach
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 
@@ -304,7 +340,7 @@ All {N} phases finished!
 
 `/gsd:complete-milestone`
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 
@@ -335,7 +371,7 @@ Ready to plan the next milestone.
 
 `/gsd:new-milestone`
 
-<sub>`/clear` first → fresh context window</sub>
+*(`/clear` first → fresh context window)*
 
 ---
 ```
@@ -362,3 +398,4 @@ Ready to plan the next milestone.
 - [ ] User confirms before any action
 - [ ] Seamless handoff to appropriate gsd command
       </success_criteria>
+

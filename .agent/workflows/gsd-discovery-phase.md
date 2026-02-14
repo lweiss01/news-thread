@@ -1,16 +1,16 @@
 ---
 name: gsd:discovery-phase
-description: Execute discovery at the appropriate depth level (Verify, Standard, Deep Dive)
-argument-hint: ""
+description: Execute discovery at the appropriate depth level. Produces DISCOVERY.md (for Level 2-3) that informs PLAN.md creation.  Called from plan-phase.md's mandatory_discovery step with a depth parameter. ...
 allowed-tools:
   - Read
   - Write
   - Edit
-  - Glob
-  - Grep
   - Bash
+  - Grep
+  - Glob
   - Task
   - AskUserQuestion
+  - SlashCommand
 ---
 
 <purpose>
@@ -43,7 +43,7 @@ Claude's training data is 6-18 months stale. Always verify.
 2. **Official docs** - When Context7 lacks coverage
 3. **WebSearch LAST** - For comparisons and trends only
 
-See .agent/GSD/templates/discovery.md `<discovery_protocol>` for full protocol.
+See ./.gemini/get-shit-done/templates/discovery.md `<discovery_protocol>` for full protocol.
 </source_hierarchy>
 
 <process>
@@ -122,7 +122,7 @@ For: Choosing between options, new external integration.
 
 5. **Cross-verify:** Any WebSearch finding → confirm with Context7/official docs.
 
-6. **Create DISCOVERY.md** using .agent/GSD/templates/discovery.md structure:
+6. **Create DISCOVERY.md** using ./.gemini/get-shit-done/templates/discovery.md structure:
 
    - Summary with recommendation
    - Key findings per option
@@ -141,7 +141,7 @@ For: Architectural decisions, novel problems, high-risk choices.
 
 **Process:**
 
-1. **Scope the discovery** using .agent/GSD/templates/discovery.md:
+1. **Scope the discovery** using ./.gemini/get-shit-done/templates/discovery.md:
 
    - Define clear scope
    - Define include/exclude boundaries
@@ -175,7 +175,7 @@ For: Architectural decisions, novel problems, high-risk choices.
 
 6. **Create comprehensive DISCOVERY.md:**
 
-   - Full structure from .agent/GSD/templates/discovery.md
+   - Full structure from ./.gemini/get-shit-done/templates/discovery.md
    - Quality report with source attribution
    - Confidence by finding
    - If LOW confidence on any critical finding → add validation checkpoints
@@ -199,7 +199,7 @@ Ask: What do we need to learn before we can plan this phase?
   </step>
 
 <step name="create_discovery_scope">
-Use .agent/GSD/templates/discovery.md.
+Use ./.gemini/get-shit-done/templates/discovery.md.
 
 Include:
 
@@ -302,3 +302,4 @@ NOTE: DISCOVERY.md is NOT committed separately. It will be committed with phase 
 - Confidence gate passed
 - Ready to inform PLAN.md creation
 </success_criteria>
+

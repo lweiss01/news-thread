@@ -29,6 +29,7 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ NewsAPI rate limit detection and graceful handling
 - ✓ Story grouping logic (auto-match, novelty detection)
 - ✓ Thread visualization (timeline, badges, unread state)
+- ✓ Story grouping logic (auto-match, novelty detection) — Phase 9
 
 ### Active
 

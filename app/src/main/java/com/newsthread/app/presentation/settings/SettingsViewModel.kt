@@ -1,12 +1,16 @@
 package com.newsthread.app.presentation.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.newsthread.app.data.repository.QuotaRepository
 import com.newsthread.app.data.repository.UserPreferencesRepository
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.SyncStrategy
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +21,21 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val quotaRepository: QuotaRepository
 ) : ViewModel() {
+
+    // ... (existing flows)
+
+    fun forceStorySync() {
+        viewModelScope.launch {
+            val request = OneTimeWorkRequestBuilder<com.newsthread.app.worker.StoryUpdateWorker>().build()
+            WorkManager.getInstance(context).enqueue(request)
+        }
+    }
+    
+    // ... (existing methods)
 
     private val _rateLimitCleared = MutableStateFlow(false)
     val rateLimitCleared: StateFlow<Boolean> = _rateLimitCleared.asStateFlow()

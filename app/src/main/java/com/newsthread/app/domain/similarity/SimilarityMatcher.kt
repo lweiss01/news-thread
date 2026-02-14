@@ -30,10 +30,10 @@ enum class MatchStrength {
 class SimilarityMatcher @Inject constructor() {
     
     companion object {
-        /** Strong match threshold (high confidence) */
-        const val STRONG_THRESHOLD = 0.70f
-        /** Weak match threshold (shown only when <3 total matches) */
-        const val WEAK_THRESHOLD = 0.50f
+        /** Strong match threshold (high confidence) - Adjusted for MobileBERT recall */
+        const val STRONG_THRESHOLD = 0.65f
+        /** Weak match threshold (shown only when <3 total matches) - Adjusted for precision */
+        const val WEAK_THRESHOLD = 0.55f
     }
 
     /**

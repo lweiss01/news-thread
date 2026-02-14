@@ -12,6 +12,8 @@ interface TrackingRepository {
     suspend fun unfollowStory(storyId: String)
     
     suspend fun isArticleTracked(url: String): Boolean
+    
+    suspend fun getStoryId(articleUrl: String): String?
 
     // Phase 9: Story Grouping
     suspend fun getStoryArticleEmbeddings(storyId: String): List<FloatArray>

@@ -1,16 +1,16 @@
 ---
 name: gsd:list-phase-assumptions
-description: Surface Claude's assumptions about a phase before planning, enabling users to correct misconceptions early.
-argument-hint: "<phase-number>"
+description: Surface Claude's assumptions about a phase before planning, enabling users to correct misconceptions early.  Key difference from discuss-phase This is ANALYSIS of what Claude thinks, not INTAKE of...
 allowed-tools:
   - Read
   - Write
   - Edit
-  - Glob
-  - Grep
   - Bash
+  - Grep
+  - Glob
   - Task
   - AskUserQuestion
+  - SlashCommand
 ---
 
 <purpose>
@@ -191,3 +191,4 @@ If "Re-examine": Return to analyze_phase with updated understanding
 - User feedback acknowledged
 - Clear next steps offered
 </success_criteria>
+
