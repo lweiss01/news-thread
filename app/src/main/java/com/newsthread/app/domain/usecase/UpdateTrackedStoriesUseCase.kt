@@ -72,9 +72,14 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
         stories.forEach { storyWithArticles ->
             val storyId = storyWithArticles.story.id
             val storyEmbeddings = trackingRepository.getStoryArticleEmbeddings(storyId)
-            if (storyEmbeddings.isEmpty()) return@forEach
+            if (storyEmbeddings.isEmpty()) {
+                android.util.Log.d("StoryMatching", "Story $storyId has no embeddings, skipping")
+                return@forEach
+            }
 
             val storyCentroid = computeCentroid(storyEmbeddings)
+            android.util.Log.d("StoryMatching", "Story $storyId centroid computed from ${storyEmbeddings.size} articles")
+
             val existingBiasCategories = storyWithArticles.articles
                 .mapNotNull { article -> article.sourceId?.let { sourceRatings[it] } }
                 .toSet()
@@ -83,6 +88,10 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
                 val articleEmbedding = candidateEmbeddings[article.url] ?: return@forEach
                 val similarity = similarityMatcher.cosineSimilarity(articleEmbedding, storyCentroid)
                 val strength = similarityMatcher.matchStrength(similarity)
+                
+                android.util.Log.d("StoryMatching", "Candidate ${article.title.take(30)}...: similarity $similarity, strength $strength")
+
+                android.util.Log.d("StoryMatching", "Candidate ${article.title.take(30)}...: similarity $similarity, strength $strength")
 
                 if (strength != MatchStrength.NONE) {
                     val isNovel = isNovelContent(articleEmbedding, storyEmbeddings)
@@ -90,12 +99,15 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
 
                     // Auto-add strong matches
                     if (strength == MatchStrength.STRONG) {
+                        android.util.Log.d("StoryMatching", "AUTO-ADDING strong match: ${article.url}")
                         trackingRepository.addArticleToStory(
                             articleUrl = article.url, 
                             storyId = storyId,
                             isNovel = isNovel,
                             hasNewPerspective = hasNewPerspective
                         )
+                    } else {
+                        android.util.Log.d("StoryMatching", "Match found but NOT auto-added (Weak/Novelty): ${article.url} Strength=$strength")
                     }
 
                     results.add(StoryMatchResult(
@@ -106,6 +118,8 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
                         isNovel = isNovel,
                         hasNewPerspective = hasNewPerspective
                     ))
+                } else if (similarity > 0.40) {
+                     android.util.Log.d("StoryMatching", "CLOSE CALL (Missed): ${article.title} sim=$similarity < Threshold")
                 }
             }
         }
