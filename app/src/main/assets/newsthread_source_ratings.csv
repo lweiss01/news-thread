@@ -1,4 +1,7 @@
-source_id,display_name,domain,allsides_rating,ad_fontes_bias,ad_fontes_reliability,mbfc_bias,mbfc_factual,final_bias,final_bias_score,final_reliability,final_reliability_score,notes
+sourceId,displayName,domain,allsidesRating,adFontesBias,adFontesReliability,mbfcBias,mbfcFactual,finalBias,finalBiasScore,finalReliability,finalReliabilityScore,notes
+the-daily-caller,The Daily Caller,dailycaller.com,Right,2,Low Reliability,Right,Mixed,Right,2,Low Reliability,1,Auto-downgraded
+dw,DW,dw.com,Center,0,High,Least Biased,High,Center,0,High,4,German public broadcaster
+newsbreak,Newsbreak,newsbreak.com,Center,0,Mixed,Least Biased,Mixed,Center,0,Mixed,2,Aggregator - varies by source
 reuters,Reuters,reuters.com,Center,0,Very High,Least Biased,Very High,Center,0,Very High,5,Gold standard wire service
 associated-press,Associated Press,apnews.com,Left,-5,Very High,Left-Center,Very High,Center-Left,-1,Very High,5,Wire service; shifted left 2024
 bbc-news,BBC News,bbc.com,Lean Left,-10,High,Least Biased,High,Center,0,High,4,UK public broadcaster

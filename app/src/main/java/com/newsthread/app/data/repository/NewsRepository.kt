@@ -3,13 +3,16 @@ package com.newsthread.app.data.repository
 import android.util.Log
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.FeedCacheDao
+import com.newsthread.app.data.local.dao.SourceRatingDao
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.FeedCacheEntity
+import com.newsthread.app.data.local.entity.SourceRatingEntity
 import com.newsthread.app.data.remote.NewsApiService
 import com.newsthread.app.data.remote.RateLimitedException
 import com.newsthread.app.data.remote.dto.toArticle
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
+import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.util.CacheConstants
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -32,7 +35,8 @@ import javax.inject.Singleton
 class NewsRepository @Inject constructor(
     private val newsApiService: NewsApiService,
     private val cachedArticleDao: CachedArticleDao,
-    private val feedCacheDao: FeedCacheDao
+    private val feedCacheDao: FeedCacheDao,
+    private val sourceRatingDao: SourceRatingDao
 ) {
     /**
      * Get top headlines with offline-first pattern.
@@ -52,9 +56,14 @@ class NewsRepository @Inject constructor(
         val feedKey = "top_headlines_${country}_${category ?: "all"}"
 
         // 1. Emit cached data first (immediate UI)
-        val cached = cachedArticleDao.getAll()
+        // 1. Emit cached data first (immediate UI)
+        // Ensure even cached data adheres to quality/clustering rules
+        var cached = cachedArticleDao.getAll().map { it.toDomain() }
         if (cached.isNotEmpty()) {
-            emit(Result.success(cached.map { it.toDomain() }))
+            val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter { it.finalReliabilityScore > 1 }
+            cached = filterArticles(cached, ratedSources)
+            cached = clusterArticles(cached)
+            emit(Result.success(cached))
         }
 
         // 2. Check staleness
@@ -63,16 +72,44 @@ class NewsRepository @Inject constructor(
 
         if (shouldRefresh) {
             val result = runCatching {
+                // Phase 9.5-04: Quality Filter - Exclude unrated/low-quality
+                // Only block "Low" (1) or "Unrated/Very Low" (0). "Mixed" (2) is allowed (e.g. Newsbreak).
+                val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter {
+                    it.finalReliabilityScore > 1
+                }
+                val hasRatings = ratedSources.isNotEmpty()
+
+                // Request 100 to have buffer for filtering (if ratings exist), otherwise just 20
+                val fetchSize = if (hasRatings) 80 else 20
+
                 val response = newsApiService.getTopHeadlines(
                     country = country,
                     category = category,
-                    page = page
+                    page = page,
+                    pageSize = fetchSize
                 )
-                val articles = response.articles.mapNotNull { it.toArticle() }
+
+                var articles = response.articles.mapNotNull { it.toArticle() }
+
+                // Phase 9.5-04: Quality Filter & Phase 9.5-05: Feed Clustering
+                // Extracted logic to ensure consistency between Cache and Network
+
+                // 1. Filter
+                articles = filterArticles(articles, ratedSources)
+
+                // 2. Cluster
+                articles = clusterArticles(articles)
+
+                // Limit to 20
+                articles = articles.take(20)
+
                 val now = System.currentTimeMillis()
 
                 // Save to Room
+                // Clear old cache for this feed key? Strategy: insertAll w/ REPLACE.
+                // But we usually want to append? No, top headlines is a snapshot.
                 cachedArticleDao.insertAll(articles.map { it.toEntity(now) })
+
                 feedCacheDao.upsert(
                     FeedCacheEntity(
                         feedKey = feedKey,
@@ -191,6 +228,68 @@ class NewsRepository @Inject constructor(
         }
     }
 
+    private fun filterArticles(articles: List<Article>, ratedSources: List<SourceRating>): List<Article> {
+        if (ratedSources.isEmpty()) return articles
+        
+        val ratedIds = ratedSources.mapNotNull { it.sourceId }.toSet()
+        val ratedNames = ratedSources.map { it.displayName }.toSet()
+        val ratedDomains = ratedSources.map { it.domain }.toSet()
+        
+        return articles.filter { article ->
+            // 1. Match by ID (exact)
+            if (article.source.id != null && ratedIds.contains(article.source.id)) return@filter true
+            
+            // 2. Match by Name (exact)
+            if (ratedNames.contains(article.source.name)) return@filter true
+            
+            // 3. Match by Domain in URL (contains)
+            val url = article.url
+            if (url != null) {
+                if (ratedDomains.any { domain -> url.contains(domain, ignoreCase = true) }) return@filter true
+            }
+            
+            false
+        }
+    }
+
+    private fun clusterArticles(articles: List<Article>): List<Article> {
+        val clusters = mutableListOf<Article>()
+        val seenTitles = mutableListOf<Set<String>>()
+        val stopWords = setOf("video", "live", "update", "new", "watch", "photos", "exclusive")
+
+        for (article in articles) {
+            val titleWords = article.title.lowercase()
+                .replace(Regex("[^a-z0-9 ]"), "")
+                .split(" ")
+                .filter { it.isNotBlank() && !stopWords.contains(it) }
+                .toSet()
+            
+            if (titleWords.isEmpty()) {
+                 clusters.add(article)
+                 continue
+            }
+
+            var isDuplicate = false
+            for (seen in seenTitles) {
+                val intersection = titleWords.intersect(seen).size
+                val union = titleWords.union(seen).size
+                if (union > 0) {
+                    val jaccard = intersection.toDouble() / union.toDouble()
+                    if (jaccard > 0.2) { 
+                        isDuplicate = true
+                        break
+                    }
+                }
+            }
+            
+            if (!isDuplicate) {
+                clusters.add(article)
+                seenTitles.add(titleWords)
+            }
+        }
+        return clusters
+    }
+
     companion object {
         private const val TAG = "NewsRepository"
     }
@@ -239,5 +338,26 @@ private fun Article.toEntity(now: Long): CachedArticleEntity {
         fullText = null,
         fetchedAt = now,
         expiresAt = now + CacheConstants.ARTICLE_RETENTION_MS
+    )
+}
+
+/**
+ * Convert SourceRatingEntity to domain SourceRating.
+ */
+private fun SourceRatingEntity.toDomain(): SourceRating {
+    return SourceRating(
+        sourceId = sourceId,
+        displayName = displayName,
+        domain = domain,
+        allsidesRating = allsidesRating,
+        adFontesBias = adFontesBias,
+        adFontesReliability = adFontesReliability,
+        mbfcBias = mbfcBias,
+        mbfcFactual = mbfcFactual,
+        finalBias = finalBias,
+        finalBiasScore = finalBiasScore,
+        finalReliability = finalReliability,
+        finalReliabilityScore = finalReliabilityScore,
+        notes = notes
     )
 }

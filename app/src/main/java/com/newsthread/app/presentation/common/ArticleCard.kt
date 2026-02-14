@@ -5,6 +5,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
-import com.newsthread.app.presentation.feed.components.SourceBadge
+import com.newsthread.app.presentation.comparison.ReliabilityBadge
 import java.net.URI
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -25,45 +26,57 @@ import java.net.URI
 fun ArticleCard(
     article: Article,
     sourceRatings: Map<String, SourceRating>,
+    isTracked: Boolean = false,
+    onBookmarkClick: () -> Unit = {},
     onClick: () -> Unit,
-    onLongClick: () -> Unit = {}
+    onLongClick: () -> Unit = {}, // Keeping for backward compatibility or extra options
 ) {
     // State for context menu
     var contextMenuExpanded by remember { mutableStateOf(false) }
 
-    Box {
+    Box(modifier = Modifier.fillMaxWidth()) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .combinedClickable(
                     onClick = onClick,
-                    onLongClick = { 
-                        if (onLongClick != {}) {
-                            contextMenuExpanded = true 
-                        }
+                    onLongClick = {
+                        contextMenuExpanded = true
+                        onLongClick()
                     }
                 ),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                // Source name with badge
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Header: Source Name & Rating
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = article.source.name ?: "Unknown Source",
+                        text = article.source.name,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    val rating = findRatingForArticle(article, sourceRatings)
-                    if (rating != null) {
-                        SourceBadge(sourceRating = rating)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val rating = findRatingForArticle(article, sourceRatings)
+                        if (rating != null) {
+                            ReliabilityBadge(rating = rating, size = 18.dp)
+                        }
+                        
+                        IconButton(onClick = onBookmarkClick) {
+                            Icon(
+                                imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                contentDescription = if (isTracked) "Unfollow" else "Follow",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
 
@@ -140,7 +153,8 @@ private fun findRatingForArticle(
 private fun extractDomain(url: String): String {
     return try {
         val uri = android.net.Uri.parse(url)
-        uri.host?.lowercase() ?: ""
+        val host = uri.host?.lowercase() ?: ""
+        host.removePrefix("www.")
     } catch (e: Exception) {
         ""
     }

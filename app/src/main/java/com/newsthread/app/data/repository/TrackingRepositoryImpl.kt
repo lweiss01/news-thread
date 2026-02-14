@@ -32,6 +32,12 @@ class TrackingRepositoryImpl @Inject constructor(
     }
 
     override suspend fun followArticle(article: Article): Result<Unit> {
+        // 0. Check if already tracked
+        val existingStoryId = articleDao.getStoryIdForArticle(article.url)
+        if (existingStoryId != null) {
+            return Result.success(Unit) // Already tracked
+        }
+        
         // 1. Check limit
         val count = storyDao.getStoryCount()
         if (count >= 1000) {
@@ -51,12 +57,12 @@ class TrackingRepositoryImpl @Inject constructor(
         // 3. Update Article (Soft FK)
         articleDao.updateTrackingStatus(article.url, true, storyId)
         
-        // Phase 9: Trigger immediate background matching for newly followed story
+        // Phase 9: Trigger immediate background matching
         try {
             val request = OneTimeWorkRequestBuilder<StoryUpdateWorker>().build()
             WorkManager.getInstance(context).enqueue(request)
         } catch (e: Exception) {
-            // Log but don't fail the follow action
+            // Log but don't fail
         }
         
         return Result.success(Unit)
@@ -100,6 +106,10 @@ class TrackingRepositoryImpl @Inject constructor(
 
     override suspend fun markStoryViewed(storyId: String) {
         storyDao.markStoryViewed(storyId)
+    }
+
+    override suspend fun getStoryId(articleUrl: String): String? {
+        return articleDao.getStoryIdForArticle(articleUrl)
     }
 
     private fun bytesToFloatArray(bytes: ByteArray): FloatArray {
