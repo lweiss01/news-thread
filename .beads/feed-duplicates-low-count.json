@@ -1,0 +1,10 @@
+{
+  "id": "feed-duplicates-low-count",
+  "title": "Feed Duplicates and Low Item Count",
+  "status": "open",
+  "priority": "high",
+  "type": "bug",
+  "description": "The story feed shows only 7 cards instead of 20, and contains duplicates from the same source (e.g., New York Post). This indicates a failure in the deduplication or clustering logic.",
+  "created_at": "2026-02-15T19:54:00-05:00",
+  "tags": ["feed", "bug", "clustering"]
+}

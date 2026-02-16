@@ -1,0 +1,14 @@
+{
+    "id": "feed-duplicates-same-source",
+    "title": "Fix Feed Duplicates from Same Source",
+    "status": "open",
+    "priority": "high",
+    "type": "bug",
+    "description": "Feed shows multiple cards for the same story from the same source (e.g., 'Wild brawl' and 'Brawl at game' both from NY Post). Clustering logic needs to be aggressive when the source is identical.",
+    "created_at": "2026-02-15T20:05:00-05:00",
+    "tags": [
+        "feed",
+        "bug",
+        "clustering"
+    ]
+}
