@@ -19,6 +19,7 @@ import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.similarity.SimilarityMatcher
+import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.TimeWindowCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -42,6 +43,7 @@ class ArticleMatchingRepositoryTest {
     private lateinit var fakeEmbeddingRepository: FakeEmbeddingRepository
     private lateinit var fakeEmbeddingDao: FakeEmbeddingDao
     private lateinit var similarityMatcher: SimilarityMatcher
+    private lateinit var entityExtractor: EntityExtractor
     private lateinit var timeWindowCalculator: TimeWindowCalculator
 
     @Before
@@ -53,6 +55,7 @@ class ArticleMatchingRepositoryTest {
         fakeEmbeddingRepository = FakeEmbeddingRepository()
         fakeEmbeddingDao = FakeEmbeddingDao()
         similarityMatcher = SimilarityMatcher()
+        entityExtractor = EntityExtractor()
         timeWindowCalculator = TimeWindowCalculator()
 
         repository = ArticleMatchingRepositoryImpl(
@@ -63,7 +66,8 @@ class ArticleMatchingRepositoryTest {
             fakeEmbeddingRepository,
             fakeEmbeddingDao,
             similarityMatcher,
-            timeWindowCalculator
+            timeWindowCalculator,
+            entityExtractor
         )
     }
 
@@ -81,7 +85,7 @@ class ArticleMatchingRepositoryTest {
         // After fix: "US Russian" -> "Russian" (if US rejected). or "US Russian" if logic combines.
         
         val text = "The US-Russian relations."
-        val entities = repository.extractEntities(text)
+        val entities = entityExtractor.extractEntities(text)
         
         // At minimum, "Russian" or "US Russian" should be there.
         val hasRussian = entities.contains("Russian") || entities.contains("US Russian")
@@ -93,7 +97,7 @@ class ArticleMatchingRepositoryTest {
     @Test
     fun `extractEntities extract proper nouns sequence`() {
         val text = "President John Doe visited."
-        val entities = repository.extractEntities(text)
+        val entities = entityExtractor.extractEntities(text)
         assertTrue(entities.contains("President John Doe"))
     }
 
@@ -247,8 +251,8 @@ class ArticleMatchingRepositoryTest {
             val comparison = result.getOrThrow()
             if (comparison.totalComparisons == 0) {
                 println("FAILURE: Filter rejected the match.")
-                println("Extracted Entities A: ${repository.extractEntities(articleA.title)}")
-                println("Extracted Entities B: ${repository.extractEntities("Stock Market Today: Dow Rises On Surprise Jobs Data; AMD Plunges on Earnings")}")
+                println("Extracted Entities A: ${entityExtractor.extractEntities(articleA.title)}")
+                println("Extracted Entities B: ${entityExtractor.extractEntities("Stock Market Today: Dow Rises On Surprise Jobs Data; AMD Plunges on Earnings")}")
             }
         }
 
@@ -264,7 +268,7 @@ class ArticleMatchingRepositoryTest {
     fun `extractEntities ignores editorial prefixes (Scoop)`() {
         // User Report: "Scoop: Plans for Iran nuclear talks are collapsing"
         val title = "Scoop: Plans for Iran nuclear talks are collapsing, U.S. officials say"
-        val entities = repository.extractEntities(title)
+        val entities = entityExtractor.extractEntities(title)
         
         println("Extracted: $entities")
         
@@ -436,10 +440,18 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
     }
 
-    override suspend fun assignArticleToStory(articleUrl: String, storyId: String) {
+    override suspend fun getRecentUnassignedArticles(since: Long): List<CachedArticleEntity> {
+        return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
+    }
+
+    override suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean) {
         savedArticles[articleUrl]?.let {
             savedArticles[articleUrl] = it.copy(storyId = storyId, isTracked = true)
         }
+    }
+
+    override suspend fun getStoryIdForArticle(articleUrl: String): String? {
+        return savedArticles[articleUrl]?.storyId
     }
 }
 

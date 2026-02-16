@@ -30,7 +30,9 @@ class SettingsViewModel @Inject constructor(
 
     fun forceStorySync() {
         viewModelScope.launch {
-            val request = OneTimeWorkRequestBuilder<com.newsthread.app.worker.StoryUpdateWorker>().build()
+            val request = OneTimeWorkRequestBuilder<com.newsthread.app.worker.StoryUpdateWorker>()
+                .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build()
             WorkManager.getInstance(context).enqueue(request)
         }
     }

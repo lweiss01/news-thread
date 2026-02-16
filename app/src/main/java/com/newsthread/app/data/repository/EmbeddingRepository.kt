@@ -6,9 +6,9 @@ import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.entity.ArticleEmbeddingEntity
 import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.ml.EmbeddingEngine
+import com.newsthread.app.util.EmbeddingUtils.toFloatArray
+import com.newsthread.app.util.EmbeddingUtils.toByteArray
 import kotlinx.coroutines.flow.first
-import java.nio.ByteBuffer
-import java.nio.FloatBuffer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -52,13 +52,13 @@ open class EmbeddingRepository @Inject constructor(
      * @return Embedding as FloatArray or null if generation failed
      */
     open suspend fun getOrGenerateEmbedding(articleUrl: String): FloatArray? {
-        val modelVersion =userPreferencesRepository.embeddingModelVersion.first()
+        val modelVersion = userPreferencesRepository.embeddingModelVersion.first()
 
         // Check cache
         val cached = embeddingDao.getByArticleUrl(articleUrl, modelVersion)
         if (cached != null && cached.embeddingStatus == EmbeddingStatus.SUCCESS) {
             Log.d(TAG, "Using cached embedding for: $articleUrl")
-            return byteArrayToFloatArray(cached.embedding)
+            return cached.embedding.toFloatArray()
         }
 
         // Check if we should retry a failed embedding
@@ -129,7 +129,7 @@ open class EmbeddingRepository @Inject constructor(
 
         val entity = ArticleEmbeddingEntity(
             articleUrl = articleUrl,
-            embedding = floatArrayToByteArray(embedding),
+            embedding = embedding.toByteArray(),
             embeddingModel = "all-MiniLM-L6-v2",
             dimensions = embedding.size,
             computedAt = now,
@@ -170,26 +170,6 @@ open class EmbeddingRepository @Inject constructor(
 
         embeddingDao.insert(entity)
         Log.d(TAG, "Cached failed embedding for: $articleUrl (reason: $failureReason)")
-    }
-
-    /**
-     * Convert FloatArray to ByteArray for database storage.
-     */
-    private fun floatArrayToByteArray(floats: FloatArray): ByteArray {
-        val buffer = ByteBuffer.allocate(floats.size * 4)
-        buffer.asFloatBuffer().put(floats)
-        return buffer.array()
-    }
-
-    /**
-     * Convert ByteArray to FloatArray from database storage.
-     */
-    private fun byteArrayToFloatArray(bytes: ByteArray): FloatArray {
-        val buffer = ByteBuffer.wrap(bytes)
-        val floatBuffer: FloatBuffer = buffer.asFloatBuffer()
-        val floats = FloatArray(floatBuffer.remaining())
-        floatBuffer.get(floats)
-        return floats
     }
 
     /**

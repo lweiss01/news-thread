@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CachedArticleDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(articles: List<CachedArticleEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(article: CachedArticleEntity)
 
     @Query("SELECT * FROM cached_articles WHERE url = :url")
@@ -135,6 +135,18 @@ interface CachedArticleDao {
         ORDER BY ca.fetchedAt DESC
     """)
     suspend fun getRecentUnassignedArticlesWithEmbeddings(since: Long): List<CachedArticleEntity>
+
+    /**
+     * Get recent articles that are not yet assigned to a story.
+     * Used for finding candidates that might need embedding generation.
+     */
+    @Query("""
+        SELECT * FROM cached_articles
+        WHERE storyId IS NULL
+        AND fetchedAt > :since
+        ORDER BY fetchedAt DESC
+    """)
+    suspend fun getRecentUnassignedArticles(since: Long): List<CachedArticleEntity>
 
     /**
      * Assign article to a story (updates storyId, isTracked, isNovel, and hasNewPerspective).

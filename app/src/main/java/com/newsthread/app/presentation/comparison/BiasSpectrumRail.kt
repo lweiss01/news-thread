@@ -33,16 +33,20 @@ import com.newsthread.app.domain.model.SourceRating
 @Composable
 fun BiasSpectrumRail(
     articles: List<Article>,
-    ratings: Map<String, SourceRating>, // Key: Article URL
+    sourceRatings: Map<String, SourceRating>,
     modifier: Modifier = Modifier
 ) {
     if (articles.isEmpty()) return
 
     // Pre-process data: Group articles by bias score (-2 to +2) to handle stacking
-    val distribution = remember(articles, ratings) {
+    val distribution = remember(articles, sourceRatings) {
         val dist = mutableMapOf<Int, Int>()
         articles.forEach { article ->
-            val rating = ratings[article.url]
+            // Robust lookup: ID -> Name -> URL
+            val rating = article.source.id?.let { sourceRatings[it] }
+                ?: sourceRatings[article.source.name]
+                // Fallback to URL lookup if needed, though sourceRatings keying might not cover it unless we pass the map
+                
             if (rating != null) {
                 val score = rating.finalBiasScore
                 // Clamping just in case, though scores should be -2..2

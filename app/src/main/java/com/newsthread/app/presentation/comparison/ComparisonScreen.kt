@@ -35,6 +35,7 @@ fun ComparisonScreen(
     viewModel: ComparisonViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle() // NEW
 
     // Load similar articles on first composition
     LaunchedEffect(article.url) {
@@ -85,6 +86,7 @@ fun ComparisonScreen(
                     ComparisonContent(
                         comparison = state.comparison,
                         hintMessage = state.hintMessage,
+                        sourceRatings = sourceRatings, // NEW
                         onArticleClick = { clickedArticle ->
                             val encodedUrl = URLEncoder.encode(clickedArticle.url, "UTF-8")
                             navController.navigate(ArticleDetailRoute.createRoute(encodedUrl))
@@ -120,6 +122,7 @@ fun ComparisonScreen(
 private fun ComparisonContent(
     comparison: ArticleComparison,
     hintMessage: String?,
+    sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>, // NEW
     onArticleClick: (Article) -> Unit
 ) {
     // Capture colors outside LazyListScope (which is not @Composable)
@@ -142,12 +145,20 @@ private fun ComparisonContent(
                     .padding(bottom = 8.dp)
             ) {
                 // Collect only rated articles for visualization
-                val allPerspectives = comparison.leftPerspective + 
+                // Collect only rated articles for visualization
+                val allPerspectives = listOf(comparison.originalArticle) + 
+                                      comparison.leftPerspective + 
                                       comparison.centerPerspective + 
                                       comparison.rightPerspective +
                                       comparison.unratedPerspective
                 
-                val ratedArticles = allPerspectives.filter { comparison.ratings[it.url] != null }
+                // Filter using robust lookup
+                val ratedArticles = allPerspectives.filter { article ->
+                     val rating = article.source.id?.let { sourceRatings[it] }
+                        ?: sourceRatings[article.source.name]
+                        ?: comparison.ratings[article.url]
+                     rating != null
+                }
 
                 if (ratedArticles.isNotEmpty()) {
                     Text(
@@ -159,7 +170,7 @@ private fun ComparisonContent(
                     
                     BiasSpectrumRail(
                         articles = ratedArticles,
-                        ratings = comparison.ratings,
+                        sourceRatings = sourceRatings,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
@@ -191,7 +202,10 @@ private fun ComparisonContent(
             }
             MatchedArticleCard(
                 article = comparison.originalArticle,
-                rating = comparison.ratings[comparison.originalArticle.url],
+                // Robust lookup: ID -> Name -> URL
+                rating = sourceRatings[comparison.originalArticle.source.id] 
+                    ?: sourceRatings[comparison.originalArticle.source.name] 
+                    ?: comparison.ratings[comparison.originalArticle.url],
                 similarityScore = 1.0f, // Original
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -208,7 +222,10 @@ private fun ComparisonContent(
                 items(articles) { article ->
                     MatchedArticleCard(
                         article = article,
-                        rating = comparison.ratings[article.url],
+                        // Robust lookup
+                        rating = sourceRatings[article.source.id] 
+                            ?: sourceRatings[article.source.name] 
+                            ?: comparison.ratings[article.url],
                         similarityScore = 0.0f, // TODO: threaded score if available
                         modifier = Modifier
                     )

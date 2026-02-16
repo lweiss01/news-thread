@@ -10,6 +10,7 @@ import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.local.entity.SourceRatingEntity
 import com.newsthread.app.data.local.entity.StoryEntity
 import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.MatchStrength
 import com.newsthread.app.domain.similarity.SimilarityMatcher
 import kotlinx.coroutines.flow.flowOf
@@ -21,6 +22,7 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -40,18 +42,22 @@ class UpdateTrackedStoriesUseCaseTest {
     private lateinit var sourceRatingDao: SourceRatingDao
 
     private lateinit var similarityMatcher: SimilarityMatcher
+    private lateinit var entityExtractor: EntityExtractor
     private lateinit var useCase: UpdateTrackedStoriesUseCase
 
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
         similarityMatcher = SimilarityMatcher() // Real implementation
+        entityExtractor = EntityExtractor() // Real implementation
         useCase = UpdateTrackedStoriesUseCase(
             trackingRepository,
             cachedArticleDao,
             embeddingDao,
             sourceRatingDao,
-            similarityMatcher
+            similarityMatcher,
+            mock(), // embeddingRepository
+            entityExtractor
         )
     }
 

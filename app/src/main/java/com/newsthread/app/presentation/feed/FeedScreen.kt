@@ -58,6 +58,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.data.local.dao.StoryWithArticles
 import javax.inject.Inject
@@ -74,33 +77,41 @@ class FeedViewModel @Inject constructor(
     private val sourceRatingRepository: SourceRatingRepository,
     private val quotaRepository: QuotaRepository,
     private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase,
-    private val trackingRepository: TrackingRepository // NEW
+    private val trackingRepository: TrackingRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+    
+    // NEW: Refresh state
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    // NEW: Pre-load all source ratings
     private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
     val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
 
-    // Rate limit state for UI feedback
     private val _isRateLimited = MutableStateFlow(false)
     val isRateLimited: StateFlow<Boolean> = _isRateLimited.asStateFlow()
 
     private val _rateLimitMinutesRemaining = MutableStateFlow(0)
     val rateLimitMinutesRemaining: StateFlow<Int> = _rateLimitMinutesRemaining.asStateFlow()
 
-    // NEW: Map of article URL -> story ID for quick lookup
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
 
     init {
-        loadHeadlines()
+        loadHeadlines() // initial load
         loadSourceRatings()
-        // Phase 8: Load tracked stories to show bookmark status
         loadTrackedStories()
         checkRateLimitState()
+    }
+    
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            loadHeadlines(forceRefresh = true)
+            _isRefreshing.value = false
+        }
     }
 
     private fun checkRateLimitState() {
@@ -115,12 +126,10 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    // NEW: Load all source ratings once
     private fun loadSourceRatings() {
         viewModelScope.launch {
             try {
                 sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
-                    // Create map: domain -> rating AND sourceId -> rating
                     val ratingsMap = mutableMapOf<String, SourceRating>()
                     ratings.forEach { rating ->
                         if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
@@ -134,9 +143,10 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    fun loadHeadlines() {
+    // Updated to accept forceRefresh
+    fun loadHeadlines(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            newsRepository.getTopHeadlines().collect { result ->
+            newsRepository.getTopHeadlines(forceRefresh = forceRefresh).collect { result ->
                 result.fold(
                     onSuccess = { articles ->
                         _uiState.value = FeedUiState.Success(articles)
@@ -167,20 +177,17 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    // NEW: Toggle Follow (Follow/Unfollow)
     fun toggleFollow(article: Article) {
         viewModelScope.launch {
             val storyId = _trackedStoriesMap.value[article.url]
             if (storyId != null) {
-                // Already tracked -> Unfollow
                 trackingRepository.unfollowStory(storyId)
             } else {
-                // Not tracked -> Follow
                 followStoryUseCase(article)
             }
         }
     }
-} // End of FeedViewModel
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,8 +196,9 @@ fun FeedScreen(
     navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle() // NEW
     val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle()
-    val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle() // NEW
+    val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
     val isRateLimited by viewModel.isRateLimited.collectAsStateWithLifecycle()
     val rateLimitMinutes by viewModel.rateLimitMinutesRemaining.collectAsStateWithLifecycle()
 
@@ -213,62 +221,105 @@ fun FeedScreen(
             )
         }
     ) { paddingValues ->
-        when (uiState) {
-            is FeedUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+        // M3 Pull-to-Refresh
+        val pullRefreshState = rememberPullToRefreshState()
+        
+        if (pullRefreshState.isRefreshing) {
+            LaunchedEffect(true) {
+                viewModel.refresh()
             }
-            is FeedUiState.Success -> {
-                val articles = uiState.let { it as FeedUiState.Success }.articles
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    items(articles) { article ->
-                        ArticleCard(
-                            article = article,
-                            sourceRatings = sourceRatings,
-                            isTracked = trackedStoriesMap.containsKey(article.url),
-                            onBookmarkClick = { viewModel.toggleFollow(article) },
-                            onClick = {
-                                // Save article to navigation state
-                                navController.currentBackStackEntry
-                                    ?.savedStateHandle
-                                    ?.set("selected_article", article)
+        }
+        
+        LaunchedEffect(isRefreshing) {
+            if (isRefreshing) {
+                pullRefreshState.startRefresh()
+            } else {
+                pullRefreshState.endRefresh()
+            }
+        }
 
-                                val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
-                                navController.navigate(
-                                    ArticleDetailRoute.createRoute(encodedUrl)
-                                )
-                            }
-                        )
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
+        ) {
+            when (val state = uiState) {
+                is FeedUiState.Loading -> {
+                     if (!isRefreshing) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
-            }
-            is FeedUiState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = (uiState as FeedUiState.Error).message,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadHeadlines() }) {
-                            Text("Retry")
+                is FeedUiState.Success -> {
+                    val articles = state.articles
+                    if (articles.isEmpty()) {
+                         // Empty State (Scrollable for Pull-to-Refresh)
+                         LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            item {
+                                Text("No stories found.", style = MaterialTheme.typography.bodyLarge)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("Pull to refresh", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(articles) { article ->
+                                ArticleCard(
+                                    article = article,
+                                    sourceRatings = sourceRatings,
+                                    isTracked = trackedStoriesMap.containsKey(article.url),
+                                    onBookmarkClick = { viewModel.toggleFollow(article) },
+                                    onClick = {
+                                        navController.currentBackStackEntry
+                                            ?.savedStateHandle
+                                            ?.set("selected_article", article)
+
+                                        val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
+                                        navController.navigate(
+                                            ArticleDetailRoute.createRoute(encodedUrl)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                is FeedUiState.Error -> {
+                    // Error State (Scrollable for Pull-to-Refresh)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        item {
+                            Text(
+                                text = state.message,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.loadHeadlines(true) }) {
+                                Text("Retry")
+                            }
                         }
                     }
                 }
             }
+            
+            PullToRefreshContainer(
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = pullRefreshState,
+            )
         }
     }
 }
-
-// ArticleCard moved to com.newsthread.app.presentation.common.ArticleCard

@@ -57,4 +57,13 @@ interface StoryDao {
      */
     @Query("UPDATE stories SET lastViewedAt = :timestamp WHERE id = :storyId")
     suspend fun markStoryViewed(storyId: String, timestamp: Long = System.currentTimeMillis())
+
+    /**
+     * Update last checked timestamp (sync ran).
+     */
+    @Query("UPDATE stories SET lastCheckedAt = :timestamp WHERE id = :storyId")
+    suspend fun updateLastChecked(storyId: String, timestamp: Long)
+
+    @Query("UPDATE stories SET lastCheckedAt = :timestamp")
+    suspend fun updateAllLastChecked(timestamp: Long)
 }

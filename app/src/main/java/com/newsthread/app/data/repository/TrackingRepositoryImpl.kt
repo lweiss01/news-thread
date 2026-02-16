@@ -108,6 +108,16 @@ class TrackingRepositoryImpl @Inject constructor(
         storyDao.markStoryViewed(storyId)
     }
 
+    override suspend fun markAllStoriesChecked(timestamp: Long) {
+        storyDao.updateAllLastChecked(timestamp)
+    }
+
+    override suspend fun removeArticleFromStory(articleUrl: String, storyId: String) {
+        val article = articleDao.getByUrl(articleUrl)
+        android.util.Log.w("MATCH_REJECTION", "article='$articleUrl' story='$storyId' title='${article?.title}'")
+        articleDao.updateTrackingStatus(articleUrl, false, null)
+    }
+
     override suspend fun getStoryId(articleUrl: String): String? {
         return articleDao.getStoryIdForArticle(articleUrl)
     }

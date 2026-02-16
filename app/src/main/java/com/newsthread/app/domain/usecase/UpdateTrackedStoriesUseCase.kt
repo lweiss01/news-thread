@@ -5,13 +5,14 @@ import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.SourceRatingDao
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.MatchStrength
 import com.newsthread.app.domain.similarity.SimilarityMatcher
 import kotlinx.coroutines.flow.first
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.newsthread.app.util.EmbeddingUtils.toFloatArray
+import com.newsthread.app.data.repository.EmbeddingRepository
 
 /**
  * Match result with classification for UI display.
@@ -40,7 +41,9 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
     private val cachedArticleDao: CachedArticleDao,
     private val embeddingDao: ArticleEmbeddingDao,
     private val sourceRatingDao: SourceRatingDao,
-    private val similarityMatcher: SimilarityMatcher
+    private val similarityMatcher: SimilarityMatcher,
+    private val embeddingRepository: EmbeddingRepository,
+    private val entityExtractor: EntityExtractor
 ) {
     companion object {
         private const val NOVELTY_THRESHOLD = 0.85f
@@ -52,13 +55,30 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
         if (stories.isEmpty()) return emptyList()
 
         val since = System.currentTimeMillis() - MATCHING_WINDOW_MS
-        val candidateArticles = cachedArticleDao.getRecentUnassignedArticlesWithEmbeddings(since)
+        
+        // Step 1: Get all candidate articles (regardless of embedding status)
+        val candidateArticles = cachedArticleDao.getRecentUnassignedArticles(since)
         if (candidateArticles.isEmpty()) return emptyList()
 
-        // Pre-fetch embeddings for all candidate articles
+        // Step 2: Ensure embeddings exist for all candidates (Self-healing for Migration 9)
         val candidateUrls = candidateArticles.map { it.url }
+        val existingEmbeddings = embeddingDao.getByArticleUrls(candidateUrls)
+        
+        if (existingEmbeddings.size < candidateUrls.size) {
+            android.util.Log.d("StoryMatching", "Found ${candidateUrls.size - existingEmbeddings.size} articles missing embeddings. Regenerating...")
+            candidateArticles.forEach { article ->
+                // This checks cache internally and generates if missing
+                try {
+                    embeddingRepository.getOrGenerateEmbedding(article.url)
+                } catch (e: Exception) {
+                    android.util.Log.e("StoryMatching", "Failed to generate embedding for ${article.url}", e)
+                }
+            }
+        }
+
+        // Step 3: Fetch all embeddings (now including regenerated ones)
         val candidateEmbeddings = embeddingDao.getByArticleUrls(candidateUrls)
-            .associate { it.articleUrl to bytesToFloatArray(it.embedding) }
+            .associate { it.articleUrl to it.embedding.toFloatArray() }
 
         // Pre-fetch source ratings for bias lookup
         val allSourceIds = candidateArticles.mapNotNull { it.sourceId } +
@@ -71,35 +91,164 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
 
         stories.forEach { storyWithArticles ->
             val storyId = storyWithArticles.story.id
-            val storyEmbeddings = trackingRepository.getStoryArticleEmbeddings(storyId)
+            var storyEmbeddings = trackingRepository.getStoryArticleEmbeddings(storyId)
+            
+            // Self-healing: If story has no embeddings (e.g. after MIGRATION_8_9), regenerate them
+            if (storyEmbeddings.isEmpty() && storyWithArticles.articles.isNotEmpty()) {
+                android.util.Log.d("StoryMatching", "Story $storyId has no embeddings. Regenerating from ${storyWithArticles.articles.size} articles...")
+                storyWithArticles.articles.forEach { article ->
+                    try {
+                        embeddingRepository.getOrGenerateEmbedding(article.url)
+                    } catch (e: Exception) {
+                        android.util.Log.e("StoryMatching", "Failed to heal story embedding for ${article.url}", e)
+                    }
+                }
+                // Refetch after generation
+                storyEmbeddings = trackingRepository.getStoryArticleEmbeddings(storyId)
+            }
+
+            // --- SELF-CLEANING PHASE ---
+            // Moved BEFORE centroid check to ensure it runs even if story centroid is missing.
+            val validArticles = storyWithArticles.articles.sortedBy { it.fetchedAt }.toMutableList()
+            var anchorEmbedding: FloatArray? = null
+            var anchorUrl: String? = null
+            var anchorTitle: String? = null
+            if (validArticles.size > 1) {
+                android.util.Log.d("StoryMatching", "Entering cleanup for story '${storyWithArticles.story.title}'")
+                // Find the first article that has (or can generate) a valid embedding.
+                // This handles cases where the "original" article is a dud (no text/failed extraction).
+                val anchorIterator = validArticles.iterator()
+                
+                while (anchorIterator.hasNext()) {
+                    val potentialAnchor = anchorIterator.next()
+                    var embEntity = embeddingDao.getByArticleUrl(potentialAnchor.url)
+                    var emb = candidateEmbeddings[potentialAnchor.url] ?: embEntity?.embedding?.toFloatArray()
+                    
+                    if (embEntity != null) {
+                         android.util.Log.d("StoryMatching", "Article '${potentialAnchor.title}' status: ${embEntity.embeddingStatus} Reason: ${embEntity.failureReason}")
+                    } else {
+                         android.util.Log.d("StoryMatching", "Article '${potentialAnchor.title}' has NO embedding record.")
+                    }
+
+                    if (emb == null || emb.isEmpty()) {
+                        try {
+                            val result = embeddingRepository.getOrGenerateEmbedding(potentialAnchor.url)
+                            if (result != null) {
+                                emb = result // Use the result directly as it returns FloatArray?
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("StoryMatching", "Failed to heal anchor embedding for ${potentialAnchor.url}", e)
+                        }
+                    }
+
+                    if (emb != null && emb.isNotEmpty()) {
+                        anchorEmbedding = emb
+                        anchorUrl = potentialAnchor.url
+                        anchorTitle = potentialAnchor.title
+                        android.util.Log.d("StoryMatching", "Found valid anchor: ${potentialAnchor.title}")
+                        break
+                    } else {
+                         android.util.Log.w("StoryMatching", "Skipping invalid anchor candidate: ${potentialAnchor.title}")
+                    }
+                }
+
+                if (anchorEmbedding != null && anchorEmbedding.isNotEmpty()) {
+                    val articlesToRemove = mutableListOf<String>()
+                    val iter = validArticles.iterator()
+                    
+                    while (iter.hasNext()) {
+                        val article = iter.next()
+                        // Don't compare anchor to itself
+                        if (article.url == anchorUrl) continue
+
+                        val emb = candidateEmbeddings[article.url] ?: embeddingDao.getByArticleUrl(article.url)?.embedding?.toFloatArray()
+                        if (emb != null && emb.isNotEmpty()) {
+                            val sim = similarityMatcher.cosineSimilarity(anchorEmbedding, emb)
+                            val entityOverlap = entityExtractor.titleEntityOverlap(
+                                anchorTitle ?: "", article.title
+                            )
+                            
+                            // Debug log for checking existing stories
+                            android.util.Log.d("StoryMatching", "CLEANUP CHECK: '${article.title}' vs Anchor. Sim: $sim, EntityOverlap: $entityOverlap")
+
+                            // CLEANUP: Only remove articles that are clearly wrong.
+                            // Use lenient CLEANUP_FLOOR since these articles were previously matched.
+                            val shouldRemove = sim < SimilarityMatcher.CLEANUP_FLOOR
+                            if (shouldRemove) {
+                                android.util.Log.w("StoryMatching", "CLEANUP: Removing '${article.title}' (sim=$sim, entities=$entityOverlap)")
+                                cachedArticleDao.updateTrackingStatus(article.url, false, null)
+                                articlesToRemove.add(article.url)
+                                iter.remove()
+                            } else {
+                                android.util.Log.d("StoryMatching", "CLEANUP: Keeping '${article.title}' (sim=$sim, entities=$entityOverlap)")
+                            }
+                        }
+                    }
+                    
+                    // Re-fetch existing embeddings if we removed anything or if we generated new ones
+                    // This ensures the centroid calculation below uses the new/cleaned state
+                    storyEmbeddings = trackingRepository.getStoryArticleEmbeddings(storyId)
+                } else {
+                     android.util.Log.e("StoryMatching", "Story $storyId has NO valid embeddings in any of its ${validArticles.size} articles. Cannot clean or match.")
+                }
+            }
+            // ---------------------------
+
             if (storyEmbeddings.isEmpty()) {
-                android.util.Log.d("StoryMatching", "Story $storyId has no embeddings, skipping")
+                android.util.Log.d("StoryMatching", "Story $storyId still has no embeddings (after cleanup check), skipping matching new updates")
                 return@forEach
             }
 
-            val storyCentroid = computeCentroid(storyEmbeddings)
-            android.util.Log.d("StoryMatching", "Story $storyId centroid computed from ${storyEmbeddings.size} articles")
+            // Use anchor embedding for matching (avoids centroid pollution from false positives)
+            // If cleanup phase already found an anchor, reuse it. Otherwise, compute from first article.
+            val matchAnchor = if (anchorEmbedding != null && anchorEmbedding!!.isNotEmpty()) {
+                anchorEmbedding!!
+            } else {
+                // Single-article story or anchor was found during cleanup
+                val firstArticle = storyWithArticles.articles.minByOrNull { it.fetchedAt }
+                if (firstArticle != null) {
+                    candidateEmbeddings[firstArticle.url]
+                        ?: embeddingDao.getByArticleUrl(firstArticle.url)?.embedding?.toFloatArray()
+                } else null
+            }
+
+            if (matchAnchor == null || matchAnchor.isEmpty()) {
+                android.util.Log.w("StoryMatching", "Story $storyId: no anchor available for matching, skipping")
+                return@forEach
+            }
+            android.util.Log.d("StoryMatching", "Story $storyId using ANCHOR-based matching (not centroid)")
 
             val existingBiasCategories = storyWithArticles.articles
                 .mapNotNull { article -> article.sourceId?.let { sourceRatings[it] } }
                 .toSet()
 
+            // Get anchor title for entity comparison
+            val matchAnchorTitle = anchorTitle ?: storyWithArticles.articles.minByOrNull { it.fetchedAt }?.title ?: ""
+
             candidateArticles.forEach { article ->
                 val articleEmbedding = candidateEmbeddings[article.url] ?: return@forEach
-                val similarity = similarityMatcher.cosineSimilarity(articleEmbedding, storyCentroid)
-                val strength = similarityMatcher.matchStrength(similarity)
+                val similarity = similarityMatcher.cosineSimilarity(articleEmbedding, matchAnchor)
+                val entityOverlap = entityExtractor.titleEntityOverlap(matchAnchorTitle, article.title)
                 
-                android.util.Log.d("StoryMatching", "Candidate ${article.title.take(30)}...: similarity $similarity, strength $strength")
+                // HYBRID MATCHING: embedding similarity + entity overlap
+                // STRONG: embedding >= 0.78 (auto-add, skip entity check)
+                // WEAK: embedding >= 0.55 AND entity overlap >= 1
+                // NONE: everything else
+                val hybridStrength = when {
+                    similarity >= SimilarityMatcher.STRONG_THRESHOLD -> MatchStrength.STRONG
+                    similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1 -> MatchStrength.WEAK
+                    else -> MatchStrength.NONE
+                }
+                
+                android.util.Log.d("StoryMatching", "HYBRID: '${article.title.take(40)}...' sim=$similarity, entities=$entityOverlap -> $hybridStrength")
 
-                android.util.Log.d("StoryMatching", "Candidate ${article.title.take(30)}...: similarity $similarity, strength $strength")
-
-                if (strength != MatchStrength.NONE) {
+                if (hybridStrength != MatchStrength.NONE) {
                     val isNovel = isNovelContent(articleEmbedding, storyEmbeddings)
                     val hasNewPerspective = hasNewPerspective(article, existingBiasCategories, sourceRatings)
 
                     // Auto-add strong matches
-                    if (strength == MatchStrength.STRONG) {
-                        android.util.Log.d("StoryMatching", "AUTO-ADDING strong match: ${article.url}")
+                    if (hybridStrength == MatchStrength.STRONG) {
+                        android.util.Log.d("StoryMatching", "AUTO-ADDING strong match: ${article.title}")
                         trackingRepository.addArticleToStory(
                             articleUrl = article.url, 
                             storyId = storyId,
@@ -107,23 +256,31 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
                             hasNewPerspective = hasNewPerspective
                         )
                     } else {
-                        android.util.Log.d("StoryMatching", "Match found but NOT auto-added (Weak/Novelty): ${article.url} Strength=$strength")
+                        // WEAK match confirmed by entity overlap — also add to story
+                        android.util.Log.d("StoryMatching", "HYBRID MATCH (weak+entities): ${article.title}")
+                        trackingRepository.addArticleToStory(
+                            articleUrl = article.url,
+                            storyId = storyId,
+                            isNovel = isNovel,
+                            hasNewPerspective = hasNewPerspective
+                        )
                     }
 
                     results.add(StoryMatchResult(
                         articleUrl = article.url,
                         storyId = storyId,
                         similarity = similarity,
-                        strength = strength,
+                        strength = hybridStrength,
                         isNovel = isNovel,
                         hasNewPerspective = hasNewPerspective
                     ))
-                } else if (similarity > 0.40) {
-                     android.util.Log.d("StoryMatching", "CLOSE CALL (Missed): ${article.title} sim=$similarity < Threshold")
+                } else if (similarity > 0.50) {
+                     android.util.Log.d("StoryMatching", "REJECTED: '${article.title.take(40)}' sim=$similarity entities=$entityOverlap (need both)")
                 }
             }
         }
 
+        markAllChecked(System.currentTimeMillis())
         return results
     }
 
@@ -157,10 +314,7 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
         return newBiasCategory !in existingBiasCategories
     }
 
-    private fun bytesToFloatArray(bytes: ByteArray): FloatArray {
-        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-        val floats = FloatArray(bytes.size / 4)
-        buffer.asFloatBuffer().get(floats)
-        return floats
+    suspend fun markAllChecked(timestamp: Long) {
+        trackingRepository.markAllStoriesChecked(timestamp)
     }
 }

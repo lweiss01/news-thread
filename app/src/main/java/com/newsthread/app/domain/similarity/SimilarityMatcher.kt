@@ -30,10 +30,17 @@ enum class MatchStrength {
 class SimilarityMatcher @Inject constructor() {
     
     companion object {
-        /** Strong match threshold (high confidence) - Adjusted for MobileBERT recall */
-        const val STRONG_THRESHOLD = 0.65f
-        /** Weak match threshold (shown only when <3 total matches) - Adjusted for precision */
+        /** Strong match threshold (high confidence)
+         *  MiniLM produces ~0.6-0.7 baseline between any two news articles,
+         *  so genuinely related articles must score well above that floor. */
+        const val STRONG_THRESHOLD = 0.78f
+        /** Weak match threshold - floor for hybrid consideration.
+         *  Below this, even entity overlap won't save the match. */
         const val WEAK_THRESHOLD = 0.55f
+        /** Cleanup floor - very lenient threshold for existing articles.
+         *  Articles already in a story should only be removed if clearly wrong.
+         *  Much lower than WEAK_THRESHOLD since they were already matched once. */
+        const val CLEANUP_FLOOR = 0.35f
     }
 
     /**

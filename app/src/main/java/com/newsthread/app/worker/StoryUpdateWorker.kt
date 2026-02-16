@@ -48,7 +48,15 @@ class StoryUpdateWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Story update failed", e)
-            Result.retry()
+            if (runAttemptCount < 3) {
+                Result.retry()
+            } else {
+                Result.failure()
+            }
+        } finally {
+             // Update all stories "last checked" timestamp
+             updateTrackedStoriesUseCase.markAllChecked(System.currentTimeMillis())
+             Log.d("StoryMatching", "Worker finished. Updated timestamps.")
         }
     }
 

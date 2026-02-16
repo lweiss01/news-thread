@@ -20,4 +20,6 @@ interface TrackingRepository {
     suspend fun addArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean)
     suspend fun markStoryUpdated(storyId: String)
     suspend fun markStoryViewed(storyId: String)
+    suspend fun markAllStoriesChecked(timestamp: Long)
+    suspend fun removeArticleFromStory(articleUrl: String, storyId: String)
 }

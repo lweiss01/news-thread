@@ -1,5 +1,6 @@
 package com.newsthread.app.data.repository
 
+import android.content.Context
 import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.StoryDao
@@ -19,6 +20,9 @@ import org.mockito.kotlin.whenever
 class TrackingRepositoryTest {
 
     @Mock
+    private lateinit var context: Context
+
+    @Mock
     private lateinit var storyDao: StoryDao
 
     @Mock
@@ -32,7 +36,7 @@ class TrackingRepositoryTest {
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        repository = TrackingRepositoryImpl(storyDao, articleDao, embeddingDao)
+        repository = TrackingRepositoryImpl(context, storyDao, articleDao, embeddingDao)
     }
 
     @Test

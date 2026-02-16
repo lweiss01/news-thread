@@ -30,11 +30,37 @@ sealed interface ComparisonUiState {
 class ComparisonViewModel @Inject constructor(
     private val getSimilarArticlesUseCase: GetSimilarArticlesUseCase,
     private val networkMonitor: NetworkMonitor,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val sourceRatingRepository: com.newsthread.app.domain.repository.SourceRatingRepository // NEW
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ComparisonUiState>(ComparisonUiState.Loading)
     val uiState: StateFlow<ComparisonUiState> = _uiState.asStateFlow()
+
+    // NEW: Robust source ratings map
+    private val _sourceRatings = MutableStateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>>(emptyMap())
+    val sourceRatings: StateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>> = _sourceRatings.asStateFlow()
+
+    init {
+        loadSourceRatings()
+    }
+
+    private fun loadSourceRatings() {
+        viewModelScope.launch {
+            try {
+                sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
+                    val ratingsMap = mutableMapOf<String, com.newsthread.app.domain.model.SourceRating>()
+                    ratings.forEach { rating ->
+                        if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
+                        if (rating.sourceId.isNotBlank()) ratingsMap[rating.sourceId] = rating
+                    }
+                    _sourceRatings.value = ratingsMap
+                }
+            } catch (e: Exception) {
+                // Log error
+            }
+        }
+    }
 
     fun findSimilarArticles(article: Article) {
         viewModelScope.launch {

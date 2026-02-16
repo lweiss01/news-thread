@@ -60,7 +60,7 @@ class NewsRepository @Inject constructor(
         // Ensure even cached data adheres to quality/clustering rules
         var cached = cachedArticleDao.getAll().map { it.toDomain() }
         if (cached.isNotEmpty()) {
-            val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter { it.finalReliabilityScore > 1 }
+            val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter { it.finalReliabilityScore > 2 }
             cached = filterArticles(cached, ratedSources)
             cached = clusterArticles(cached)
             emit(Result.success(cached))
@@ -75,12 +75,12 @@ class NewsRepository @Inject constructor(
                 // Phase 9.5-04: Quality Filter - Exclude unrated/low-quality
                 // Only block "Low" (1) or "Unrated/Very Low" (0). "Mixed" (2) is allowed (e.g. Newsbreak).
                 val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter {
-                    it.finalReliabilityScore > 1
+                    it.finalReliabilityScore > 2
                 }
                 val hasRatings = ratedSources.isNotEmpty()
 
-                // Request 100 to have buffer for filtering (if ratings exist), otherwise just 20
-                val fetchSize = if (hasRatings) 80 else 20
+                // Request 100 (Max) to ensure we have enough articles after the Quality Filter (Allowlist) runs
+                val fetchSize = 100
 
                 val response = newsApiService.getTopHeadlines(
                     country = country,
@@ -228,34 +228,41 @@ class NewsRepository @Inject constructor(
         }
     }
 
-    private fun filterArticles(articles: List<Article>, ratedSources: List<SourceRating>): List<Article> {
-        if (ratedSources.isEmpty()) return articles
+    private fun filterArticles(articles: List<Article>, allowedSources: List<SourceRating>): List<Article> {
+        if (allowedSources.isEmpty()) return articles // If no ratings, maybe show all (or none? existing logic showed all)
         
-        val ratedIds = ratedSources.mapNotNull { it.sourceId }.toSet()
-        val ratedNames = ratedSources.map { it.displayName }.toSet()
-        val ratedDomains = ratedSources.map { it.domain }.toSet()
+        val allowedIds = allowedSources.mapNotNull { it.sourceId }.toSet()
+        val allowedNames = allowedSources.map { it.displayName }.toSet()
+        val allowedDomains = allowedSources.map { it.domain }.toSet()
+        
+        Log.d(TAG, "Filtering against ${allowedSources.size} allowed sources (Reliability > 2)")
         
         return articles.filter { article ->
             // 1. Match by ID (exact)
-            if (article.source.id != null && ratedIds.contains(article.source.id)) return@filter true
+            if (article.source.id != null && allowedIds.contains(article.source.id)) return@filter true
             
             // 2. Match by Name (exact)
-            if (ratedNames.contains(article.source.name)) return@filter true
+            if (allowedNames.contains(article.source.name)) return@filter true
             
             // 3. Match by Domain in URL (contains)
             val url = article.url
             if (url != null) {
-                if (ratedDomains.any { domain -> url.contains(domain, ignoreCase = true) }) return@filter true
+                if (allowedDomains.any { domain -> url.contains(domain, ignoreCase = true) }) return@filter true
             }
             
-            false
+            Log.w("FeedFilter", "Dropped: ${article.source.name} (${article.source.id}) - URL: ${article.url}")
+            false // Drop if not in allowlist
         }
     }
 
     private fun clusterArticles(articles: List<Article>): List<Article> {
         val clusters = mutableListOf<Article>()
-        val seenTitles = mutableListOf<Set<String>>()
-        val stopWords = setOf("video", "live", "update", "new", "watch", "photos", "exclusive")
+        // Store pair of (TitleWords, SourceName)
+        val seenArticles = mutableListOf<Pair<Set<String>, String>>()
+        val stopWords = setOf(
+            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+            "video", "live", "update", "new", "watch", "photos", "exclusive", "breaking", "news"
+        )
 
         for (article in articles) {
             val titleWords = article.title.lowercase()
@@ -264,18 +271,33 @@ class NewsRepository @Inject constructor(
                 .filter { it.isNotBlank() && !stopWords.contains(it) }
                 .toSet()
             
+            val sourceName = article.source.name ?: ""
+
             if (titleWords.isEmpty()) {
                  clusters.add(article)
                  continue
             }
 
             var isDuplicate = false
-            for (seen in seenTitles) {
-                val intersection = titleWords.intersect(seen).size
-                val union = titleWords.union(seen).size
+            for ((seenWords, seenSource) in seenArticles) {
+                val intersection = titleWords.intersect(seenWords).size
+                val union = titleWords.union(seenWords).size
+                
                 if (union > 0) {
                     val jaccard = intersection.toDouble() / union.toDouble()
-                    if (jaccard > 0.2) { 
+                    
+                    // Rule 1: Same Source = Aggressive Dedup (Threshold 0.2)
+                    // "Wild brawl" vs "Brawl at game" from same source is likely a duplicate/update
+                    if (sourceName.equals(seenSource, ignoreCase = true)) {
+                        if (jaccard > 0.2) {
+                            isDuplicate = true
+                            break
+                        }
+                    }
+                    
+                    // Rule 2: Different Source = Standard Cluster (Threshold 0.45)
+                    // Lowered slightly from 0.5 to catch more obvious cross-outlet stories
+                    else if (jaccard > 0.45) { 
                         isDuplicate = true
                         break
                     }
@@ -284,7 +306,7 @@ class NewsRepository @Inject constructor(
             
             if (!isDuplicate) {
                 clusters.add(article)
-                seenTitles.add(titleWords)
+                seenArticles.add(titleWords to sourceName)
             }
         }
         return clusters

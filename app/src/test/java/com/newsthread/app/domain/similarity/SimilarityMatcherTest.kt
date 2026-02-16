@@ -89,21 +89,21 @@ class SimilarityMatcherTest {
 
     @Test
     fun `matchStrength_thresholds_strong`() {
-        assertEquals(MatchStrength.STRONG, matcher.matchStrength(0.70f))
+        assertEquals(MatchStrength.STRONG, matcher.matchStrength(0.78f))
         assertEquals(MatchStrength.STRONG, matcher.matchStrength(0.85f))
         assertEquals(MatchStrength.STRONG, matcher.matchStrength(1.0f))
     }
 
     @Test
     fun `matchStrength_thresholds_weak`() {
-        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.50f))
-        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.60f))
-        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.69f))
+        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.55f))
+        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.65f))
+        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.77f))
     }
 
     @Test
     fun `matchStrength_thresholds_none`() {
-        assertEquals(MatchStrength.NONE, matcher.matchStrength(0.49f))
+        assertEquals(MatchStrength.NONE, matcher.matchStrength(0.54f))
         assertEquals(MatchStrength.NONE, matcher.matchStrength(0.0f))
         assertEquals(MatchStrength.NONE, matcher.matchStrength(-0.5f))
     }
@@ -111,40 +111,40 @@ class SimilarityMatcherTest {
     @Test
     fun `matchStrength_boundaryValues`() {
         // Exactly at boundaries
-        assertEquals(MatchStrength.STRONG, matcher.matchStrength(0.70f))
-        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.50f))
+        assertEquals(MatchStrength.STRONG, matcher.matchStrength(0.78f))
+        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.55f))
         // Just below boundaries
-        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.699f))
-        assertEquals(MatchStrength.NONE, matcher.matchStrength(0.499f))
+        assertEquals(MatchStrength.WEAK, matcher.matchStrength(0.779f))
+        assertEquals(MatchStrength.NONE, matcher.matchStrength(0.549f))
     }
 
     // ========== Helper Method Tests ==========
 
     @Test
     fun `isMatch_aboveThreshold_returnsTrue`() {
-        assertTrue(matcher.isMatch(0.50f))
-        assertTrue(matcher.isMatch(0.70f))
+        assertTrue(matcher.isMatch(0.55f))
+        assertTrue(matcher.isMatch(0.78f))
         assertTrue(matcher.isMatch(1.0f))
     }
 
     @Test
     fun `isMatch_belowThreshold_returnsFalse`() {
-        assertFalse(matcher.isMatch(0.49f))
+        assertFalse(matcher.isMatch(0.54f))
         assertFalse(matcher.isMatch(0.0f))
         assertFalse(matcher.isMatch(-0.5f))
     }
 
     @Test
     fun `isStrongMatch_aboveThreshold_returnsTrue`() {
-        assertTrue(matcher.isStrongMatch(0.70f))
+        assertTrue(matcher.isStrongMatch(0.78f))
         assertTrue(matcher.isStrongMatch(0.85f))
         assertTrue(matcher.isStrongMatch(1.0f))
     }
 
     @Test
     fun `isStrongMatch_belowThreshold_returnsFalse`() {
-        assertFalse(matcher.isStrongMatch(0.69f))
-        assertFalse(matcher.isStrongMatch(0.50f))
+        assertFalse(matcher.isStrongMatch(0.77f))
+        assertFalse(matcher.isStrongMatch(0.55f))
         assertFalse(matcher.isStrongMatch(0.0f))
     }
 }

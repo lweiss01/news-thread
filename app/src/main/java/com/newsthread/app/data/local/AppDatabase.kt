@@ -37,7 +37,7 @@ import com.newsthread.app.data.local.entity.StoryEntity
         FeedCacheEntity::class,
         StoryEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -57,6 +57,36 @@ abstract class AppDatabase : RoomDatabase() {
         private const val DATABASE_NAME = "newsthread_database"
 
         /**
+         * Migration from version 7 to 8.
+         * Phase 9.5: Support "Last Checked" timestamp for tracking.
+         * Adds lastCheckedAt column to stories.
+         */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE stories ADD COLUMN lastCheckedAt INTEGER NOT NULL DEFAULT 0")
+                // Backfill with updatedAt so it doesn't look like 1970
+                db.execSQL("UPDATE stories SET lastCheckedAt = updatedAt")
+                
+                // Fix: Clear article_embeddings table due to endianness mismatch fix.
+                // Previous versions stored embeddings as Big Endian, new version uses Little Endian.
+                // Clearing ensures no garbage data is read, forcing regeneration.
+                db.execSQL("DELETE FROM article_embeddings")
+            }
+        }
+
+        /**
+         * Migration from version 8 to 9.
+         * Maintenance: Explicitly clear article_embeddings again.
+         * This ensures users who were already on v8 (and thus skipped MIGRATION_7_8)
+         * get their corrupted Big Endian embeddings cleared.
+         */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DELETE FROM article_embeddings")
+            }
+        }
+
+        /**
          * Migration from version 6 to 7.
          * Phase 9: Story Visualization Refinements.
          * Adds isNovel and hasNewPerspective columns to cached_articles.
@@ -67,7 +97,6 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE cached_articles ADD COLUMN hasNewPerspective INTEGER NOT NULL DEFAULT 0")
             }
         }
-
         /**
          * Migration from version 1 to 2.
          * Adds cache tables for offline-first support.
@@ -216,7 +245,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .build()
 
                 INSTANCE = instance

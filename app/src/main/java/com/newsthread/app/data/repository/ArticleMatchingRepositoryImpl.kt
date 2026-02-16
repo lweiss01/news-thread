@@ -17,6 +17,7 @@ import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.similarity.MatchStrength
 import com.newsthread.app.domain.similarity.SimilarityMatcher
+import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.TimeWindowCalculator
 import com.newsthread.app.util.CacheConstants
 import kotlinx.coroutines.flow.Flow
@@ -56,7 +57,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     private val embeddingRepository: EmbeddingRepository,
     private val embeddingDao: ArticleEmbeddingDao,
     private val similarityMatcher: SimilarityMatcher,
-    private val timeWindowCalculator: TimeWindowCalculator
+    private val timeWindowCalculator: TimeWindowCalculator,
+    private val entityExtractor: EntityExtractor
 ) : ArticleMatchingRepository {
 
     override suspend fun findSimilarArticles(article: Article): Flow<Result<ArticleComparison>> = flow {
@@ -108,7 +110,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
                 // --- STAGE 2: NewsAPI Search (if needed and quota available) ---
                 if (allMatches.size < 3) {
-                    val titleEntities = extractEntities(article.title, article.source.name)
+                    val titleEntities = entityExtractor.extractEntities(article.title, article.source.name)
                     val query = titleEntities.take(3).joinToString(" ").ifEmpty { article.title.take(50) }
                     
                     safeLogD("Searching NewsAPI for more matches: $query")
@@ -253,8 +255,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                     }
                 } else {
                     // Fallback: use keyword matching for this candidate
-                    val allEntities = extractEntities(originalArticle.title, originalArticle.source.name) + extractEntities(originalArticle.description ?: "", originalArticle.source.name)
-                    val candidateEntities = extractEntities(candidate.title, candidate.source.name) + extractEntities(candidate.description ?: "", candidate.source.name)
+                    val allEntities = entityExtractor.extractEntities(originalArticle.title, originalArticle.source.name) + entityExtractor.extractEntities(originalArticle.description ?: "", originalArticle.source.name)
+                    val candidateEntities = entityExtractor.extractEntities(candidate.title, candidate.source.name) + entityExtractor.extractEntities(candidate.description ?: "", candidate.source.name)
                     val overlap = allEntities.intersect(candidateEntities.toSet()).size.toFloat() / maxOf(allEntities.size, 1).toFloat()
                     
                     if (overlap >= 0.3f) { // 30% entity overlap as fallback
@@ -281,8 +283,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         toDate: String,
         visitedUrls: MutableSet<String>
     ): List<Article> {
-        val titleEntities = extractEntities(article.title, article.source.name)
-        val descEntities = extractEntities(article.description ?: "", article.source.name)
+        val titleEntities = entityExtractor.extractEntities(article.title, article.source.name)
+        val descEntities = entityExtractor.extractEntities(article.description ?: "", article.source.name)
         val allEntities = (titleEntities + descEntities).distinct()
 
         val allMatches = mutableListOf<Article>()
@@ -303,9 +305,9 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
         // Stage 3: Fallback
         if (allMatches.size < 3) {
-            val titleTokens = tokenize(article.title).filter { it !in getStopWords() }
-            if (titleTokens.isNotEmpty()) {
-                val query3 = titleTokens.take(4).joinToString(" ")
+            val titleKeywords = entityExtractor.extractEntities(article.title, article.source.name)
+            if (titleKeywords.isNotEmpty()) {
+                val query3 = titleKeywords.take(4).joinToString(" ")
                 val matches3 = searchAndMatchKeywords(query3, article, allEntities, fromDate, toDate, visitedUrls)
                 allMatches.addAll(matches3)
             }
@@ -422,7 +424,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 .distinctBy { it.url }
 
             val matched = candidates.filter { candidate ->
-                val candidateEntities = (extractEntities(candidate.title, candidate.source.name) + extractEntities(candidate.description ?: "", candidate.source.name)).distinct()
+                val candidateEntities = (entityExtractor.extractEntities(candidate.title, candidate.source.name) + entityExtractor.extractEntities(candidate.description ?: "", candidate.source.name)).distinct()
 
                 val sharedEntities = allEntities.intersect(candidateEntities.toSet())
                 val entityOverlap = if (allEntities.isNotEmpty()) {
@@ -445,68 +447,6 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             safeLogE("Search failed for query: $query", e)
             return emptyList()
-        }
-    }
-
-    private fun getStopWords(): Set<String> = setOf(
-        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-        "of", "with", "by", "from", "as", "is", "was", "are", "were", "be",
-        "been", "being", "have", "has", "had", "do", "does", "did", "will",
-        "would", "could", "should", "may", "might", "must", "can", "about",
-        "says", "said", "after", "over", "what", "know", "this", "that",
-        "news", "report", "breaking", "live", "least", "officials", "including",
-        "mum", "video", "photos", "watch", "today", "updates",
-        "scoop", "exclusive", "analysis", "opinion", "review", "fact check", "live", "timeline"
-    )
-
-    internal fun extractEntities(text: String, excludedText: String? = null): List<String> {
-        val entities = mutableListOf<String>()
-        val cleanText = text.replace(Regex("[-_]"), " ")
-        val words = cleanText.split(Regex("\\s+"))
-        val stopWords = getStopWords()
-        
-        // Split excluded text into tokens to filter out
-        val excludedTokens = excludedText?.lowercase()?.split(Regex("\\s+"))?.toSet() ?: emptySet()
-
-        var currentEntity = mutableListOf<String>()
-
-        words.forEach { word ->
-            val cleanWord = word.replace(Regex("[^a-zA-Z0-9&.]"), "")
-
-            if (cleanWord.isNotEmpty() &&
-                cleanWord[0].isUpperCase() &&
-                cleanWord.lowercase() !in stopWords &&
-                cleanWord.length >= 2) {
-                currentEntity.add(cleanWord)
-            } else {
-                if (currentEntity.isNotEmpty()) {
-                    entities.add(currentEntity.joinToString(" "))
-                    currentEntity.clear()
-                }
-            }
-        }
-        if (currentEntity.isNotEmpty()) {
-            entities.add(currentEntity.joinToString(" "))
-        }
-
-        val importantWords = cleanText
-            .lowercase()
-            .replace(Regex("[^a-z0-9&.\\s]"), "")
-            .split("\\s+".toRegex())
-            .filter { it.length > 3 && it !in stopWords }
-
-        entities.addAll(importantWords)
-        
-        return entities.distinct().filter { entity ->
-            // Filter out if entity is part of excluded text (e.g. Source Name)
-            val lowerEntity = entity.lowercase()
-            // Strict check: if the entity IS the excluded text or contained within it if it's short
-            if (excludedTokens.contains(lowerEntity)) return@filter false
-            if (excludedText != null && lowerEntity.contains(excludedText.lowercase())) return@filter false
-             // Also check if excluded text contains the entity (e.g. "Slashdot" contains "Slashdot")
-            if (excludedText != null && excludedText.lowercase().contains(lowerEntity)) return@filter false
-            
-            true
         }
     }
 
