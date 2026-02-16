@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -92,7 +93,8 @@ fun TrackingScreen(
                             sourceRatings = sourceRatings,
                             onUnfollow = { viewModel.unfollowStory(it) },
                             onArticleClick = onArticleClick,
-                            onMarkViewed = { viewModel.markStoryViewed(it) }
+                            onMarkViewed = { viewModel.markStoryViewed(it) },
+                            onRejectMatch = { url -> viewModel.rejectMatch(url, storyWithArticles.story.id) }
                         )
                     }
                 }
@@ -135,7 +137,8 @@ fun EnhancedStoryCard(
     sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>,
     onUnfollow: (String) -> Unit,
     onArticleClick: (String) -> Unit,
-    onMarkViewed: (String) -> Unit
+    onMarkViewed: (String) -> Unit,
+    onRejectMatch: (String) -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     val unreadCount = storyWithArticles.unreadCount
@@ -192,7 +195,7 @@ fun EnhancedStoryCard(
                     
                     // Explicit Last Updated (Phase 9.5 Fix)
                     Text(
-                        text = "Checked: ${getRelativeTime(storyWithArticles.story.updatedAt)}",
+                        text = "Checked: ${getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp)
@@ -262,7 +265,8 @@ fun EnhancedStoryCard(
                             ArticleTimelineItem(
                                 article = article,
                                 isNew = article.fetchedAt > storyWithArticles.story.lastViewedAt,
-                                onClick = { onArticleClick(article.url) }
+                                onClick = { onArticleClick(article.url) },
+                                onReject = { onRejectMatch(article.url) }
                             )
                         }
                     }
@@ -276,7 +280,8 @@ fun EnhancedStoryCard(
 fun ArticleTimelineItem(
     article: CachedArticleEntity,
     isNew: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onReject: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -318,6 +323,21 @@ fun ArticleTimelineItem(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isNew) FontWeight.SemiBold else FontWeight.Normal
             )
+        }
+
+        // Debug: Reject match button
+        if (onReject != null) {
+            IconButton(
+                onClick = onReject,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Not a match",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }

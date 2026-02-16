@@ -108,4 +108,11 @@ class TrackingViewModel @Inject constructor(
             trackingRepository.markStoryViewed(storyId)
         }
     }
+
+    // Debug: Reject a matched article (removes from story, logs to Logcat)
+    fun rejectMatch(articleUrl: String, storyId: String) {
+        viewModelScope.launch {
+            trackingRepository.removeArticleFromStory(articleUrl, storyId)
+        }
+    }
 }
