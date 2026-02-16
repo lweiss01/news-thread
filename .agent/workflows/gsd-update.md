@@ -184,6 +184,15 @@ rm -f ./.gemini/cache/gsd-update-check.json
 ```
 </step>
 
+
+<step name="migrate_workflows">
+Run the migration script to convert the new TOML/MD workflows to the agent format.
+
+```bash
+node .agent/scripts/migrate-gsd.js
+```
+</step>
+
 <step name="display_result">
 Format completion message (changelog was already shown in confirmation step):
 

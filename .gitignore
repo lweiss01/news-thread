@@ -100,13 +100,3 @@ screenshots/
 test_output.txt
 test_output.txt
 
-# GSD files
-.agent/
-
-# Beads files
-.beads/
-
-# Gemini files
-.gemini/
-
-
