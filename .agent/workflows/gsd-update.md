@@ -184,14 +184,6 @@ rm -f ./.gemini/cache/gsd-update-check.json
 ```
 </step>
 
-<step name="migrate_workflows">
-Run the migration script to convert the new TOML workflows to Markdown, ensuring the updated commands are available to the agent.
-
-```bash
-node .agent/scripts/migrate-gsd.js
-```
-</step>
-
 <step name="display_result">
 Format completion message (changelog was already shown in confirmation step):
 

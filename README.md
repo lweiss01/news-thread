@@ -271,7 +271,7 @@ NewsThread was built using a hybrid AI-augmented workflow, moving from foundatio
 * **[Android Studio](https://developer.android.com/studio)**: The primary forge for development.
 * **[Antigravity](https://antigravity.google/)**: The agentic partner for complex phases (Orchestration, on-device NLP, and 16KB system fixes).
 * **[Claude Code](https://claude.ai/code)**: The foundational spark used for initial prototyping and Phase 1-2 UI/Repository boilerplate.
-* **[GSD (Getting Shit Done)](https://github.com/glittercowboy/get-shit-done)**: The workflow framework providing structured research, planning, and execution cycles.
+* **[GSD (Getting Shit Done)](https://github.com/gsd-build/get-shit-done)**: The workflow framework providing structured research, planning, and execution cycles.
 * **[Beads](https://github.com/steveyegge/beads)**: Local system management and daemon integration.
  
 ### Matching Pipeline
