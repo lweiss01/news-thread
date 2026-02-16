@@ -30,6 +30,9 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Story grouping logic (auto-match, novelty detection)
 - ✓ Thread visualization (timeline, badges, unread state)
 - ✓ Story grouping logic (auto-match, novelty detection) — Phase 9
+- ✓ Hybrid story matching (embedding + entity overlap) — Phase 9.5
+- ✓ Feed quality and stability fixes — Phase 9.5
+- ✓ Debug tooling for threshold tuning — Phase 9.5
 
 ### Active
 
@@ -80,11 +83,11 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-1k5 | API Quota Investigation | Closed | Resolved by aggressive caching implementation |
 | newsthread-1k6 | 16 KB Page Size Alignment | Closed | Resolved by TF Lite 2.17.0 upgrade and XNNPACK optimization |
 | newsthread-cjl | Allow untracking from Story Page | Open | Add UI action to clear bookmark in detail view |
-| newsthread-ops | Compare Perspectives shows unrelated stories | Open | Investigate matching threshold/logic |
-| newsthread-a83 | Compare Perspectives misses related stories | Open | Tune recall/search strategy |
+| newsthread-ops | Compare Perspectives shows unrelated stories | Closed | Fixed by hybrid matching (embedding + entity overlap) |
+| newsthread-a83 | Compare Perspectives misses related stories | Closed | Fixed by tuned thresholds and entity extraction |
 | newsthread-4ql | Add track hint tooltip | Open | UX improvement for discovery |
 | newsthread-6pr | Reduce unused space above titles | Closed | Fixed in MainActivity (NavHost padding) |
 
 ---
-*Last updated: 2026-02-08*
+*Last updated: 2026-02-16*
 

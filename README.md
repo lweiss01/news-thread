@@ -33,7 +33,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 0.5.1 (Alpha)
+**Version**: 0.6.0 (Alpha)
 **Status**: Active Development
 
 ### Completed
@@ -51,6 +51,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Background processing and sync settings (Phase 6)
 - [x] Bias spectrum visualization (Phase 7)
 - [x] Story tracking foundation and UI (Phase 8)
+- [x] Story grouping and auto-matching (Phase 9)
+- [x] Hybrid matching, feed quality, and stability fixes (Phase 9.5)
 
 <details>
 <summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
@@ -162,6 +164,18 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
     - Clickable "Original Article" source
 </details>
 
+<details>
+<summary><b>Phase 9.5: Quality & Stability (Completed 2026-02-16) ✅ Verified</b></summary>
+
+- [x] **Hybrid Story Matching**: Combined embedding similarity + title entity overlap for high-precision matching
+- [x] **Tuned Thresholds**: STRONG (0.78), WEAK (0.55 + entities), CLEANUP_FLOOR (0.35)
+- [x] **Data Integrity Fix**: `OnConflictStrategy.REPLACE` → `IGNORE` prevents feed refresh from wiping story associations
+- [x] **Feed Clustering**: Adjusted thresholds and stop words to reduce false positives
+- [x] **Source Badges**: Fixed robust lookup in Comparison and Feed screens
+- [x] **Debug Rejection Toggle**: ❌ button on tracked story updates logs `MATCH_REJECTION` for threshold tuning
+- [x] **Entity Extraction**: Shared `EntityExtractor` utility for title entity overlap detection
+</details>
+
 ### In Development — Notifications (Phase 10)
 
 The matching engine and story tracking are complete. We are now planning the Notifications system:
@@ -177,9 +191,10 @@ The matching engine and story tracking are complete. We are now planning the Not
 | 7 | UI Implementation | ✅ **Complete** | Bias spectrum visualization |
 | 8 | Tracking Foundation | ✅ **Complete** | Database & UI for followed stories |
 | 9 | Story Grouping Logic | ✅ **Complete** | Auto-grouping new articles to threads |
+| 9.5 | Quality & Stability | ✅ **Complete** | Hybrid matching, feed quality, debug tooling |
 | 10 | Notifications | 📋 **Next** | Background alerts for thread updates |
 
-**Progress:** Phase 1-9 complete — 90% of current roadmap complete. Moving to **Notifications** (Phase 10).
+**Progress:** Phase 1-9.5 complete — ~90% of current roadmap complete. Moving to **Notifications** (Phase 10).
 
 **30 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
@@ -259,13 +274,13 @@ NewsThread was built using a hybrid AI-augmented workflow, moving from foundatio
 * **[GSD (Getting Shit Done)](https://github.com/glittercowboy/get-shit-done)**: The workflow framework providing structured research, planning, and execution cycles.
 * **[Beads](https://github.com/steveyegge/beads)**: Local system management and daemon integration.
  
-### Matching Pipeline (In Development)
+### Matching Pipeline
 
 ```
 Article Feed
   → Text Extraction (fetch URL + parse with Readability4J)
   → Embedding Generation (TF Lite sentence embeddings)
-  → Similarity Matching (cosine similarity, configurable threshold)
+  → Hybrid Matching (cosine similarity + entity overlap)
   → Bias Clustering (join with source ratings)
   → Bias Spectrum UI (continuous left-to-right visualization)
 ```

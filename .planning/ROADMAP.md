@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: UI Implementation** - Bias spectrum visualization
 - [x] **Phase 8: Tracking Foundation** - Database & UI for followed stories
 - [x] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
-- [ ] **Phase 9.5: Quality & Stability** - Fix matching key bugs and feed quality issues
+- [x] **Phase 9.5: Quality & Stability** - Fix matching key bugs and feed quality issues
 - [ ] **Phase 10: Notifications & Updates** - Background alerts for thread updates
 
 ## Phase Details
@@ -59,11 +59,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 9.5: Quality & Stability
 **Goal**: Resolve critical quality issues (matching, feed spam, untracked updates) before pushing notifications
 
-**Status**: Planned
+**Status**: Complete (2026-02-16)
 
-**Plans**:
-- [ ] 09.5-01: Matching Logic & Updates Fix (Fix critical bugs newsthread-a83, newsthread-ops, no updates issue)
-- [ ] 09.5-02: Feed Quality & UI Cleanup (Filter spam, fix badges, trusted sources logic)
+**Delivered**:
+- [x] 09.5-01: Matching Logic & Updates Fix
+- [x] 09.5-02: Feed Quality & UI Cleanup
+- [x] 09.5-03: Debug Instrumentation & Tracking Fixes
+- [x] 09.5-04: Hybrid Matching, Data Integrity & Debug Rejection Toggle
 
 ### Phase 10: Notifications & Updates
 **Goal**: Notify users of significant developments in tracked stories
@@ -90,5 +92,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. UI Implementation | 2/2 | Complete | 2026-02-07 |
 | 8. Tracking Foundation | 2/2 | Complete | 2026-02-08 |
 | 9. Story Grouping Logic | 2/2 | Complete | 2026-02-08 |
-| 9.5. Quality & Stability | 0/2 | Planned | - |
+| 9.5. Quality & Stability | 4/4 | Complete | 2026-02-16 |
 | 10. Notifications | 0/2 | Planned | - |

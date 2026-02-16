@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 8 - Tracking Foundation
+**Current focus:** Phase 10 - Notifications & Updates
 
 ## Current Position
 
 Phase: 9.5 of 10.5 (Quality & Stability)
-Plan: 09.5-01 Executed, Verification Pending
-Status: Blocked (NewsAPI Rate Limit)
-Last activity: 2026-02-09 — Phase 9 complete, synced state to Phase 10
+Plan: 09.5-01 through 09.5-04 complete, Verification validated
+Status: ✅ Phase 9.5 Complete — Ready for Phase 10
+Last activity: 2026-02-16 — Phase 9.5 validated, all docs updated
 
-Progress: [█████████░] ~85% (9/10.5 phases complete)
+Progress: [██████████░] ~90% (9.5/10.5 phases complete)
 
 ## Performance Metrics
 
@@ -132,4 +132,25 @@ Resume with: `/gsd:discuss-phase 6` to gather context for background processing
 - Fixed NavHost missing routes for Settings/Tracking tabs
 - Added debug "Clear Rate Limit" button in Settings
 - Added detailed API request logging (RateLimitInterceptor)
+- Added detailed API request logging (RateLimitInterceptor)
 - Created beads issue newsthread-1k5 for API quota investigation
+
+### Session Notes (2026-02-14)
+- **Phase 9.5 Recovery**:
+    - Analyzed handoff context: Phase 9.5-05 features were implemented but buggy.
+    - Created **Recovery Plan 09.5-04** to consolidate verification and fixes.
+    - **Fixed**: Feed Clustering bug (NewsRepository) - adjusted thresholds and stop words to prevent false positives.
+    - **Verified**: Source Badges (ArticleCard) and Untrack (FeedViewModel/TrackingScreen) functionality.
+    - **Fixed**: Comparison Screen robust source rating lookup.
+    - All plans (01-04) executed. Ready for manual verification.
+
+### Session Notes (2026-02-16)
+- **Phase 9.5 Validated & Complete**:
+    - **Fixed**: Hybrid matching — weak matches now persisted (were logged but never saved)
+    - **Fixed**: Self-cleaning threshold — introduced `CLEANUP_FLOOR = 0.35` (was using aggressive `WEAK_THRESHOLD = 0.55`)
+    - **Fixed**: `OnConflictStrategy.REPLACE` → `IGNORE` in `CachedArticleDao` — feed refreshes were wiping `storyId` on tracked articles
+    - **Added**: Debug rejection toggle (❌ button on tracked story updates, logs `MATCH_REJECTION`)
+    - **Added**: `EntityExtractor` utility class for hybrid matching entity overlap
+    - **Added**: `CLEANUP_FLOOR` constant in `SimilarityMatcher`
+    - Matching confirmed working correctly on Pixel 9a — true positives retained, false positives filtered
+    - Updated all project docs (ROADMAP, STATE, PROJECT, README) and pushed to GitHub
