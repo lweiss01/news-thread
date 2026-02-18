@@ -173,6 +173,8 @@ fun EnhancedStoryCard(
     // Phase 10: Ensure story is marked viewed when card is collapsed
     // Removed DisposableEffect as it was causing premature 'viewed' status on initial composition
 
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
