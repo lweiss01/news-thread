@@ -22,7 +22,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Tracking Foundation** - Database & UI for followed stories
 - [x] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
 - [x] **Phase 9.5: Quality & Stability** - Fix matching key bugs and feed quality issues
-- [ ] **Phase 10: Notifications & Updates** - Background alerts for thread updates
+- [x] **Phase 10: Notifications & Updates** - Background alerts for thread updates
+- [ ] **Phase 11: Architecture Refactor** - Repo-wide cleanup (Domain logic, ViewModels, DI)
 
 ## Phase Details
 
@@ -70,16 +71,29 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 10: Notifications & Updates
 **Goal**: Notify users of significant developments in tracked stories
 
+**Status**: Complete (2026-02-18)
+
+**Delivered**:
+- [x] 10-01: Database Migration (Schema v10)
+- [x] 10-02: Notification Infrastructure (Channels, Permissions)
+- [x] 10-03: Story Detail Screen & Deep Linking
+- [x] 10-04: Worker Logic (Update detection & grouping)
+- [x] 10-05: UI Indicators (Badges & Unread State)
+- [x] 10-06: Many-to-Many Data Model & Article Highlighting
+
+### Phase 11: Architecture Refactor
+**Goal**: Address repo-wide audit findings (Domain logic, ViewModel cleanup, DI) to improve maintainability.
+
 **Status**: Planned
 
 **Plans**:
-- [ ] 10-01: Update Worker (Background check for thread updates)
-- [ ] 10-02: Notifications (System notifications and deep links)
+- [ ] 11-01: Domain Logic Extraction (NewsRepository -> UseCases)
+- [ ] 11-02: ViewModel Standardization & DI Cleanup
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -93,4 +107,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Tracking Foundation | 2/2 | Complete | 2026-02-08 |
 | 9. Story Grouping Logic | 2/2 | Complete | 2026-02-08 |
 | 9.5. Quality & Stability | 4/4 | Complete | 2026-02-16 |
-| 10. Notifications | 0/2 | Planned | - |
+| 10. Notifications & Updates | 6/6 | Complete | 2026-02-18 |
+| 11. Architecture Refactor | 0/2 | Planned | - |

@@ -36,5 +36,8 @@ data class CachedArticleEntity(
 
     // Phase 9: Story Grouping & Visualization
     val isNovel: Boolean = false,          // True if article contains new information (low similarity to cluster centroid)
-    val hasNewPerspective: Boolean = false // True if article is from a bias category not previously represented
+    val hasNewPerspective: Boolean = false, // True if article is from a bias category not previously represented
+    
+    // Phase 10: Overlapping Stories (Newness tracking)
+    val matchedAt: Long? = null            // Timestamp when article was linked to the story (for UI highlighting)
 )

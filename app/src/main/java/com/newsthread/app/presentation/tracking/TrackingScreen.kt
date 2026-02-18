@@ -35,6 +35,15 @@ import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import java.text.SimpleDateFormat
 import java.util.*
+import android.Manifest // Moved from below
+import android.os.Build // Moved from below
+import android.content.pm.PackageManager // Moved from below
+import androidx.activity.compose.rememberLauncherForActivityResult // Moved from below
+import androidx.activity.result.contract.ActivityResultContracts // Moved from below
+import androidx.compose.ui.platform.LocalContext // Moved from below
+import androidx.core.content.ContextCompat // Moved from below
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect // Moved from below
 
 // Phase 7 bias spectrum colors (consistent with rest of app)
 private val biasColors = mapOf(
@@ -55,6 +64,25 @@ fun TrackingScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val lastRefreshed by viewModel.lastRefreshed.collectAsState()
     val sourceRatings by viewModel.sourceRatings.collectAsState()
+    
+    // Phase 10: Notification Permission Request
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                // Permission granted
+            }
+        }
+    )
+    
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -94,6 +122,7 @@ fun TrackingScreen(
                             onUnfollow = { viewModel.unfollowStory(it) },
                             onArticleClick = onArticleClick,
                             onMarkViewed = { viewModel.markStoryViewed(it) },
+                            onMarkBadgeSeen = { viewModel.markBadgeSeen(it) }, // NEW
                             onRejectMatch = { url -> viewModel.rejectMatch(url, storyWithArticles.story.id) }
                         )
                     }
@@ -138,207 +167,46 @@ fun EnhancedStoryCard(
     onUnfollow: (String) -> Unit,
     onArticleClick: (String) -> Unit,
     onMarkViewed: (String) -> Unit,
+    onMarkBadgeSeen: (String) -> Unit,
     onRejectMatch: (String) -> Unit = {}
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val unreadCount = storyWithArticles.unreadCount
-    
-    // Phase 9: Separate original article from updates
-    val sortedArticles = remember(storyWithArticles.articles) {
-        storyWithArticles.articles.sortedBy { it.fetchedAt }
-    }
-    val originalArticle = sortedArticles.firstOrNull()
-    val updates = sortedArticles.drop(1).sortedByDescending { it.fetchedAt }
+    // Phase 10: Ensure story is marked viewed when card is collapsed
+    // Removed DisposableEffect as it was causing premature 'viewed' status on initial composition
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
                 expanded = !expanded
-                if (expanded) onMarkViewed(storyWithArticles.story.id)
+                if (expanded) {
+                    onMarkBadgeSeen(storyWithArticles.story.id)
+                } else {
+                    // Mark as viewed when collapsing
+                     onMarkViewed(storyWithArticles.story.id)
+                }
             }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = storyWithArticles.story.title,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    
-                    // Original Source
-                    originalArticle?.let { article ->
-                        Text(
-                            text = "Original: ${article.sourceName}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .padding(top = 4.dp)
-                                .clickable { onArticleClick(article.url) }
-                        )
-                        
-                        // Phase 9.5-05: Source Badge
-                        val rating = sourceRatings[article.sourceId ?: ""] ?: sourceRatings[article.sourceName]
-                        if (rating != null) {
-                            com.newsthread.app.presentation.comparison.ReliabilityBadge(
-                                rating = rating,
-                                modifier = Modifier.padding(start = 8.dp),
-                                size = 16.dp
-                            )
-                        }
-                    }
-                    
-                    // Explicit Last Updated (Phase 9.5 Fix)
-                    Text(
-                        text = "Checked: ${getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-
-                    // Unread badge
-                    if (unreadCount > 0) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.NewReleases,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "$unreadCount new update${if (unreadCount > 1) "s" else ""}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    } else if (updates.isNotEmpty()) {
-                         Text(
-                            text = "${updates.size} update${if (updates.size != 1) "s" else ""}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+        com.newsthread.app.presentation.component.StoryContent(
+            storyWithArticles = storyWithArticles,
+            sourceRatings = sourceRatings,
+            isExpanded = expanded,
+            onExpandChange = {
+                expanded = it
+                if (expanded) {
+                    onMarkBadgeSeen(storyWithArticles.story.id)
+                } else {
+                    onMarkViewed(storyWithArticles.story.id)
                 }
-                
-                Row {
-                    IconButton(onClick = { expanded = !expanded }) {
-                        Icon(
-                            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (expanded) "Collapse" else "Expand"
-                        )
-                    }
-                    IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
-                        Icon(
-                            imageVector = Icons.Default.Bookmark,
-                            contentDescription = "Unfollow (Tracked)",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            // Expandable timeline
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 12.dp)) {
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    if (updates.isEmpty()) {
-                        Text(
-                            text = "No updates yet. Check back later.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        updates.forEach { article ->
-                            ArticleTimelineItem(
-                                article = article,
-                                isNew = article.fetchedAt > storyWithArticles.story.lastViewedAt,
-                                onClick = { onArticleClick(article.url) },
-                                onReject = { onRejectMatch(article.url) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ArticleTimelineItem(
-    article: CachedArticleEntity,
-    isNew: Boolean,
-    onClick: () -> Unit,
-    onReject: (() -> Unit)? = null
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        // Source indicator dot
-        Box(
-            modifier = Modifier
-                .padding(top = 4.dp, end = 12.dp)
-                .size(8.dp)
-                .background(
-                    color = if (isNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                    shape = CircleShape
-                )
+            },
+            onUnfollow = onUnfollow,
+            onArticleClick = { url ->
+                // Mark viewed explicitly on click as we are navigating away (and DisposableEffect handles dispose)
+                // But duplicate call is harmless.
+                onArticleClick(url)
+            },
+            onMarkViewed = onMarkViewed,
+            onRejectMatch = onRejectMatch
         )
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = article.sourceName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = getRelativeTime(article.fetchedAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-            Text(
-                text = article.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isNew) FontWeight.SemiBold else FontWeight.Normal
-            )
-        }
-
-        // Debug: Reject match button
-        if (onReject != null) {
-            IconButton(
-                onClick = onReject,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Not a match",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
     }
 }
 

@@ -33,7 +33,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 0.6.0 (Alpha)
+**Version**: 0.7.0 (Beta)
 **Status**: Active Development
 
 ### Completed
@@ -53,6 +53,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Story tracking foundation and UI (Phase 8)
 - [x] Story grouping and auto-matching (Phase 9)
 - [x] Hybrid matching, feed quality, and stability fixes (Phase 9.5)
+- [x] **Notifications, Deep Linking, and Update Highlighting (Phase 10)**
 
 <details>
 <summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
@@ -176,9 +177,19 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] **Entity Extraction**: Shared `EntityExtractor` utility for title entity overlap detection
 </details>
 
-### In Development — Notifications (Phase 10)
+<details>
+<summary><b>Phase 10: Notifications & Updates (Completed 2026-02-18) ✅ Verified</b></summary>
 
-The matching engine and story tracking are complete. We are now planning the Notifications system:
+- [x] **System Notifications**: Background alerts for novel story updates
+- [x] **Deep Linking**: Tapping notification opens the specific story thread
+- [x] **UI Indicators**: "New Major Update" badge distinct from regular unread counts
+- [x] **Article Highlighting**: Visual "NEW" pill and background highlight for specific new articles
+- [x] **Many-to-Many Tracking**: Support for one article belonging to multiple tracked stories (`StoryArticleCrossRef`)
+</details>
+
+### In Development — Architecture Refactor (Phase 11)
+
+We are now preparing for a repository-wide architecture refactor to improve maintainability and testability.
 
 | Phase | Name | Status | What It Does |
 |-------|------|--------|-------------|
@@ -192,11 +203,12 @@ The matching engine and story tracking are complete. We are now planning the Not
 | 8 | Tracking Foundation | ✅ **Complete** | Database & UI for followed stories |
 | 9 | Story Grouping Logic | ✅ **Complete** | Auto-grouping new articles to threads |
 | 9.5 | Quality & Stability | ✅ **Complete** | Hybrid matching, feed quality, debug tooling |
-| 10 | Notifications | 📋 **Next** | Background alerts for thread updates |
+| 10 | Notifications | ✅ **Complete** | Background alerts for thread updates |
+| 11 | Architecture Refactor | 📋 **Next** | Domain logic cleanup & DI improvements |
 
-**Progress:** Phase 1-9.5 complete — ~90% of current roadmap complete. Moving to **Notifications** (Phase 10).
+**Progress:** Phase 1-10 complete. **Versions 0.7.0**.
 
-**30 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
+**32 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 
 ### Planned (Future Milestones)
 

@@ -129,30 +129,28 @@ interface CachedArticleDao {
     @Query("""
         SELECT ca.* FROM cached_articles ca
         INNER JOIN article_embeddings ae ON ca.url = ae.articleUrl
-        WHERE ca.storyId IS NULL
-        AND ca.fetchedAt > :since
+        WHERE ca.fetchedAt > :since
         AND ae.embeddingStatus = 'SUCCESS'
         ORDER BY ca.fetchedAt DESC
     """)
     suspend fun getRecentUnassignedArticlesWithEmbeddings(since: Long): List<CachedArticleEntity>
 
     /**
-     * Get recent articles that are not yet assigned to a story.
-     * Used for finding candidates that might need embedding generation.
+     * Get recent articles for matching against stories.
+     * Includes articles that might already be assigned to other stories (Many-to-Many).
      */
     @Query("""
         SELECT * FROM cached_articles
-        WHERE storyId IS NULL
-        AND fetchedAt > :since
+        WHERE fetchedAt > :since
         ORDER BY fetchedAt DESC
     """)
-    suspend fun getRecentUnassignedArticles(since: Long): List<CachedArticleEntity>
+    suspend fun getRecentCandidateArticles(since: Long): List<CachedArticleEntity>
 
     /**
      * Assign article to a story (updates storyId, isTracked, isNovel, and hasNewPerspective).
      */
-    @Query("UPDATE cached_articles SET storyId = :storyId, isTracked = 1, isNovel = :isNovel, hasNewPerspective = :hasNewPerspective WHERE url = :articleUrl")
-    suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean)
+    @Query("UPDATE cached_articles SET storyId = :storyId, isTracked = 1, isNovel = :isNovel, hasNewPerspective = :hasNewPerspective, matchedAt = :matchedAt WHERE url = :articleUrl")
+    suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean, matchedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT storyId FROM cached_articles WHERE url = :articleUrl")
     suspend fun getStoryIdForArticle(articleUrl: String): String?

@@ -9,12 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 9.5 of 10.5 (Quality & Stability)
-Plan: 09.5-01 through 09.5-04 complete, Verification validated
-Status: ✅ Phase 9.5 Complete — Ready for Phase 10
-Last activity: 2026-02-16 — Phase 9.5 validated, all docs updated
-
-Progress: [██████████░] ~90% (9.5/10.5 phases complete)
+Phase: 11 of 11 (Architecture Refactor)
+Plan: —
+Status: Milestone v1.1 / Phase 11 Planning — Phase 10 Complete
+Last activity: 2026-02-18 — Phase 10 verified and docs updated
+Progress: [███████████] 100% (10/11 phases complete) - Note: Phase 11 is a refactor, not a feature phase.
 
 ## Performance Metrics
 
@@ -84,10 +83,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Verify build compiles with `gradlew assembleDebug` (JAVA_HOME not available in execution environment)
-- Test Room migration v1->v2 on device with existing data
-- Test Room migration v2->v3 on device with existing data
-- Test plans must include validation methods and steps (2026-02-04)
+- Address Android Code Review Findings (architecture refactor) [2026-02-17]
 
 ### Blockers/Concerns
 
@@ -108,9 +104,18 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Phase 5 verified complete, ready to plan Phase 6
-Resume with: `/gsd:discuss-phase 6` to gather context for background processing
+Last session: 2026-02-17
+Stopped at: Phase 10 verification pending (All Bold fix)
+Resume with: Plan Phase 11 (Architecture Refactor)
+
+### Session Notes (2026-02-18)
+- **Phase 10 Validated & Complete**:
+    - **Fixed**: UI Highlighting for new articles (resolved `matchedAt` and `lastViewedAt` race condition).
+    - **Fixed**: "Mark as Read" behavior improved (only on collapse/dismiss, not expand).
+    - **Refactored**: `StoryArticleCrossRef` introduced for Many-to-Many support between stories and articles.
+    - **Implementation**: `NotificationHelper` and `StoryUpdateWorker` integration verified.
+    - **Verified**: Deep links, system notifications, and in-app badges all working as expected.
+    - **Docs**: Updated README, ROADMAP, PROJECT, and STATE to reflect v0.7.0 / Phase 10 completion.
 
 ### Session Notes (2026-02-06)
 - Implemented `GetSimilarArticlesUseCase` for end-to-end matching orchestration

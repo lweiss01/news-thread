@@ -136,6 +136,7 @@ fun NewsThreadApp() {
 
             // NEW: Add comparison route
             composable(ComparisonRoute.route) {
+                // ... existing comparison route code ...
                 val article = navController.previousBackStackEntry
                     ?.savedStateHandle
                     ?.get<Article>("selected_article")
@@ -144,6 +145,27 @@ fun NewsThreadApp() {
                     ComparisonScreen(
                         article = article,
                         navController = navController
+                    )
+                }
+            }
+
+            composable(
+                route = "story/{storyId}",
+                deepLinks = listOf(
+                    androidx.navigation.navDeepLink { uriPattern = "newsthread://story/{storyId}" }
+                )
+            ) { backStackEntry ->
+                val storyId = backStackEntry.arguments?.getString("storyId")
+                if (storyId != null) {
+                    com.newsthread.app.presentation.story.StoryDetailScreen(
+                        storyId = storyId,
+                        onBackClick = { navController.popBackStack() },
+                        onArticleClick = { url ->
+                            val encodedUrl = URLEncoder.encode(url, "UTF-8")
+                            navController.navigate(
+                                ArticleDetailRoute.createRoute(encodedUrl)
+                            )
+                        }
                     )
                 }
             }

@@ -8,7 +8,16 @@ NewsThread is a native Android news reader that shows how different media source
 
 When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
 
-## Requirements
+## Current Milestone: v1.1 Architecture Refactor
+
+**Goal:** Address critical architectural issues identified in the repo-wide audit to improve testability and maintainability.
+
+**Target features:**
+- Domain Logic Extraction (NewsRepository -> UseCases)
+- ViewModel Standardization (Remove Repository dependencies)
+- Dependency Injection Cleanup (MainActivity)
+
+### Requirements
 
 ### Validated
 
@@ -33,10 +42,19 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Hybrid story matching (embedding + entity overlap) — Phase 9.5
 - ✓ Feed quality and stability fixes — Phase 9.5
 - ✓ Debug tooling for threshold tuning — Phase 9.5
+- ✓ Real-time push notifications for story updates — Phase 10
+- ✓ Deep linking to story details — Phase 10
+- ✓ Background worker for update detection — Phase 10
+- ✓ UI Highlighting for new updates ("New" badge and pill) — Phase 10
 
-### Active
+### Active (v1.1)
 
-- [ ] Real-time push notifications for story updates (Phase 10)
+- [ ] Refactor NewsRepository filtering/clustering to Domain UseCases
+- [ ] Standardize ViewModels to use UseCases only
+- [ ] Inject DatabaseSeeder via Hilt in MainActivity
+
+### Backlog (Future)
+
 - [ ] Timeline visualization — see the evolution of a story (Future)
 
 ### Out of Scope

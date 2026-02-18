@@ -7,6 +7,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.newsthread.app.domain.similarity.MatchStrength
 import com.newsthread.app.domain.usecase.UpdateTrackedStoriesUseCase
+import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.util.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -23,7 +25,9 @@ import dagger.assisted.AssistedInject
 class StoryUpdateWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val updateTrackedStoriesUseCase: UpdateTrackedStoriesUseCase
+    private val updateTrackedStoriesUseCase: UpdateTrackedStoriesUseCase,
+    private val notificationHelper: NotificationHelper,
+    private val trackingRepository: TrackingRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -43,7 +47,31 @@ class StoryUpdateWorker @AssistedInject constructor(
                 - Weak matches (for review): $weakMatches
                 - Novel content: $novelMatches
                 - New perspectives: $perspectiveMatches
+                - New perspectives: $perspectiveMatches
             """.trimIndent())
+
+            // Phase 10: Trigger Notifications for interesting updates
+            // Group by storyId to avoid duplicate notifications
+            val interestingMatches = results.filter { it.isNovel || it.hasNewPerspective }
+            val matchesByStory = interestingMatches.groupBy { it.storyId }
+
+            matchesByStory.forEach { (storyId, matches) ->
+                 val isNovel = matches.any { it.isNovel }
+                 val isPerspective = matches.any { it.hasNewPerspective }
+                 
+                 val title = if (isNovel && isPerspective) "New Updates & Perspectives" 
+                             else if (isNovel) "New Updates" 
+                             else "New Perspectives"
+                             
+                 val body = if (matches.size == 1) {
+                     "Update on tracked story: ${matches.first().articleTitle}"
+                 } else {
+                     "${matches.size} new updates on tracked story"
+                 }
+                 
+                 notificationHelper.showNotification(title, body, storyId)
+                 trackingRepository.markStoryNotified(storyId)
+            }
 
             Result.success()
         } catch (e: Exception) {

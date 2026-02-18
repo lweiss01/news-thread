@@ -32,19 +32,14 @@ class TrackingRepositoryImpl @Inject constructor(
     }
 
     override suspend fun followArticle(article: Article): Result<Unit> {
-        // 0. Check if already tracked
-        val existingStoryId = articleDao.getStoryIdForArticle(article.url)
-        if (existingStoryId != null) {
-            return Result.success(Unit) // Already tracked
-        }
-        
-        // 1. Check limit
+        // Phase 10: Allow multiple stories to track the same article (Many-to-Many).
+        // Check story limit
         val count = storyDao.getStoryCount()
         if (count >= 1000) {
             return Result.failure(Exception("Storage limit reached. Please unfollow some stories."))
         }
 
-        // 2. Create Story
+        // 1. Create Story
         val storyId = UUID.randomUUID().toString()
         val story = StoryEntity(
             id = storyId,
@@ -54,8 +49,14 @@ class TrackingRepositoryImpl @Inject constructor(
         )
         storyDao.insertStory(story)
 
-        // 3. Update Article (Soft FK)
-        articleDao.updateTrackingStatus(article.url, true, storyId)
+        // 2. Add Article using unified method (sets CrossRef, Legacy flags, AND matchedAt)
+        // We set isNovel=false for the seed article since it defines the story.
+        addArticleToStory(
+            articleUrl = article.url,
+            storyId = storyId,
+            isNovel = true, // Initial article is technically novel
+            hasNewPerspective = true
+        )
         
         // Phase 9: Trigger immediate background matching
         try {
@@ -69,22 +70,25 @@ class TrackingRepositoryImpl @Inject constructor(
     }
 
     override suspend fun unfollowStory(storyId: String) {
-        // 1. Get stories to find linked articles? 
-        // Actually we can just update articles with this storyId first.
+        // 1. Clear legacy tracking info (optional, helps cleanup)
         articleDao.clearTrackingForStory(storyId)
         
-        // 2. Delete story
+        // 2. Delete story (Cascades to CrossRef)
         storyDao.deleteStory(storyId)
     }
 
     override suspend fun isArticleTracked(url: String): Boolean {
-        // We need a method in Dao to check this efficienty
         return articleDao.isArticleTracked(url)
     }
 
     // Phase 9: Story Grouping
     override suspend fun getStoryArticleEmbeddings(storyId: String): List<FloatArray> {
-        val embeddings = embeddingDao.getEmbeddingsForStory(storyId)
+        // Get URLs from CrossRef (updated DAO method)
+        val urls = storyDao.getStoryArticleUrls(storyId)
+        if (urls.isEmpty()) return emptyList()
+
+        // Get embeddings for these URLs
+        val embeddings = embeddingDao.getByArticleUrls(urls)
         return embeddings.map { entity ->
             bytesToFloatArray(entity.embedding)
         }
@@ -96,8 +100,31 @@ class TrackingRepositoryImpl @Inject constructor(
         isNovel: Boolean, 
         hasNewPerspective: Boolean
     ) {
-        articleDao.assignArticleToStory(articleUrl, storyId, isNovel, hasNewPerspective)
+        // 1. Insert CrossRef
+        val crossRef = com.newsthread.app.data.local.entity.StoryArticleCrossRef(
+            storyId = storyId,
+            articleUrl = articleUrl,
+            isNovel = isNovel,
+            hasNewPerspective = hasNewPerspective
+        )
+        storyDao.insertStoryArticleCrossRef(crossRef)
+
+        // 2. Update Legacy Tracking Status (ensure isTracked=true) AND mirror flags for UI
+        // The UI reads these flags from CachedArticleEntity, so we must keep them in sync.
+        articleDao.assignArticleToStory(
+            articleUrl = articleUrl, 
+            storyId = storyId, 
+            isNovel = isNovel, 
+            hasNewPerspective = hasNewPerspective,
+            matchedAt = System.currentTimeMillis() // Capture match time for UI highlighting
+        )
+
+        // 3. Update Story Timestamp
         storyDao.updateStoryTimestamp(storyId, System.currentTimeMillis())
+        
+        if (isNovel || hasNewPerspective) {
+            storyDao.setHasUnseenUpdates(storyId, true)
+        }
     }
 
     override suspend fun markStoryUpdated(storyId: String) {
@@ -108,18 +135,32 @@ class TrackingRepositoryImpl @Inject constructor(
         storyDao.markStoryViewed(storyId)
     }
 
+    override suspend fun markBadgeSeen(storyId: String) {
+        storyDao.setHasUnseenUpdates(storyId, false)
+    }
+
+    override suspend fun markStoryNotified(storyId: String) {
+        storyDao.updateLastNotified(storyId, System.currentTimeMillis())
+    }
+
     override suspend fun markAllStoriesChecked(timestamp: Long) {
         storyDao.updateAllLastChecked(timestamp)
     }
 
     override suspend fun removeArticleFromStory(articleUrl: String, storyId: String) {
-        val article = articleDao.getByUrl(articleUrl)
-        android.util.Log.w("MATCH_REJECTION", "article='$articleUrl' story='$storyId' title='${article?.title}'")
-        articleDao.updateTrackingStatus(articleUrl, false, null)
+        // Remove from CrossRef
+        storyDao.removeArticleFromStory(storyId, articleUrl)
+        
+        // Log rejection
+        android.util.Log.i("TRACKING", "Removed article $articleUrl from story $storyId")
     }
 
     override suspend fun getStoryId(articleUrl: String): String? {
         return articleDao.getStoryIdForArticle(articleUrl)
+    }
+
+    override suspend fun getStoryArticleUrls(storyId: String): List<String> {
+        return storyDao.getStoryArticleUrls(storyId)
     }
 
     private fun bytesToFloatArray(bytes: ByteArray): FloatArray {

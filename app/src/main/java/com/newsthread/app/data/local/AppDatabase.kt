@@ -35,9 +35,10 @@ import com.newsthread.app.data.local.entity.StoryEntity
         ArticleEmbeddingEntity::class,
         MatchResultEntity::class,
         FeedCacheEntity::class,
-        StoryEntity::class
+        StoryEntity::class,
+        com.newsthread.app.data.local.entity.StoryArticleCrossRef::class // NEW
     ],
-    version = 9,
+    version = 12, // Bumped for Phase 10 Overlapping Stories (Part 2: UI Metadata)
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -55,6 +56,32 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         private const val DATABASE_NAME = "newsthread_database"
+
+        /**
+         * Migration from version 10 to 11.
+         * Phase 10: Overlapping Stories (Many-to-Many).
+         * Adds story_article_cross_ref table.
+         * Note: Existing data in cached_articles.storyId is NOT migrated automatically in this step.
+         * It will be ignored by new logic, effectively resetting tracking history for the view.
+         */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `story_article_cross_ref` (
+                        `storyId` TEXT NOT NULL,
+                        `articleUrl` TEXT NOT NULL,
+                        `isNovel` INTEGER NOT NULL,
+                        `hasNewPerspective` INTEGER NOT NULL,
+                        `addedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`storyId`, `articleUrl`),
+                        FOREIGN KEY(`storyId`) REFERENCES `stories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`articleUrl`) REFERENCES `cached_articles`(`url`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_story_article_cross_ref_storyId` ON `story_article_cross_ref` (`storyId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_story_article_cross_ref_articleUrl` ON `story_article_cross_ref` (`articleUrl`)")
+            }
+        }
 
         /**
          * Migration from version 7 to 8.
@@ -83,6 +110,18 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DELETE FROM article_embeddings")
+            }
+        }
+
+        /**
+         * Migration from version 9 to 10.
+         * Phase 10: Notifications & Updates.
+         * Adds lastNotifiedAt and hasUnseenUpdates columns to stories table.
+         */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE stories ADD COLUMN lastNotifiedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE stories ADD COLUMN hasUnseenUpdates INTEGER NOT NULL DEFAULT 0")
             }
         }
 
@@ -238,6 +277,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 11 to 12.
+         * Phase 11.5: Story Matching Refinements.
+         * Adds matchedAt column to cached_articles.
+         */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN matchedAt INTEGER DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -245,7 +295,19 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(
+                        MIGRATION_1_2, 
+                        MIGRATION_2_3, 
+                        MIGRATION_3_4, 
+                        MIGRATION_4_5, 
+                        MIGRATION_5_6, 
+                        MIGRATION_6_7, 
+                        MIGRATION_7_8, 
+                        MIGRATION_8_9, 
+                        MIGRATION_9_10, 
+                        MIGRATION_10_11, 
+                        MIGRATION_11_12
+                    )
                     .build()
 
                 INSTANCE = instance

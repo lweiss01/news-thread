@@ -14,12 +14,15 @@ interface TrackingRepository {
     suspend fun isArticleTracked(url: String): Boolean
     
     suspend fun getStoryId(articleUrl: String): String?
+    suspend fun getStoryArticleUrls(storyId: String): List<String>
 
     // Phase 9: Story Grouping
     suspend fun getStoryArticleEmbeddings(storyId: String): List<FloatArray>
     suspend fun addArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean)
     suspend fun markStoryUpdated(storyId: String)
     suspend fun markStoryViewed(storyId: String)
+    suspend fun markBadgeSeen(storyId: String)
+    suspend fun markStoryNotified(storyId: String)
     suspend fun markAllStoriesChecked(timestamp: Long)
     suspend fun removeArticleFromStory(articleUrl: String, storyId: String)
 }
