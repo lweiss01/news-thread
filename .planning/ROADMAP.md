@@ -81,6 +81,15 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 10-05: UI Indicators (Badges & Unread State)
 - [x] 10-06: Many-to-Many Data Model & Article Highlighting
 
+### Phase 10.1: UI Polish & Bug Fixes (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Depends on:** Phase 10
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 10.1 to break down)
+
 ### Phase 11: Architecture Refactor
 **Goal**: Address repo-wide audit findings (Domain logic, ViewModel cleanup, DI) to improve maintainability.
 

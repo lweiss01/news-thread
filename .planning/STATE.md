@@ -102,6 +102,10 @@ Recent decisions affecting current work:
 **Phase 6 (Background Processing):**
 - OEM battery optimization behavior (Samsung/Xiaomi) needs physical device testing
 
+### Roadmap Evolution
+
+- Phase 10.1 inserted after Phase 10: UI Polish & Bug Fixes (URGENT)
+
 ## Session Continuity
 
 Last session: 2026-02-17
