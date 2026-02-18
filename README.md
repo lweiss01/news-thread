@@ -204,6 +204,7 @@ We are now preparing for a repository-wide architecture refactor to improve main
 | 9 | Story Grouping Logic | ✅ **Complete** | Auto-grouping new articles to threads |
 | 9.5 | Quality & Stability | ✅ **Complete** | Hybrid matching, feed quality, debug tooling |
 | 10 | Notifications | ✅ **Complete** | Background alerts for thread updates |
+| 10.1 | UI Polish & Bug Fixes | 🚧 **Active** | Critical UI fixes (Badges, Notifications, Paywall) |
 | 11 | Architecture Refactor | 📋 **Next** | Domain logic cleanup & DI improvements |
 
 **Progress:** Phase 1-10 complete. **Versions 0.7.0**.

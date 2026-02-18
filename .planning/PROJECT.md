@@ -47,7 +47,16 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Background worker for update detection — Phase 10
 - ✓ UI Highlighting for new updates ("New" badge and pill) — Phase 10
 
-### Active (v1.1)
+### Active (Phase 10.1 & v1.1)
+
+#### Phase 10.1: UI Polish & Bug Fixes
+- [ ] Fix Missing Source Badges (Critical)
+- [ ] Suppress Redundant Notifications (Use Toasts in foreground)
+- [ ] Fix Paywall Detection failures
+- [ ] UI Polish: Untrack from Story Page
+- [ ] UI Polish: Track Hint Tooltip
+
+#### v1.1 Architecture Refactor
 
 - [ ] Refactor NewsRepository filtering/clustering to Domain UseCases
 - [ ] Standardize ViewModels to use UseCases only
