@@ -46,6 +46,7 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Background worker for update detection — Phase 10
 - ✓ UI Highlighting for new updates ("New" badge and pill) — Phase 10
 
+
 ### Active (Phase 11: UI/UX & Phase 12: Architecture)
 
 #### Phase 11: UI/UX Review and Refinement
@@ -57,7 +58,6 @@ When a user reads an article, they can instantly see how the same story is cover
 #### Phase 12: Architecture Refactor
 - [ ] Refactor NewsRepository filtering/clustering to Domain UseCases
 - [ ] Standardize ViewModels to use UseCases only
-- [ ] Inject DatabaseSeeder via Hilt in MainActivity
 
 ### Backlog (Future)
 
