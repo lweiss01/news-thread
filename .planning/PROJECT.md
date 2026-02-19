@@ -8,14 +8,13 @@ NewsThread is a native Android news reader that shows how different media source
 
 When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
 
-## Current Milestone: v1.1 Architecture Refactor
-
-**Goal:** Address critical architectural issues identified in the repo-wide audit to improve testability and maintainability.
+## Current Milestone: v1.1 UI/UX Refinement & Architecture Refactor
 
 **Target features:**
+- UI/UX Redesign (Pulse Dashboard, Heatmap, Modern Style)
 - Domain Logic Extraction (NewsRepository -> UseCases)
-- ViewModel Standardization (Remove Repository dependencies)
-- Dependency Injection Cleanup (MainActivity)
+- ViewModel Standardization
+- Dependency Injection Cleanup
 
 ### Requirements
 
@@ -47,17 +46,15 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Background worker for update detection — Phase 10
 - ✓ UI Highlighting for new updates ("New" badge and pill) — Phase 10
 
-### Active (Phase 10.1 & v1.1)
+### Active (Phase 11: UI/UX & Phase 12: Architecture)
 
-#### Phase 10.1: UI Polish & Bug Fixes
-- [ ] Fix Missing Source Badges (Critical)
-- [ ] Suppress Redundant Notifications (Use Toasts in foreground)
-- [ ] Fix Paywall Detection failures
-- [ ] UI Polish: Untrack from Story Page
-- [ ] UI Polish: Track Hint Tooltip
+#### Phase 11: UI/UX Review and Refinement
+- [ ] Visual Foundations (Colors/Shapes)
+- [ ] Tracked Stories (Pulse Dashboard)
+- [ ] Comparison Screen (Stream)
+- [ ] Final Polish
 
-#### v1.1 Architecture Refactor
-
+#### Phase 12: Architecture Refactor
 - [ ] Refactor NewsRepository filtering/clustering to Domain UseCases
 - [ ] Standardize ViewModels to use UseCases only
 - [ ] Inject DatabaseSeeder via Hilt in MainActivity
@@ -109,11 +106,11 @@ When a user reads an article, they can instantly see how the same story is cover
 |----|-------|--------|----------|
 | newsthread-1k5 | API Quota Investigation | Closed | Resolved by aggressive caching implementation |
 | newsthread-1k6 | 16 KB Page Size Alignment | Closed | Resolved by TF Lite 2.17.0 upgrade and XNNPACK optimization |
-| newsthread-cjl | Allow untracking from Story Page | Open | Add UI action to clear bookmark in detail view |
+| newsthread-cjl | Allow untracking from Story Page | Closed | Fixed by adding bookmark toggle in StoryDetailScreen |
 | newsthread-ops | Compare Perspectives shows unrelated stories | Closed | Fixed by hybrid matching (embedding + entity overlap) |
 | newsthread-a83 | Compare Perspectives misses related stories | Closed | Fixed by tuned thresholds and entity extraction |
-| newsthread-4ql | Add track hint tooltip | Open | UX improvement for discovery |
-| newsthread-6pr | Reduce unused space above titles | Closed | Fixed in MainActivity (NavHost padding) |
+| newsthread-4ql | Add track hint tooltip | Closed | Cancelled/Removed feature per user decision |
+| newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
 *Last updated: 2026-02-16*

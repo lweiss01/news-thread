@@ -77,7 +77,8 @@ class FeedViewModel @Inject constructor(
     private val sourceRatingRepository: SourceRatingRepository,
     private val quotaRepository: QuotaRepository,
     private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase,
-    private val trackingRepository: TrackingRepository
+    private val trackingRepository: TrackingRepository,
+    private val userPreferencesRepository: com.newsthread.app.data.repository.UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -109,7 +110,7 @@ class FeedViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            loadHeadlines(forceRefresh = true)
+            fetchHeadlinesInternal(forceRefresh = true)
             _isRefreshing.value = false
         }
     }
@@ -144,22 +145,27 @@ class FeedViewModel @Inject constructor(
     }
 
     // Updated to accept forceRefresh
+    // Updated to accept forceRefresh and suspend
     fun loadHeadlines(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            newsRepository.getTopHeadlines(forceRefresh = forceRefresh).collect { result ->
-                result.fold(
-                    onSuccess = { articles ->
-                        _uiState.value = FeedUiState.Success(articles)
-                        checkRateLimitState()
-                    },
-                    onFailure = { error ->
-                        _uiState.value = FeedUiState.Error(
-                            error.message ?: "Failed to load articles"
-                        )
-                        checkRateLimitState()
-                    }
-                )
-            }
+            fetchHeadlinesInternal(forceRefresh)
+        }
+    }
+
+    suspend fun fetchHeadlinesInternal(forceRefresh: Boolean) {
+        newsRepository.getTopHeadlines(forceRefresh = forceRefresh).collect { result ->
+            result.fold(
+                onSuccess = { articles ->
+                    _uiState.value = FeedUiState.Success(articles)
+                    checkRateLimitState()
+                },
+                onFailure = { error ->
+                    _uiState.value = FeedUiState.Error(
+                        error.message ?: "Failed to load articles"
+                    )
+                    checkRateLimitState()
+                }
+            )
         }
     }
 
@@ -203,6 +209,15 @@ fun FeedScreen(
     val rateLimitMinutes by viewModel.rateLimitMinutesRemaining.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(isRateLimited, rateLimitMinutes) {
+        if (isRateLimited) {
+            snackbarHostState.showSnackbar(
+                message = "Using cached data - API limit reached. Fresh data in ~$rateLimitMinutes min",
+                withDismissAction = true
+            )
+        }
+    }
 
     LaunchedEffect(isRateLimited, rateLimitMinutes) {
         if (isRateLimited) {

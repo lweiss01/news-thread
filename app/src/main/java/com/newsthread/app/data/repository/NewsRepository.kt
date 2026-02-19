@@ -60,7 +60,8 @@ class NewsRepository @Inject constructor(
         // Ensure even cached data adheres to quality/clustering rules
         var cached = cachedArticleDao.getAll().map { it.toDomain() }
         if (cached.isNotEmpty()) {
-            val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter { it.finalReliabilityScore > 2 }
+            // Relaxed Filter: Allow Mixed (2+). Exclude Low (1) and Unrated.
+            val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter { it.finalReliabilityScore > 1 }
             cached = filterArticles(cached, ratedSources)
             cached = clusterArticles(cached)
             emit(Result.success(cached))
@@ -72,10 +73,10 @@ class NewsRepository @Inject constructor(
 
         if (shouldRefresh) {
             val result = runCatching {
-                // Phase 9.5-04: Quality Filter - Exclude unrated/low-quality
-                // Only block "Low" (1) or "Unrated/Very Low" (0). "Mixed" (2) is allowed (e.g. Newsbreak).
+                // Phase 9.5-04: Quality Filter - Exclude Low (1) and Unrated (0). Allow Mixed (2)+.
+                // Strict Allowlist: Only sources we KNOW are at least Mixed reliability.
                 val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter {
-                    it.finalReliabilityScore > 2
+                    it.finalReliabilityScore > 1
                 }
                 val hasRatings = ratedSources.isNotEmpty()
 
@@ -86,7 +87,8 @@ class NewsRepository @Inject constructor(
                     country = country,
                     category = category,
                     page = page,
-                    pageSize = fetchSize
+                    pageSize = fetchSize,
+                    cacheControl = if (forceRefresh) "no-cache" else null
                 )
 
                 var articles = response.articles.mapNotNull { it.toArticle() }
@@ -106,8 +108,6 @@ class NewsRepository @Inject constructor(
                 val now = System.currentTimeMillis()
 
                 // Save to Room
-                // Clear old cache for this feed key? Strategy: insertAll w/ REPLACE.
-                // But we usually want to append? No, top headlines is a snapshot.
                 cachedArticleDao.insertAll(articles.map { it.toEntity(now) })
 
                 feedCacheDao.upsert(
@@ -125,7 +125,7 @@ class NewsRepository @Inject constructor(
             result.fold(
                 onSuccess = { articles -> emit(Result.success(articles)) },
                 onFailure = { error ->
-                    // Log ALL errors to help debug issues like newsthread-1k5
+                    // Log ALL errors to help debug issues
                     Log.e(TAG, "Failed to refresh feed: ${error.message}", error)
 
                     // If we have cached data, silently swallow error (offline-first)
@@ -229,28 +229,28 @@ class NewsRepository @Inject constructor(
     }
 
     private fun filterArticles(articles: List<Article>, allowedSources: List<SourceRating>): List<Article> {
-        if (allowedSources.isEmpty()) return articles // If no ratings, maybe show all (or none? existing logic showed all)
+        if (allowedSources.isEmpty()) return articles
+        
+        // Strict Allowlist: Only sources with Score > 1 (Mixed, High, Very High)
+        // User Requirement: "NO UNRATED SOURCES. ... filtering can favor more reliable sources"
         
         val allowedIds = allowedSources.mapNotNull { it.sourceId }.toSet()
         val allowedNames = allowedSources.map { it.displayName }.toSet()
         val allowedDomains = allowedSources.map { it.domain }.toSet()
         
-        Log.d(TAG, "Filtering against ${allowedSources.size} allowed sources (Reliability > 2)")
-        
         return articles.filter { article ->
-            // 1. Match by ID (exact)
+            // 1. Match by ID
             if (article.source.id != null && allowedIds.contains(article.source.id)) return@filter true
             
-            // 2. Match by Name (exact)
+            // 2. Match by Name
             if (allowedNames.contains(article.source.name)) return@filter true
             
-            // 3. Match by Domain in URL (contains)
-            val url = article.url
-            if (url != null) {
-                if (allowedDomains.any { domain -> url.contains(domain, ignoreCase = true) }) return@filter true
+            // 3. Match by Domain
+            if (article.url != null) {
+                if (allowedDomains.any { domain -> article.url.contains(domain, ignoreCase = true) }) return@filter true
             }
             
-            Log.w("FeedFilter", "Dropped: ${article.source.name} (${article.source.id}) - URL: ${article.url}")
+            Log.d("FeedFilter", "Dropped Unrated/Low: ${article.source.name}")
             false // Drop if not in allowlist
         }
     }

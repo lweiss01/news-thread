@@ -227,6 +227,8 @@ private fun DebugSection(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        )
     }
 }
 

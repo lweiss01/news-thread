@@ -9,9 +9,12 @@ object PaywallDetector {
         ".subscription-required",
         ".subscriber-only",
         "#paywall",
-        ".tp-modal",          // Piano (common paywall provider)
+        ".tp-modal",          // Piano
         ".pf-paywall",        // Paragon
-        "[data-testid=\"paywall\"]"
+        "[data-testid=\"paywall\"]",
+        "[id*='paywall']",
+        "[class*='paywall']",
+        "[class*='subscriber']"
     )
 
     private val PAYWALL_TEXT_PATTERNS = listOf(
@@ -22,7 +25,10 @@ object PaywallDetector {
         "register to read",
         "sign in to continue",
         "this content is for subscribers",
-        "your free articles"
+        "your free articles",
+        "read the full article",
+        "subscribe now",
+        "already a subscriber"
     )
 
     /**

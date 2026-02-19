@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,6 +36,20 @@ fun StoryDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (storyWithArticles != null) {
+                        IconButton(onClick = { 
+                            viewModel.unfollowStory(storyId)
+                            // Optional: onBackClick() if we want to kick them out immediately, 
+                            // but maybe better to let them see it disappear or handle "Story not found" gracefully
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Bookmark, // It's tracked, so show filled
+                                contentDescription = "Unfollow Story"
+                            )
+                        }
                     }
                 }
             )

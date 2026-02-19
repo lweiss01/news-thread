@@ -80,6 +80,8 @@ open class UserPreferencesRepository @Inject constructor(
             prefs[METERED_SYNC_ALLOWED_KEY] ?: false // Default: WiFi only
         }
 
+
+
     suspend fun setBackgroundSyncEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[BACKGROUND_SYNC_ENABLED_KEY] = enabled
@@ -97,6 +99,8 @@ open class UserPreferencesRepository @Inject constructor(
             prefs[METERED_SYNC_ALLOWED_KEY] = allowed
         }
     }
+
+
 
     companion object {
         val ARTICLE_FETCH_PREF_KEY = intPreferencesKey("article_fetch_preference")

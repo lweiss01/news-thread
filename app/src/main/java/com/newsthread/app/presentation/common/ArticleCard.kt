@@ -28,8 +28,7 @@ fun ArticleCard(
     sourceRatings: Map<String, SourceRating>,
     isTracked: Boolean = false,
     onBookmarkClick: () -> Unit = {},
-    onClick: () -> Unit,
-    onLongClick: () -> Unit = {}, // Keeping for backward compatibility or extra options
+    onClick: () -> Unit
 ) {
     // State for context menu
     var contextMenuExpanded by remember { mutableStateOf(false) }
@@ -39,13 +38,7 @@ fun ArticleCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = {
-                        contextMenuExpanded = true
-                        onLongClick()
-                    }
-                ),
+                .clickable(onClick = onClick),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
@@ -66,9 +59,8 @@ fun ArticleCard(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val rating = findRatingForArticle(article, sourceRatings)
-                        if (rating != null) {
-                            ReliabilityBadge(rating = rating, size = 18.dp)
-                        }
+                        // Always show badge, even if null (Unrated/Question Mark)
+                        ReliabilityBadge(rating = rating, size = 18.dp)
                         
                         IconButton(onClick = onBookmarkClick) {
                             Icon(
@@ -118,28 +110,7 @@ fun ArticleCard(
             }
         }
 
-        if (onLongClick != {}) {
-            DropdownMenu(
-                expanded = contextMenuExpanded,
-                onDismissRequest = { contextMenuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Follow Story") },
-                    onClick = {
-                        contextMenuExpanded = false
-                        onLongClick()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.BookmarkBorder,
-                            contentDescription = null
-                        )
-                    }
-                )
-            }
-        }
-    }
-}
+
 
 // Helper function to find rating
 private fun findRatingForArticle(
@@ -152,9 +123,9 @@ private fun findRatingForArticle(
 
 private fun extractDomain(url: String): String {
     return try {
-        val uri = android.net.Uri.parse(url)
-        val host = uri.host?.lowercase() ?: ""
-        host.removePrefix("www.")
+        val uri = java.net.URI(url)
+        val domain = uri.host ?: return ""
+        domain.removePrefix("www.").lowercase()
     } catch (e: Exception) {
         ""
     }

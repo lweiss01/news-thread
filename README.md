@@ -33,7 +33,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 0.7.0 (Beta)
+**Version**: 0.7.1 (Beta)
 **Status**: Active Development
 
 ### Completed
@@ -53,7 +53,18 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Story tracking foundation and UI (Phase 8)
 - [x] Story grouping and auto-matching (Phase 9)
 - [x] Hybrid matching, feed quality, and stability fixes (Phase 9.5)
+- [x] **UI Polish & Bug Fixes (Phase 10.1)**
 - [x] **Notifications, Deep Linking, and Update Highlighting (Phase 10)**
+
+<details>
+<summary><b>Phase 10.1: UI Polish & Bug Fixes (Completed 2026-02-19) ✅ Verified</b></summary>
+
+- [x] **Source Badges**: Strict filtering for unrated/low-quality sources.
+- [x] **Refresh Logic**: Fixed `Cache-Control` implementation to ensure fresh content on pull-to-refresh.
+- [x] **Notification Suppression**: Intelligent foreground detection (Toast in FG, System Notification in BG).
+- [x] **Untrack Action**: Added explicit bookmark toggle in Story Detail view.
+- [x] **Cleanup**: Removed unused "Track Hint" and "Test Notification" logic.
+</details>
 
 <details>
 <summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
@@ -207,7 +218,7 @@ We are now preparing for a repository-wide architecture refactor to improve main
 | 10.1 | UI Polish & Bug Fixes | 🚧 **Active** | Critical UI fixes (Badges, Notifications, Paywall) |
 | 11 | Architecture Refactor | 📋 **Next** | Domain logic cleanup & DI improvements |
 
-**Progress:** Phase 1-10 complete. **Versions 0.7.0**.
+**Progress:** Phase 1-10.1 complete. **Versions 0.7.1**.
 
 **32 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 

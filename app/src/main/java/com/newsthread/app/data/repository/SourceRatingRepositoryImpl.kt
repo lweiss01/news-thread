@@ -97,14 +97,12 @@ class SourceRatingRepositoryImpl @Inject constructor(
     
     private fun extractDomain(url: String): String {
         return try {
-            val cleanUrl = url
-                .removePrefix("https://")
-                .removePrefix("http://")
-                .removePrefix("www.")
-            
-            cleanUrl.substringBefore("/")
+            val uri = java.net.URI(url)
+            val domain = uri.host ?: return url
+            domain.removePrefix("www.").lowercase()
         } catch (e: Exception) {
-            url
+            // Fallback for malformed URLs
+            url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
         }
     }
     

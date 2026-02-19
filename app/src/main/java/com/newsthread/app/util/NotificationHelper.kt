@@ -87,10 +87,25 @@ class NotificationHelper @Inject constructor(
             .setContentIntent(resultPendingIntent)
             .setAutoCancel(true)
 
-        with(NotificationManagerCompat.from(context)) {
-            // Use storyId hash as notification ID to allow updating existing notification for same story
-            // or distinct notifications per story
-            notify(storyId.hashCode(), builder.build())
+        // Check if app is in foreground
+        val isForeground = try {
+            androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(
+                androidx.lifecycle.Lifecycle.State.STARTED
+            )
+        } catch (e: Exception) {
+            false
+        }
+
+        if (isForeground) {
+            // App is open, show non-intrusive Toast
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(context, "$title: $body", android.widget.Toast.LENGTH_LONG).show()
+            }
+        } else {
+            // App is background, show system notification
+            with(NotificationManagerCompat.from(context)) {
+                notify(storyId.hashCode(), builder.build())
+            }
         }
     }
 }

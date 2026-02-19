@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 11 of 11 (Architecture Refactor)
+Phase: 11 of 12 (UI/UX Review and Refinement)
 Plan: —
-Status: Milestone v1.1 / Phase 11 Planning — Phase 10 Complete
-Last activity: 2026-02-18 — Phase 10 verified and docs updated
-Progress: [███████████] 100% (10/11 phases complete) - Note: Phase 11 is a refactor, not a feature phase.
+Status: Phase 10.1 Complete — Ready for Phase 11
+Last activity: 2026-02-19 — Completed UI Polish & Bug Fixes (Source Badges, Notifications)
+Progress: [██████████▓] 92% (10.1/12 phases complete)
 
 ## Performance Metrics
 
@@ -105,12 +105,24 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 10.1 inserted after Phase 10: UI Polish & Bug Fixes (URGENT)
+- Phase 11 added: UI/UX Review and Refinement (Renumbered from 12)
+- Phase 12: Architecture Refactor (Renumbered from 11)
 
 ## Session Continuity
 
 Last session: 2026-02-17
 Stopped at: Phase 10 verification pending (All Bold fix)
 Resume with: Plan Phase 11 (Architecture Refactor)
+
+### Session Notes (2026-02-19)
+- **Phase 10.1 Validated & Complete**:
+    - **Fixed**: Source Badges now display correctly (strict filtering for unrated sources).
+    - **Fixed**: Feed Refresh logic now forces network fetch properly (`Cache-Control: no-cache`).
+    - **Verified**: Notification suppression works (Toast in foreground, Notification in background).
+    - **Added**: "Untrack" action in Story Detail screen.
+    - **Removed**: "Track Hint" tooltip/dialog removed per user decision (simplified UI).
+    - **Deprioritized**: Paywall detection logic present but not enforced.
+    - **Docs**: Updated README, ROADMAP, PROJECT, and STATE.
 
 ### Session Notes (2026-02-18)
 - **Phase 10 Validated & Complete**:

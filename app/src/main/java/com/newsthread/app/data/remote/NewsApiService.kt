@@ -24,7 +24,8 @@ interface NewsApiService {
         @Query("country") country: String = "us",
         @Query("category") category: String? = null,
         @Query("page") page: Int = 1,
-        @Query("pageSize") pageSize: Int = 20
+        @Query("pageSize") pageSize: Int = 20,
+        @retrofit2.http.Header("Cache-Control") cacheControl: String? = null
     ): NewsApiResponse
 
     @GET("everything")
