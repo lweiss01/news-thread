@@ -118,3 +118,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9.5. Quality & Stability | 4/4 | Complete | 2026-02-16 |
 | 10. Notifications & Updates | 6/6 | Complete | 2026-02-18 |
 | 11. Architecture Refactor | 0/2 | Planned | - |
+
+### Phase 12: UI/UX Review and Refinement
+
+**Goal:** [To be planned]
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12 to break down)

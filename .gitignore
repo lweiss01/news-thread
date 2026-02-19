@@ -100,3 +100,7 @@ screenshots/
 test_output.txt
 test_output.txt
 
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
