@@ -2,7 +2,7 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-06)
+See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
 **Current focus:** Phase 12 - Architecture Refactor
