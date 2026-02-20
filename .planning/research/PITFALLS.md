@@ -681,30 +681,30 @@ Background execution rules changed significantly from Android 8 to Android 14:
 Before shipping each phase:
 
 **Phase 1 (TF Lite + Article Fetch):**
-- [ ] Model inference never runs on main thread (StrictMode enabled)
-- [ ] Model file in assets/, not res/raw
-- [ ] Interpreter closed properly (no memory leaks)
-- [ ] Article fetch handles 404, timeout, paywall gracefully
-- [ ] Loading indicators visible during long operations
+- [x] Model inference never runs on main thread (StrictMode enabled)
+- [x] Model file in assets/, not res/raw
+- [x] Interpreter closed properly (no memory leaks)
+- [x] Article fetch handles 404, timeout, paywall gracefully
+- [x] Loading indicators visible during long operations
 
 **Phase 2 (Matching Algorithm):**
-- [ ] Quantization validated on news domain (precision/recall measured)
-- [ ] Time-windowed matching (only compare articles within 7 days)
-- [ ] Embedding storage uses compression (float16 or int8)
-- [ ] Database has indexes on timestamp column
-- [ ] NewsAPI content field not treated as full text
+- [x] Quantization validated on news domain (precision/recall measured)
+- [x] Time-windowed matching (only compare articles within 7 days)
+- [x] Embedding storage uses compression (float16 or int8)
+- [x] Database has indexes on timestamp column
+- [x] NewsAPI content field not treated as full text
 
 **Phase 3 (Background Processing):**
-- [ ] On-demand computation works even if WorkManager fails
-- [ ] Offline mode shows cached matches
-- [ ] NewsAPI quota tracked client-side with reserves
-- [ ] Rate limit (429) stops all API calls immediately
+- [x] On-demand computation works even if WorkManager fails
+- [x] Offline mode shows cached matches
+- [x] NewsAPI quota tracked client-side with reserves
+- [x] Rate limit (429) stops all API calls immediately
 
 **Phase 4 (UI):**
-- [ ] Bias spectrum visualization shows uncertainty
-- [ ] Color-coding passes WCAG AA (patterns + color)
-- [ ] Progress indicators for all multi-step operations
-- [ ] Error states with retry options
+- [x] Bias spectrum visualization shows uncertainty
+- [x] Color-coding passes WCAG AA (patterns + color)
+- [x] Progress indicators for all multi-step operations
+- [x] Error states with retry options
 
 ---
 
