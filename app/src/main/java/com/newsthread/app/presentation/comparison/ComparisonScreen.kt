@@ -179,13 +179,17 @@ private fun ComparisonContent(
                         }.groupingBy { it }.eachCount()
                     }
                     val unratedCount = allPerspectives.size - ratedArticles.size
+                    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                     
                     BiasHeatmap(
                         biasCounts = biasCounts,
                         unratedCount = unratedCount,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                            .padding(horizontal = 16.dp),
+                        onSegmentClick = { score ->
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        }
                     )
                     
                     HorizontalDivider()
@@ -219,6 +223,7 @@ private fun ComparisonContent(
                     ?: sourceRatings[comparison.originalArticle.source.name] 
                     ?: comparison.ratings[comparison.originalArticle.url],
                 similarityScore = 1.0f, // Original
+                accentColor = MaterialTheme.colorScheme.primary, // Default Amber for original
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
@@ -239,27 +244,26 @@ private fun ComparisonContent(
                             ?: sourceRatings[article.source.name] 
                             ?: comparison.ratings[article.url],
                         similarityScore = 0.0f, // TODO: threaded score if available
+                        accentColor = color, // Use the perspective color for the side accent
                         modifier = Modifier
                     )
                 }
             }
         }
 
-        renderSection("Left Perspective", comparison.leftPerspective, primaryColor)
-        renderSection("Center Perspective", comparison.centerPerspective, tertiaryColor)
-        renderSection("Right Perspective", comparison.rightPerspective, secondaryColor)
-        renderSection("Related Stories", comparison.unratedPerspective, outlineColor)
+        renderSection("Left Perspective", comparison.leftPerspective, ProjectTheme.bias.leftLabel)
+        renderSection("Center Perspective", comparison.centerPerspective, ProjectTheme.bias.gradient.let { MaterialTheme.colorScheme.secondary }) // Amber/Secondary for Center
+        renderSection("Right Perspective", comparison.rightPerspective, ProjectTheme.bias.rightLabel)
+        renderSection("Related Stories", comparison.unratedPerspective, MaterialTheme.colorScheme.outline)
     }
 }
 
 @Composable
 private fun ComparisonHint(message: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-        ),
-        shape = MaterialTheme.shapes.small
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .glassBackground(shape = MaterialTheme.shapes.small, alpha = 0.5f)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),

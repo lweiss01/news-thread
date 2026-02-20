@@ -36,7 +36,8 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 fun BiasHeatmap(
     biasCounts: Map<Int, Int>,
     unratedCount: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSegmentClick: (Int) -> Unit = {} // NEW: Interactive segments
 ) {
     // Distinct dot colors — deliberately different from app primary
     val dotColors = mapOf(
@@ -56,7 +57,7 @@ fun BiasHeatmap(
             modifier = Modifier.padding(bottom = ProjectTheme.spacing.xs)
         )
 
-        // Gradient Bar + Dots overlay
+        // Gradient Bar + Interactive Segments + Dots overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -64,6 +65,19 @@ fun BiasHeatmap(
                 .clip(MaterialTheme.shapes.medium)
                 .background(ProjectTheme.bias.gradient)
         ) {
+            // Interactive Segments Layer
+            Row(modifier = Modifier.fillMaxSize()) {
+                val biasScores = listOf(-2, -1, 0, 1, 2)
+                biasScores.forEach { score ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onSegmentClick(score) }
+                    )
+                }
+            }
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
                 val centerY = size.height / 2

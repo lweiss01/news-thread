@@ -27,9 +27,12 @@ fun ArticleCard(
     article: Article,
     sourceRatings: Map<String, SourceRating>,
     isTracked: Boolean = false,
+    accentColor: Color = MaterialTheme.colorScheme.primary, // NEW: Phase 13 bias accent
     onBookmarkClick: () -> Unit = {},
     onClick: () -> Unit
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     // We use a custom Box + pulseEffect instead of default Card
     Box(
         modifier = Modifier
@@ -42,6 +45,15 @@ fun ArticleCard(
             .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surface) // Slate900/White
     ) {
+        // Bias Accent Border (3px Left)
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .fillMaxHeight()
+                .width(3.dp)
+                .background(accentColor)
+        )
+
         Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
             // Header: Source Name & Rating
             Row(
@@ -52,16 +64,19 @@ fun ArticleCard(
                 Text(
                     text = article.source.name,
                     style = MaterialTheme.typography.labelMedium, // Mono
-                    color = MaterialTheme.colorScheme.primary // Cyan500
+                    color = MaterialTheme.colorScheme.primary // Amber500
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val rating = findRatingForArticle(article, sourceRatings)
                     ReliabilityBadge(rating = rating, size = 18.dp)
                     
-                    IconButton(onClick = onBookmarkClick) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        onBookmarkClick()
+                    }) {
                         Icon(
-                            imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            imageVector = if (isTracked) androidx.compose.material.icons.Icons.Default.Bookmark else androidx.compose.material.icons.Icons.Default.BookmarkBorder,
                             contentDescription = if (isTracked) "Unfollow" else "Follow",
                             tint = MaterialTheme.colorScheme.primary
                         )
