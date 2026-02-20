@@ -1,6 +1,12 @@
-# Requirements: Milestone v1.1 Architecture Refactor
+# Requirements: Milestone v1.1 UI/UX Refinement & Architecture Refactor
 
-**Goal:** Address key architectural issues identified in the repo-wide audit to improve testability, maintainability, and code health before adding complex new features.
+**Goal:** Address key architectural issues identified in the repo-wide audit to improve testability, maintainability, and code health before adding complex new features. In addition, modernize the app aesthetic with new design tokens and visual heatmaps.
+
+## UI/UX Refinement (Phase 11) - COMPLETED
+- [x] **UIUX-01**: Implement Design Tokens (Colors, Typography, Spacing) to modernize the app aesthetic.
+- [x] **UIUX-02**: Replace `BiasSpectrumRail` with a modern gradient `BiasHeatmap` visualization.
+- [x] **UIUX-03**: Create a "Pulse Dashboard" for the Tracking tab to summarize followed stories.
+- [x] **UIUX-04**: Group articles by Left/Center/Right/Unrated in the Story Detail screen.
 
 ## Architecture & Code Health
 

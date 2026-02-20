@@ -47,8 +47,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Status**: Complete (2026-02-08)
 
 **Delivered**:
+- [x] 08-CONTEXT.md — Phase Context
+- [x] 08-RESEARCH.md — Phase Research
 - [x] 08-01-PLAN.md — Data Layer
 - [x] 08-02-PLAN.md — UI Integration
+- [x] 08-UAT.md — User Acceptance Testing
 
 ### Phase 9: Story Grouping Logic
 **Goal**: Automatically match new articles to tracked stories

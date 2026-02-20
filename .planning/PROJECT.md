@@ -20,24 +20,25 @@ When a user reads an article, they can instantly see how the same story is cover
 
 ### Validated
 
-- ✓ News feed displays headlines from NewsAPI — existing
-- ✓ Article detail view loads articles in WebView — existing
-- ✓ Source rating database seeded from CSV (Allsides, AdFontes, MBFC) — existing
-- ✓ Article comparison finds related articles and categorizes by bias (left/center/right) — existing (low quality)
-- ✓ Navigation scaffolding with Feed, Tracking, Settings tabs — existing
-- ✓ Hilt DI, MVVM architecture, Flow-based state management — existing
-- ✓ On-device NLP matching engine using TF Lite (MobileBERT or similar)
-- ✓ Full article text extraction from URLs (fetch + parse with readability algorithm)
-- ✓ User setting to control article text fetching (WiFi-only, always, never)
-- ✓ Background pre-computation of story matches when feed loads
-- ✓ Feed-internal matching (cluster articles already in the feed)
-- ✓ NewsAPI search to find additional coverage from sources not in the feed
-- ✓ Bias spectrum UI — articles plotted along a left-to-right visual axis
-- ✓ Local caching layer for articles and match results
-- ✓ NewsAPI rate limit detection and graceful handling
-- ✓ Story grouping logic (auto-match, novelty detection)
-- ✓ Thread visualization (timeline, badges, unread state)
+- ✓ News feed displays headlines from NewsAPI — Phase 1
+- ✓ Article detail view loads articles in WebView — Phase 1
+- ✓ Source rating database seeded from CSV (Allsides, AdFontes, MBFC) — Phase 1
+- ✓ Navigation scaffolding with Feed, Tracking, Settings tabs — Phase 1
+- ✓ Hilt DI, MVVM architecture, Flow-based state management — Phase 1
+- ✓ Full article text extraction from URLs (fetch + parse with readability algorithm) — Phase 2
+- ✓ User setting to control article text fetching (WiFi-only, always, never) — Phase 2
+- ✓ On-device NLP matching engine using TF Lite (MobileBERT or similar) — Phase 3
+- ✓ Article comparison finds related articles and categorizes by bias (left/center/right) — Phase 4
+- ✓ Feed-internal matching (cluster articles already in the feed) — Phase 5
+- ✓ NewsAPI search to find additional coverage from sources not in the feed — Phase 5
+- ✓ Background pre-computation of story matches when feed loads — Phase 6
+- ✓ Local caching layer for articles and match results — Phase 6
+- ✓ NewsAPI rate limit detection and graceful handling — Phase 6
+- ✓ Bias spectrum UI — articles plotted along a left-to-right visual axis — Phase 7
+- ✓ Core data structures and Database for tracking stories — Phase 8
+- ✓ UI integration for followed stories — Phase 8
 - ✓ Story grouping logic (auto-match, novelty detection) — Phase 9
+- ✓ Thread visualization (timeline, badges, unread state) — Phase 9
 - ✓ Hybrid story matching (embedding + entity overlap) — Phase 9.5
 - ✓ Feed quality and stability fixes — Phase 9.5
 - ✓ Debug tooling for threshold tuning — Phase 9.5
@@ -45,6 +46,7 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Deep linking to story details — Phase 10
 - ✓ Background worker for update detection — Phase 10
 - ✓ UI Highlighting for new updates ("New" badge and pill) — Phase 10
+- ✓ Critical UI Bug Fixes (Source Badges, Refresh Logic, Notification Suppression) — Phase 10.1
 - ✓ Design tokens (Colors, Typography, Spacing) — Phase 11
 - ✓ Bias Heatmap (gradient bar with colored dots) — Phase 11
 - ✓ Unified bias visualization across all screens — Phase 11
