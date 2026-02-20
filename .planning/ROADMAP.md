@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10.1: UI Polish & Bug Fixes** - Source badges, refresh, notification suppression
 - [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
 - [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
-- [ ] **Phase 13: UI Design and Visual Language Updates** - Planned UI refinements and aesthetic refresh
+- [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
 
 
 ## Phase Details
@@ -133,19 +133,16 @@ Plans:
 - [x] 12-VERIFICATION.md — Verification Report
 
 ### Phase 13: UI Design and Visual Language Updates
-**Goal**: Implement advanced UI design refinements and refresh the visual language across the app.
-**Depends on**: Phase 12
-**Status**: Not planned yet
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 13 to break down)
-
+- Goal: Implement the Amber Brand refresh, editorial shields, and premium UI refinements.
+- Dependencies: Phase 12
+- Status: [Done] (2026-02-20)
+- Detail: [13-ui-design-and-visual-language-updates](phases/13-ui-design-and-visual-language-updates/)
 
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
