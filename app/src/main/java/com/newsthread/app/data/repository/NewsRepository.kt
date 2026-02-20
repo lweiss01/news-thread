@@ -4,15 +4,13 @@ import android.util.Log
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.FeedCacheDao
 import com.newsthread.app.data.local.dao.SourceRatingDao
-import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.FeedCacheEntity
-import com.newsthread.app.data.local.entity.SourceRatingEntity
 import com.newsthread.app.data.remote.NewsApiService
 import com.newsthread.app.data.remote.RateLimitedException
 import com.newsthread.app.data.remote.dto.toArticle
 import com.newsthread.app.domain.model.Article
-import com.newsthread.app.domain.model.Source
-import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
+import com.newsthread.app.domain.usecase.FilterArticlesUseCase
 import com.newsthread.app.util.CacheConstants
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -30,13 +28,17 @@ import javax.inject.Singleton
  * 5. On network failure, keep showing cached data (graceful degradation)
  *
  * Room is the single source of truth; network is a sync mechanism.
+ *
+ * Business logic (filtering, clustering) delegated to Domain UseCases (Phase 12).
  */
 @Singleton
 class NewsRepository @Inject constructor(
     private val newsApiService: NewsApiService,
     private val cachedArticleDao: CachedArticleDao,
     private val feedCacheDao: FeedCacheDao,
-    private val sourceRatingDao: SourceRatingDao
+    private val sourceRatingDao: SourceRatingDao,
+    private val filterArticlesUseCase: FilterArticlesUseCase,
+    private val clusterArticlesUseCase: ClusterArticlesUseCase
 ) {
     /**
      * Get top headlines with offline-first pattern.
@@ -56,14 +58,13 @@ class NewsRepository @Inject constructor(
         val feedKey = "top_headlines_${country}_${category ?: "all"}"
 
         // 1. Emit cached data first (immediate UI)
-        // 1. Emit cached data first (immediate UI)
         // Ensure even cached data adheres to quality/clustering rules
         var cached = cachedArticleDao.getAll().map { it.toDomain() }
         if (cached.isNotEmpty()) {
             // Relaxed Filter: Allow Mixed (2+). Exclude Low (1) and Unrated.
             val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter { it.finalReliabilityScore > 1 }
-            cached = filterArticles(cached, ratedSources)
-            cached = clusterArticles(cached)
+            cached = filterArticlesUseCase(cached, ratedSources)
+            cached = clusterArticlesUseCase(cached)
             emit(Result.success(cached))
         }
 
@@ -78,7 +79,6 @@ class NewsRepository @Inject constructor(
                 val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }.filter {
                     it.finalReliabilityScore > 1
                 }
-                val hasRatings = ratedSources.isNotEmpty()
 
                 // Request 100 (Max) to ensure we have enough articles after the Quality Filter (Allowlist) runs
                 val fetchSize = 100
@@ -94,13 +94,13 @@ class NewsRepository @Inject constructor(
                 var articles = response.articles.mapNotNull { it.toArticle() }
 
                 // Phase 9.5-04: Quality Filter & Phase 9.5-05: Feed Clustering
-                // Extracted logic to ensure consistency between Cache and Network
+                // Delegated to Domain UseCases (Phase 12)
 
                 // 1. Filter
-                articles = filterArticles(articles, ratedSources)
+                articles = filterArticlesUseCase(articles, ratedSources)
 
                 // 2. Cluster
-                articles = clusterArticles(articles)
+                articles = clusterArticlesUseCase(articles)
 
                 // Limit to 20
                 articles = articles.take(20)
@@ -228,158 +228,7 @@ class NewsRepository @Inject constructor(
         }
     }
 
-    private fun filterArticles(articles: List<Article>, allowedSources: List<SourceRating>): List<Article> {
-        if (allowedSources.isEmpty()) return articles
-        
-        // Strict Allowlist: Only sources with Score > 1 (Mixed, High, Very High)
-        // User Requirement: "NO UNRATED SOURCES. ... filtering can favor more reliable sources"
-        
-        val allowedIds = allowedSources.mapNotNull { it.sourceId }.toSet()
-        val allowedNames = allowedSources.map { it.displayName }.toSet()
-        val allowedDomains = allowedSources.map { it.domain }.toSet()
-        
-        return articles.filter { article ->
-            // 1. Match by ID
-            if (article.source.id != null && allowedIds.contains(article.source.id)) return@filter true
-            
-            // 2. Match by Name
-            if (allowedNames.contains(article.source.name)) return@filter true
-            
-            // 3. Match by Domain
-            if (article.url != null) {
-                if (allowedDomains.any { domain -> article.url.contains(domain, ignoreCase = true) }) return@filter true
-            }
-            
-            Log.d("FeedFilter", "Dropped Unrated/Low: ${article.source.name}")
-            false // Drop if not in allowlist
-        }
-    }
-
-    private fun clusterArticles(articles: List<Article>): List<Article> {
-        val clusters = mutableListOf<Article>()
-        // Store pair of (TitleWords, SourceName)
-        val seenArticles = mutableListOf<Pair<Set<String>, String>>()
-        val stopWords = setOf(
-            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
-            "video", "live", "update", "new", "watch", "photos", "exclusive", "breaking", "news"
-        )
-
-        for (article in articles) {
-            val titleWords = article.title.lowercase()
-                .replace(Regex("[^a-z0-9 ]"), "")
-                .split(" ")
-                .filter { it.isNotBlank() && !stopWords.contains(it) }
-                .toSet()
-            
-            val sourceName = article.source.name ?: ""
-
-            if (titleWords.isEmpty()) {
-                 clusters.add(article)
-                 continue
-            }
-
-            var isDuplicate = false
-            for ((seenWords, seenSource) in seenArticles) {
-                val intersection = titleWords.intersect(seenWords).size
-                val union = titleWords.union(seenWords).size
-                
-                if (union > 0) {
-                    val jaccard = intersection.toDouble() / union.toDouble()
-                    
-                    // Rule 1: Same Source = Aggressive Dedup (Threshold 0.2)
-                    // "Wild brawl" vs "Brawl at game" from same source is likely a duplicate/update
-                    if (sourceName.equals(seenSource, ignoreCase = true)) {
-                        if (jaccard > 0.2) {
-                            isDuplicate = true
-                            break
-                        }
-                    }
-                    
-                    // Rule 2: Different Source = Standard Cluster (Threshold 0.45)
-                    // Lowered slightly from 0.5 to catch more obvious cross-outlet stories
-                    else if (jaccard > 0.45) { 
-                        isDuplicate = true
-                        break
-                    }
-                }
-            }
-            
-            if (!isDuplicate) {
-                clusters.add(article)
-                seenArticles.add(titleWords to sourceName)
-            }
-        }
-        return clusters
-    }
-
     companion object {
         private const val TAG = "NewsRepository"
     }
-}
-
-// ========== Mapper Extensions ==========
-
-/**
- * Convert CachedArticleEntity to domain Article.
- */
-private fun CachedArticleEntity.toDomain(): Article {
-    return Article(
-        source = Source(
-            id = sourceId,
-            name = sourceName,
-            description = null,
-            url = null,
-            category = null,
-            language = null,
-            country = null
-        ),
-        author = author,
-        title = title,
-        description = description,
-        url = url,
-        urlToImage = urlToImage,
-        publishedAt = publishedAt,
-        content = content
-    )
-}
-
-/**
- * Convert domain Article to CachedArticleEntity for Room storage.
- */
-private fun Article.toEntity(now: Long): CachedArticleEntity {
-    return CachedArticleEntity(
-        url = url,
-        sourceId = source.id,
-        sourceName = source.name,
-        author = author,
-        title = title,
-        description = description,
-        urlToImage = urlToImage,
-        publishedAt = publishedAt,
-        content = content,
-        fullText = null,
-        fetchedAt = now,
-        expiresAt = now + CacheConstants.ARTICLE_RETENTION_MS
-    )
-}
-
-/**
- * Convert SourceRatingEntity to domain SourceRating.
- */
-private fun SourceRatingEntity.toDomain(): SourceRating {
-    return SourceRating(
-        sourceId = sourceId,
-        displayName = displayName,
-        domain = domain,
-        allsidesRating = allsidesRating,
-        adFontesBias = adFontesBias,
-        adFontesReliability = adFontesReliability,
-        mbfcBias = mbfcBias,
-        mbfcFactual = mbfcFactual,
-        finalBias = finalBias,
-        finalBiasScore = finalBiasScore,
-        finalReliability = finalReliability,
-        finalReliabilityScore = finalReliabilityScore,
-        notes = notes
-    )
 }

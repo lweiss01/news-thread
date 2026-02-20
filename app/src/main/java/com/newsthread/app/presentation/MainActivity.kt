@@ -30,34 +30,30 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.util.Log
-import com.newsthread.app.data.local.AppDatabase
-import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
 import com.newsthread.app.util.DatabaseSeeder
 import com.newsthread.app.domain.model.Article
 import java.net.URLDecoder
 import java.net.URLEncoder
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject lateinit var databaseSeeder: DatabaseSeeder
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Database seeding
+        // Database seeding (now using Hilt-injected DatabaseSeeder)
         lifecycleScope.launch {
             try {
-                val db = AppDatabase.getDatabase(this@MainActivity)
-                val repository = SourceRatingRepositoryImpl(db.sourceRatingDao())
-                val seeder = DatabaseSeeder(this@MainActivity, repository)
-
-                val count = seeder.seedSourceRatings()
+                val count = databaseSeeder.seedSourceRatings()
 
                 if (count > 0) {
                     Log.d("NewsThread", "✅ Seeded $count source ratings!")
                 } else {
                     Log.d("NewsThread", "ℹ️ Database already seeded")
                 }
-
 
             } catch (e: Exception) {
                 Log.e("NewsThread", "❌ Error: ${e.message}", e)

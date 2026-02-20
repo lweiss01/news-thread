@@ -1,16 +1,19 @@
 package com.newsthread.app.presentation.tracking
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.newsthread.app.data.local.dao.StoryWithArticles
+import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.TrackingRepository
+import com.newsthread.app.domain.usecase.GetSourceRatingsMapUseCase
 import com.newsthread.app.domain.usecase.GetTrackedStoriesUseCase
 import com.newsthread.app.domain.usecase.UnfollowStoryUseCase
 import com.newsthread.app.worker.StoryUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,16 +25,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TrackingViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext private val context: Context,
     getTrackedStoriesUseCase: GetTrackedStoriesUseCase,
     private val unfollowStoryUseCase: UnfollowStoryUseCase,
     private val trackingRepository: TrackingRepository,
-    private val sourceRatingRepository: com.newsthread.app.domain.repository.SourceRatingRepository // NEW
-) : AndroidViewModel(application) {
+    private val getSourceRatingsMapUseCase: GetSourceRatingsMapUseCase
+) : ViewModel() {
 
-    // NEW: Pre-load all source ratings
-    private val _sourceRatings = MutableStateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>>(emptyMap())
-    val sourceRatings: StateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>> = _sourceRatings.asStateFlow()
+    private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
+    val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
 
     val trackedStories: StateFlow<List<StoryWithArticles>> = getTrackedStoriesUseCase()
         .stateIn(
@@ -48,20 +50,10 @@ class TrackingViewModel @Inject constructor(
         loadSourceRatings()
     }
     
-    // NEW: Load all source ratings once
     private fun loadSourceRatings() {
         viewModelScope.launch {
             try {
-                sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
-                    // Create map: domain -> rating, sourceId -> rating, AND displayName -> rating
-                    val ratingsMap = mutableMapOf<String, com.newsthread.app.domain.model.SourceRating>()
-                    ratings.forEach { rating ->
-                        if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
-                        if (rating.sourceId.isNotBlank()) ratingsMap[rating.sourceId] = rating
-                        if (rating.displayName.isNotBlank()) ratingsMap[rating.displayName] = rating
-                    }
-                    _sourceRatings.value = ratingsMap
-                }
+                _sourceRatings.value = getSourceRatingsMapUseCase()
             } catch (e: Exception) {
                 // Log error
             }
@@ -73,7 +65,6 @@ class TrackingViewModel @Inject constructor(
     val lastRefreshed: StateFlow<Long> = _lastRefreshed.asStateFlow()
 
     fun getOriginalStoryUrl(storyId: String): String? {
-        // Find the story in the current list and return its oldest article's URL
         val storyWithArticles = trackedStories.value.find { it.story.id == storyId } ?: return null
         return storyWithArticles.articles.minByOrNull { it.fetchedAt }?.url
     }
@@ -94,7 +85,7 @@ class TrackingViewModel @Inject constructor(
             _isRefreshing.value = true
             
             val request = OneTimeWorkRequestBuilder<StoryUpdateWorker>().build()
-            WorkManager.getInstance(getApplication()).enqueue(request)
+            WorkManager.getInstance(context).enqueue(request)
             
             // Brief delay to let worker complete
             delay(2000)

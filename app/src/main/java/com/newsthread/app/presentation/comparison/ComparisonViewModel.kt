@@ -5,8 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.ArticleFetchPreference
-import com.newsthread.app.domain.repository.ArticleMatchingRepository
+import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.usecase.GetSimilarArticlesUseCase
+import com.newsthread.app.domain.usecase.GetSourceRatingsMapUseCase
 import com.newsthread.app.data.repository.UserPreferencesRepository
 import com.newsthread.app.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,15 +32,14 @@ class ComparisonViewModel @Inject constructor(
     private val getSimilarArticlesUseCase: GetSimilarArticlesUseCase,
     private val networkMonitor: NetworkMonitor,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val sourceRatingRepository: com.newsthread.app.domain.repository.SourceRatingRepository // NEW
+    private val getSourceRatingsMapUseCase: GetSourceRatingsMapUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ComparisonUiState>(ComparisonUiState.Loading)
     val uiState: StateFlow<ComparisonUiState> = _uiState.asStateFlow()
 
-    // NEW: Robust source ratings map
-    private val _sourceRatings = MutableStateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>>(emptyMap())
-    val sourceRatings: StateFlow<Map<String, com.newsthread.app.domain.model.SourceRating>> = _sourceRatings.asStateFlow()
+    private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
+    val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
 
     init {
         loadSourceRatings()
@@ -48,14 +48,7 @@ class ComparisonViewModel @Inject constructor(
     private fun loadSourceRatings() {
         viewModelScope.launch {
             try {
-                sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
-                    val ratingsMap = mutableMapOf<String, com.newsthread.app.domain.model.SourceRating>()
-                    ratings.forEach { rating ->
-                        if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
-                        if (rating.sourceId.isNotBlank()) ratingsMap[rating.sourceId] = rating
-                    }
-                    _sourceRatings.value = ratingsMap
-                }
+                _sourceRatings.value = getSourceRatingsMapUseCase()
             } catch (e: Exception) {
                 // Log error
             }

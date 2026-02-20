@@ -326,7 +326,7 @@ class FakeNewsApiService : NewsApiService {
     var responseToReturn: NewsApiResponse = NewsApiResponse("ok", 0, emptyList())
     val queryResponses = mutableMapOf<String, NewsApiResponse>()
 
-    override suspend fun getTopHeadlines(country: String, category: String?, page: Int, pageSize: Int): NewsApiResponse {
+    override suspend fun getTopHeadlines(country: String, category: String?, page: Int, pageSize: Int, cacheControl: String?): NewsApiResponse {
         TODO("Not yet implemented")
     }
 
@@ -440,11 +440,11 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
     }
 
-    override suspend fun getRecentUnassignedArticles(since: Long): List<CachedArticleEntity> {
-        return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
+    override suspend fun getRecentCandidateArticles(since: Long): List<CachedArticleEntity> {
+        return savedArticles.values.filter { it.fetchedAt > since }.toList()
     }
 
-    override suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean) {
+    override suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean, matchedAt: Long) {
         savedArticles[articleUrl]?.let {
             savedArticles[articleUrl] = it.copy(storyId = storyId, isTracked = true)
         }

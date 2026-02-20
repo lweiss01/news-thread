@@ -3,6 +3,7 @@ package com.newsthread.app.util
 import android.content.Context
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.SourceRatingRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -15,7 +16,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class DatabaseSeeder @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val repository: SourceRatingRepository
 ) {
     

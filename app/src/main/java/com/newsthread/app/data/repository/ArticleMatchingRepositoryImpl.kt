@@ -503,42 +503,4 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 /** Article with similarity score for sorting */
 private data class ScoredArticle(val article: Article, val score: Float)
 
-// ========== Local Mappers for Caching (Private) ==========
-
-private fun CachedArticleEntity.toDomain(): Article {
-    return Article(
-        source = Source(
-            id = sourceId,
-            name = sourceName,
-            description = null,
-            url = null,
-            category = null,
-            language = null,
-            country = null
-        ),
-        author = author,
-        title = title,
-        description = description,
-        url = url,
-        urlToImage = urlToImage,
-        publishedAt = publishedAt,
-        content = content
-    )
-}
-
-private fun Article.toEntity(now: Long): CachedArticleEntity {
-    return CachedArticleEntity(
-        url = url,
-        sourceId = source.id,
-        sourceName = source.name,
-        author = author,
-        title = title,
-        description = description,
-        urlToImage = urlToImage,
-        publishedAt = publishedAt,
-        content = content,
-        fullText = null,
-        fetchedAt = now,
-        expiresAt = now + CacheConstants.ARTICLE_RETENTION_MS
-    )
-}
+// Mapper extensions (toDomain, toEntity) provided by ArticleMappers.kt in the same package
