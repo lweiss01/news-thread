@@ -33,207 +33,50 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 0.8.0 (Beta)
-**Status**: Active Development
+**Version**: 0.9.0 (Beta)
+**Status**: Feature-complete beta — final architecture cleanup in progress
 
-### Completed
+### What's Built
 
-- [x] Clean Architecture setup (MVVM, Repository pattern, Hilt DI)
-- [x] Bottom navigation (Feed, Tracking, Settings)
-- [x] NewsAPI integration for live headlines
-- [x] Room database with source ratings system
-- [x] Article feed with images, summaries, and source info
-- [x] Bias rating system (50 sources from AllSides, Ad Fontes, MBFC)
-- [x] Bias symbols (◄◄ ◄ ● ► ►►) and reliability stars on every article
-- [x] Article detail view with in-app WebView reader
-- [x] Semantic article matching (Phase 4 integration)
-- [x] UI pipeline orchestration and matching hints (Phase 5)
-- [x] Background processing and sync settings (Phase 6)
-- [x] Bias spectrum visualization (Phase 7)
-- [x] Story tracking foundation and UI (Phase 8)
-- [x] Story grouping and auto-matching (Phase 9)
-- [x] Hybrid matching, feed quality, and stability fixes (Phase 9.5)
-- [x] **UI Polish & Bug Fixes (Phase 10.1)**
-- [x] **Notifications, Deep Linking, and Update Highlighting (Phase 10)**
-- [x] **UI/UX Review & Refinement (Phase 11)**
+| | Feature | Description |
+|---|---------|-------------|
+| 📰 | **News Feed** | Live headlines from NewsAPI with bias ratings and reliability stars |
+| 🧠 | **On-Device NLP** | TF Lite sentence embeddings for semantic article matching — no data leaves your device |
+| ⚖️ | **Bias Spectrum** | Articles plotted on a continuous left-to-right political axis with heatmap visualization |
+| 📌 | **Story Tracking** | Follow developing stories — new articles auto-cluster into tracked threads |
+| 🔔 | **Notifications** | Background alerts when tracked stories get new coverage, with deep linking |
+| 🎨 | **Design System** | Consistent design tokens, bias heatmap, and polished UI across all screens |
+| 🔄 | **Background Sync** | WorkManager pre-computes matches during idle with configurable sync strategies |
+| 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
 
 <details>
-<summary><b>Phase 11: UI/UX Review & Refinement (Completed 2026-02-19) ✅ Verified</b></summary>
+<summary><b>📋 Development History (11 phases completed)</b></summary>
 
-- [x] **Design Tokens**: Introduced `ProjectColors`, `ProjectTypography`, `ProjectSpacing` for consistent theming.
-- [x] **Bias Heatmap**: Gradient bar (Left→Center→Right) with colored dots sized by source count.
-- [x] **Tracking Flow**: Simplified card-click navigation, heatmap preview on tracked story cards.
-- [x] **Story Detail**: "Read original story" link, articles grouped by Left/Center/Right/Unrated perspective.
-- [x] **Compare Perspectives**: Replaced old line-chart `BiasSpectrumRail` with gradient `BiasHeatmap`.
-- [x] **Data Fix**: Robust source lookup (sourceId → sourceName → displayName fallback).
+| Phase | Name | Completed | Highlights |
+|-------|------|-----------|------------|
+| 1 | Foundation | 2026-02-02 | Room caching, rate limiting, offline-first architecture |
+| 2 | Text Extraction | 2026-02-05 | Readability4J article parsing, paywall detection, WiFi-only fetching |
+| 3 | Embedding Engine | 2026-02-06 | TF Lite 2.17.0, all-MiniLM-L6-v2 quantized model, 384-dim embeddings |
+| 4 | Similarity Matching | 2026-02-06 | Cosine similarity, tiered matching, 100% test coverage |
+| 5 | Pipeline Integration | 2026-02-06 | End-to-end matching orchestration, contextual UI hints |
+| 6 | Background Processing | 2026-02-07 | WorkManager pre-computation, sync strategy settings |
+| 7 | UI Implementation | 2026-02-07 | Bias spectrum visualization, reliability badges |
+| 8 | Tracking Foundation | 2026-02-08 | Story tracking database, tracking UI, bookmark controls |
+| 9 | Story Grouping | 2026-02-08 | Auto-clustering, novelty detection, perspective tracking |
+| 9.5 | Quality & Stability | 2026-02-16 | Hybrid matching (embedding + entity overlap), threshold tuning |
+| 10 | Notifications | 2026-02-18 | System notifications, deep linking, article highlighting |
+| 10.1 | UI Polish | 2026-02-19 | Source badges, refresh logic, notification suppression |
+| 11 | UI/UX Refinement | 2026-02-19 | Design tokens, bias heatmap, visual consistency |
+
+Full details in [ROADMAP.md](.planning/ROADMAP.md).
+
 </details>
 
-<details>
-<summary><b>Phase 10.1: UI Polish & Bug Fixes (Completed 2026-02-19) ✅ Verified</b></summary>
+### Up Next — Architecture Refactor (Phase 12)
 
-- [x] **Source Badges**: Strict filtering for unrated/low-quality sources.
-- [x] **Refresh Logic**: Fixed `Cache-Control` implementation to ensure fresh content on pull-to-refresh.
-- [x] **Notification Suppression**: Intelligent foreground detection (Toast in FG, System Notification in BG).
-- [x] **Untrack Action**: Added explicit bookmark toggle in Story Detail view.
-- [x] **Cleanup**: Removed unused "Track Hint" and "Test Notification" logic.
-</details>
+Final milestone phase: refactoring repository-level business logic into domain UseCases and standardizing ViewModel dependencies with Hilt DI cleanup.
 
-<details>
-<summary><b>Phase 1: Foundation (Completed 2026-02-02)</b></summary>
-
-- [x] Room cache tables for articles, embeddings, and match results
-- [x] Feed response caching with 3-hour TTL
-- [x] Offline-first NewsRepository (Room as source of truth)
-- [x] NewsAPI 429 rate limit detection with graceful degradation
-- [x] User feedback when rate limited (Snackbar with time remaining)
-- [x] OkHttp 50 MiB HTTP cache with custom interceptors
-- [x] DataStore persistence for quota state across app restarts
-- [x] Embedding storage utilities (FloatArray ↔ ByteArray conversion)
-</details>
-
-<details>
-<summary><b>Phase 2: Text Extraction (Completed 2026-02-05) ✅ Verified</b></summary>
-
-- [x] Readability4J 1.0.8 and jsoup 1.22.1 dependencies
-- [x] ExtractionResult sealed class (Success, PaywallDetected, NetworkError, ExtractionError, NotFetched)
-- [x] ArticleFetchPreference enum (ALWAYS, WIFI_ONLY, NEVER)
-- [x] PaywallDetector with 3-tier detection (structured data, CSS selectors, text patterns)
-- [x] ArticleHtmlFetcher with 100 MiB cache and 7-day TTL
-- [x] NetworkMonitor for WiFi/metered network detection
-- [x] UserPreferencesRepository for DataStore persistence
-- [x] TextExtractionRepository orchestrating fetch → paywall → parse → save pipeline
-- [x] Retry-once extraction logic with 5-minute window
-- [x] Database migration v2→v3 (extraction failure tracking columns)
-- [x] Settings UI for article fetch preference (SettingsViewModel, radio buttons)
-</details>
-
-<details>
-<summary><b>Phase 3: Embedding Engine (Completed 2026-02-06) ✅ Verified</b></summary>
-
-- [x] TensorFlow Lite 2.17.0 integration with XNNPACK optimization (16KB aligned)
-- [x] all-MiniLM-L6-v2 quantized INT8 model (~23MB) bundled in assets
-- [x] BertTokenizerWrapper with 30,522 token vocabulary (WordPiece)
-- [x] EmbeddingModelManager with lazy loading and thread-safe inference
-- [x] EmbeddingRepository with caching, retry logic, and failure tracking
-- [x] Runtime tensor resizing fix for dynamic input shapes
-- [x] 384-dimensional embeddings with L2 normalization
-</details>
-
-<details>
-<summary><b>Phase 4: Similarity Matching (Completed 2026-02-06) ✅ Verified</b></summary>
-
-- [x] SimilarityMatcher for cosine similarity (STRONG ≥0.70, WEAK ≥0.50)
-- [x] TimeWindowCalculator for dynamic search windows (±48h to ±14d)
-- [x] Tiered matching: Feed-internal first → NewsAPI search fallback
-- [x] Persistent similarity scores in MatchResultEntity
-- [x] "Unrated Perspectives" support for unknown sources
-- [x] Mockito integration for high-fidelity repository unit tests
-- [x] **Verification**: 9/9 logic tests passed (100% logic coverage)
-</details>
- 
-<details>
-<summary><b>Phase 5: Pipeline Integration (Completed 2026-02-06) ✅ Verified</b></summary>
- 
-- [x] Introduced `GetSimilarArticlesUseCase` for "Fetch → Embed → Match" orchestration
-- [x] Added `matchMethod` persistence and state propagation
-- [x] Implemented user fallback hint: *"Perspectives are limited. Connect to WiFi for more perspectives."*
-- [x] Created `ComparisonHint` UI component for contextual feedback
-- [x] Verified end-to-end flow with unit tests for UseCase orchestration
-</details>
-
-<details>
-<summary><b>Phase 6: Background Processing (Completed 2026-02-07) ✅ Verified</b></summary>
-
-- [x] WorkManager infrastructure with Hilt injection and custom Configuration
-- [x] `ArticleAnalysisWorker` for background pre-computation of top 20 articles
-- [x] `BackgroundWorkScheduler` observing user preferences (Sync Enabled, Strategy, Metered)
-- [x] Settings UI with "Performance", "Balanced", "Power Saver" strategies
-- [x] Data usage warnings for metered network syncing
-</details>
-
-<details>
-<summary><b>Phase 7: UI Implementation (Completed 2026-02-07) ✅ Verified</b></summary>
-
-- [x] Bias Spectrum Rail (Canvas visualization)
-- [x] Reliability Badges (Accessible shields with shape+color)
-- [x] Comparison Screen integration with "Related Stories"
-- [x] Settings legend for ratings and reliability
-</details>
-
-<details>
-<summary><b>Phase 8: Tracking Foundation (Completed 2026-02-08) ✅ Verified</b></summary>
-
-- [x] **Database Schema**: Added `stories` table and `cached_articles` fields (`isTracked`, `storyId`)
-- [x] **Story Tracking Logic**: Implementation of `TrackingRepository` with 1,000-story limit enforcement
-- [x] **Tracking Persistence**: Articles in tracked stories are exempted from automatic cache expiration
-- [x] **UI Integration**: 
-    - Long-press context menu on Feed articles to "Follow Story"
-    - Bookmark icon in Article Detail view to toggle tracking
-    - Dedicated "Tracking" tab with clustering views
-- [x] **Usability**: Implemented full-card clickability for tracked story items
-- [x] **Verification**: `TrackingRepositoryTest` passed with 100% logic coverage
-</details>
-
-<details>
-<summary><b>Phase 9: Story Grouping Logic (Completed 2026-02-08) ✅ Verified</b></summary>
-
-- [x] **StoryUpdateWorker**: Background matching of new articles to tracked stories
-- [x] **Tiered Matching Logic**: Strong matches (≥0.70) auto-add, weak matches (0.50-0.69) flagged
-- [x] **Novelty Detection**: `isNovel` flag for articles with low similarity to existing cluster
-- [x] **Perspective Tracking**: `hasNewPerspective` flag for first article from a bias group
-- [x] **UI Enhancements**: 
-    - Unread badges ("3 new updates")
-    - Expandable timeline in Story Card
-    - "Last checked" timestamp and Pull-to-Refresh
-    - Clickable "Original Article" source
-</details>
-
-<details>
-<summary><b>Phase 9.5: Quality & Stability (Completed 2026-02-16) ✅ Verified</b></summary>
-
-- [x] **Hybrid Story Matching**: Combined embedding similarity + title entity overlap for high-precision matching
-- [x] **Tuned Thresholds**: STRONG (0.78), WEAK (0.55 + entities), CLEANUP_FLOOR (0.35)
-- [x] **Data Integrity Fix**: `OnConflictStrategy.REPLACE` → `IGNORE` prevents feed refresh from wiping story associations
-- [x] **Feed Clustering**: Adjusted thresholds and stop words to reduce false positives
-- [x] **Source Badges**: Fixed robust lookup in Comparison and Feed screens
-- [x] **Debug Rejection Toggle**: ❌ button on tracked story updates logs `MATCH_REJECTION` for threshold tuning
-- [x] **Entity Extraction**: Shared `EntityExtractor` utility for title entity overlap detection
-</details>
-
-<details>
-<summary><b>Phase 10: Notifications & Updates (Completed 2026-02-18) ✅ Verified</b></summary>
-
-- [x] **System Notifications**: Background alerts for novel story updates
-- [x] **Deep Linking**: Tapping notification opens the specific story thread
-- [x] **UI Indicators**: "New Major Update" badge distinct from regular unread counts
-- [x] **Article Highlighting**: Visual "NEW" pill and background highlight for specific new articles
-- [x] **Many-to-Many Tracking**: Support for one article belonging to multiple tracked stories (`StoryArticleCrossRef`)
-</details>
-
-### In Development — Architecture Refactor (Phase 12)
-
-We are now preparing for a repository-wide architecture refactor to improve maintainability and testability.
-
-| Phase | Name | Status | What It Does |
-|-------|------|--------|-------------|
-| 1 | Foundation | ✅ **Complete** | Data models, Room schema, caching, rate limiting |
-| 2 | Text Extraction | ✅ **Complete** | Fetch and parse full article text from URLs |
-| 3 | Embedding Engine | ✅ **Complete** | On-device TF Lite sentence embeddings (384-dim) |
-| 4 | Similarity Matching | ✅ **Complete** | Cosine similarity, clustering, persistent scores |
-| 5 | Pipeline Integration | ✅ **Complete** | End-to-end matching orchestration in UI |
-| 6 | Background Processing | ✅ **Complete** | WorkManager pre-computation during idle |
-| 7 | UI Implementation | ✅ **Complete** | Bias spectrum visualization |
-| 8 | Tracking Foundation | ✅ **Complete** | Database & UI for followed stories |
-| 9 | Story Grouping Logic | ✅ **Complete** | Auto-grouping new articles to threads |
-| 9.5 | Quality & Stability | ✅ **Complete** | Hybrid matching, feed quality, debug tooling |
-| 10 | Notifications | ✅ **Complete** | Background alerts for thread updates |
-| 10.1 | UI Polish & Bug Fixes | ✅ **Complete** | Source badges, refresh logic, notification suppression |
-| 11 | UI/UX Review & Refinement | ✅ **Complete** | Design tokens, bias heatmap, visual alignment |
-| 12 | Architecture Refactor | 📋 **Next** | Domain logic cleanup & DI improvements |
-
-**Progress:** Phase 1–11 complete. **Version 0.8.0**.
-
-**32 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
+**Progress:** 11/12 phases complete — **v0.9.0**.
 
 ### Planned (Future Milestones)
 
@@ -269,7 +112,10 @@ presentation/         # UI layer (Jetpack Compose)
 ├── feed/             # News feed with bias ratings
 ├── detail/           # Article detail WebView
 ├── comparison/       # Perspective comparison (bias spectrum)
-├── tracking/         # Story tracking (future)
+├── tracking/         # Story tracking & thread management
+├── story/            # Story detail view
+├── components/       # Shared UI components (BiasHeatmap, etc.)
+├── navigation/       # Bottom nav bar & route definitions
 ├── settings/         # App settings
 └── theme/            # Material 3 theming
 
@@ -343,7 +189,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 - **0 (●)**: Center — Reuters, AP, BBC, The Hill
 - **+1 (►)**: Center-Right — WSJ (news), The Economist
 - **+2 (►►)**: Right — Fox News, Breitbart, Newsmax
-- **?**: **Unrated Perspectives** — Sources not yet rated appear with a queston mark; they are still matched and clustered, but without a bias position.
+- **?**: **Unrated Perspectives** — Sources not yet rated appear with a question mark; they are still matched and clustered, but without a bias position.
 
 ### Reliability Scale (1-5 stars)
 - **★★★★★**: Very High — Reuters, AP, BBC
@@ -391,19 +237,19 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 <table>
   <tr>
     <td width="33%" align="center">
-      <img src="screenshots/newsthread_feed.png" width="100%" alt="Android app screen showing the news feed with bias ratings and reliability stars">
-      <br><b>News Feed v0.5</b><br>
-      Real-time headlines with aggregated bias indicators.
+      <img src="screenshots/tracked_stories.png" width="100%" alt="Android app screen showing tracked stories with bias heatmap previews">
+      <br><b>Tracked Stories</b><br>
+      Follow developing stories with auto-clustered updates.
     </td>
     <td width="33%" align="center">
-      <img src="screenshots/compare_perspectives_bias_spectrum_4.png" width="100%" alt="Android app screen displaying the Perspective Comparison spectrum with articles clustered from Left to Right">
-      <br><b>Perspective spectrum</b><br>
-      Semantic clustering of stories along a political axis.
+      <img src="screenshots/tracked_story_coverage_analysis.png" width="100%" alt="Android app screen showing coverage analysis for a tracked story">
+      <br><b>Coverage Analysis</b><br>
+      See how a story is covered across the political spectrum.
     </td>
     <td width="33%" align="center">
-      <img src="screenshots/16kb_warning.png" width="100%" alt="Android 15 system popup warning about a 16KB alignment issue in native libraries">
-      <br><b>The 16KB Villain</b><br>
-      The Android 15 error we officially conquered.
+      <img src="screenshots/story_compare_perspectives_view.png" width="100%" alt="Android app screen displaying the Compare Perspectives view with bias heatmap">
+      <br><b>Compare Perspectives</b><br>
+      Semantic matching along a political bias spectrum.
     </td>
   </tr>
 </table>

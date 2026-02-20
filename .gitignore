@@ -101,7 +101,6 @@ log_final.txt
 screenshots/
 .DS_Store
 test_output.txt
-test_output.txt
 
 
 # JVM crash logs
