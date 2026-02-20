@@ -50,7 +50,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
 
 <details>
-<summary><b>📋 Development History (11 phases completed)</b></summary>
+<summary><b>📋 Development History (12 phases completed)</b></summary>
 
 | Phase | Name | Completed | Highlights |
 |-------|------|-----------|------------|
