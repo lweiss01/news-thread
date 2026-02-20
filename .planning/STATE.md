@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 10 - Notifications & Updates
+**Current focus:** Phase 12 - Architecture Refactor
 
 ## Current Position
 
-Phase: 11 of 12 (UI/UX Review and Refinement)
+Phase: 12 of 12 (Architecture Refactor)
 Plan: —
-Status: Phase 10.1 Complete — Ready for Phase 11
-Last activity: 2026-02-19 — Completed UI Polish & Bug Fixes (Source Badges, Notifications)
-Progress: [██████████▓] 92% (10.1/12 phases complete)
+Status: Phase 11 Complete & Validated — Ready for Phase 12
+Last activity: 2026-02-19 — Completed UI/UX Review and Refinement
+Progress: [███████████▓] 96% (11/12 phases complete)
 
 ## Performance Metrics
 
@@ -110,9 +110,20 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-02-17
-Stopped at: Phase 10 verification pending (All Bold fix)
-Resume with: Plan Phase 11 (Architecture Refactor)
+Last session: 2026-02-19
+Stopped at: Phase 11 validated and complete
+Resume with: Plan Phase 12 (Architecture Refactor)
+
+### Session Notes (2026-02-19, Phase 11)
+- **Phase 11 Validated & Complete**:
+    - **Design Tokens**: Introduced `ProjectColors`, `ProjectTypography`, `ProjectSpacing` token system.
+    - **BiasHeatmap**: Gradient bar with colored dots (Navy→Blue→Purple→Red→Crimson), sizing by source count.
+    - **Tracking Flow**: Simplified card-click navigation to Story Detail, heatmap preview on cards.
+    - **Story Detail**: "Read original story" link, articles grouped by Left/Center/Right/Unrated.
+    - **Compare Perspectives**: Replaced `BiasSpectrumRail` with gradient `BiasHeatmap`.
+    - **Data Fix**: Robust `sourceRatings` lookup (sourceId → sourceName → displayName fallback).
+    - **TrackingViewModel**: `displayName` added as additional key in ratings map.
+    - **Docs**: Updated ROADMAP, STATE, PROJECT, README.
 
 ### Session Notes (2026-02-19)
 - **Phase 10.1 Validated & Complete**:

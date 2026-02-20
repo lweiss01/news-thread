@@ -23,7 +23,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
 - [x] **Phase 9.5: Quality & Stability** - Fix matching key bugs and feed quality issues
 - [x] **Phase 10: Notifications & Updates** - Background alerts for thread updates
-- [ ] **Phase 11: Architecture Refactor** - Repo-wide cleanup (Domain logic, ViewModels, DI)
+- [x] **Phase 10.1: UI Polish & Bug Fixes** - Source badges, refresh, notification suppression
+- [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
+- [ ] **Phase 12: Architecture Refactor** - Repo-wide cleanup (Domain logic, ViewModels, DI)
 
 ## Phase Details
 
@@ -99,13 +101,19 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Goal:** Redesign the app to "Modern/Pulse" aesthetic. Implement Bias Heatmap, Pulse Dashboard, and Comparison Stream.
 **Depends on:** Phase 10
-**Plans:** 4 plans
+**Status**: Complete (2026-02-19)
 
 Plans:
-- [ ] 11-01: Visual Foundations & Bias Heatmap
-- [ ] 11-02: Tracked Stories (Pulse Dashboard)
-- [ ] 11-03: Comparison Screen (Stream)
-- [ ] 11-04: Final Polish & Visual Refinement
+- [x] 11-01: Visual Foundations & Bias Heatmap
+- [x] 11-02: Tracked Stories (Pulse Dashboard)
+- [x] 11-03: Comparison Screen (Stream)
+- [x] 11-04: Final Polish & Visual Refinement
+
+**Additional Deliverables (User Feedback Iteration):**
+- [x] Robust sourceRatings lookup (sourceId → sourceName fallback)
+- [x] Replaced BiasSpectrumRail with gradient BiasHeatmap on ComparisonScreen
+- [x] Articles grouped by Left/Center/Right/Unrated on StoryDetailScreen
+- [x] displayName added as additional key in ratings map
 
 ### Phase 12: Architecture Refactor
 **Goal**: Address repo-wide audit findings (Domain logic, ViewModel cleanup, DI) to improve maintainability.
@@ -135,5 +143,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9.5. Quality & Stability | 4/4 | Complete | 2026-02-16 |
 | 10. Notifications & Updates | 6/6 | Complete | 2026-02-18 |
 | 10.1. UI Polish & Bug Fixes | 1/1 | Complete | 2026-02-19 |
-| 11. UI/UX Review and Refinement | 0/4 | Planned | - |
+| 11. UI/UX Review & Refinement | 4/4 | Complete | 2026-02-19 |
 | 12. Architecture Refactor | 0/2 | Planned | - |

@@ -33,7 +33,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 0.7.1 (Beta)
+**Version**: 0.8.0 (Beta)
 **Status**: Active Development
 
 ### Completed
@@ -55,6 +55,18 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] Hybrid matching, feed quality, and stability fixes (Phase 9.5)
 - [x] **UI Polish & Bug Fixes (Phase 10.1)**
 - [x] **Notifications, Deep Linking, and Update Highlighting (Phase 10)**
+- [x] **UI/UX Review & Refinement (Phase 11)**
+
+<details>
+<summary><b>Phase 11: UI/UX Review & Refinement (Completed 2026-02-19) ✅ Verified</b></summary>
+
+- [x] **Design Tokens**: Introduced `ProjectColors`, `ProjectTypography`, `ProjectSpacing` for consistent theming.
+- [x] **Bias Heatmap**: Gradient bar (Left→Center→Right) with colored dots sized by source count.
+- [x] **Tracking Flow**: Simplified card-click navigation, heatmap preview on tracked story cards.
+- [x] **Story Detail**: "Read original story" link, articles grouped by Left/Center/Right/Unrated perspective.
+- [x] **Compare Perspectives**: Replaced old line-chart `BiasSpectrumRail` with gradient `BiasHeatmap`.
+- [x] **Data Fix**: Robust source lookup (sourceId → sourceName → displayName fallback).
+</details>
 
 <details>
 <summary><b>Phase 10.1: UI Polish & Bug Fixes (Completed 2026-02-19) ✅ Verified</b></summary>
@@ -198,7 +210,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 - [x] **Many-to-Many Tracking**: Support for one article belonging to multiple tracked stories (`StoryArticleCrossRef`)
 </details>
 
-### In Development — Architecture Refactor (Phase 11)
+### In Development — Architecture Refactor (Phase 12)
 
 We are now preparing for a repository-wide architecture refactor to improve maintainability and testability.
 
@@ -215,10 +227,11 @@ We are now preparing for a repository-wide architecture refactor to improve main
 | 9 | Story Grouping Logic | ✅ **Complete** | Auto-grouping new articles to threads |
 | 9.5 | Quality & Stability | ✅ **Complete** | Hybrid matching, feed quality, debug tooling |
 | 10 | Notifications | ✅ **Complete** | Background alerts for thread updates |
-| 10.1 | UI Polish & Bug Fixes | 🚧 **Active** | Critical UI fixes (Badges, Notifications, Paywall) |
-| 11 | Architecture Refactor | 📋 **Next** | Domain logic cleanup & DI improvements |
+| 10.1 | UI Polish & Bug Fixes | ✅ **Complete** | Source badges, refresh logic, notification suppression |
+| 11 | UI/UX Review & Refinement | ✅ **Complete** | Design tokens, bias heatmap, visual alignment |
+| 12 | Architecture Refactor | 📋 **Next** | Domain logic cleanup & DI improvements |
 
-**Progress:** Phase 1-10.1 complete. **Versions 0.7.1**.
+**Progress:** Phase 1–11 complete. **Version 0.8.0**.
 
 **32 requirements** defined across matching engine, bias spectrum UI, caching, and infrastructure.
 

@@ -45,15 +45,13 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Deep linking to story details — Phase 10
 - ✓ Background worker for update detection — Phase 10
 - ✓ UI Highlighting for new updates ("New" badge and pill) — Phase 10
+- ✓ Design tokens (Colors, Typography, Spacing) — Phase 11
+- ✓ Bias Heatmap (gradient bar with colored dots) — Phase 11
+- ✓ Unified bias visualization across all screens — Phase 11
+- ✓ Articles grouped by Left/Center/Right/Unrated in Story Detail — Phase 11
 
 
-### Active (Phase 11: UI/UX & Phase 12: Architecture)
-
-#### Phase 11: UI/UX Review and Refinement
-- [ ] Visual Foundations (Colors/Shapes)
-- [ ] Tracked Stories (Pulse Dashboard)
-- [ ] Comparison Screen (Stream)
-- [ ] Final Polish
+### Active (Phase 12: Architecture)
 
 #### Phase 12: Architecture Refactor
 - [ ] Refactor NewsRepository filtering/clustering to Domain UseCases
@@ -113,5 +111,5 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
-*Last updated: 2026-02-16*
+*Last updated: 2026-02-19*
 
