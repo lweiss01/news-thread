@@ -88,6 +88,7 @@ Recent decisions affecting current work:
 - Phase 10.1 inserted after Phase 10: UI Polish & Bug Fixes (URGENT)
 - Phase 11 added: UI/UX Review and Refinement (Renumbered from 12)
 - Phase 12: Architecture Refactor (Renumbered from 11)
+- Phase 13 added: UI Design and Visual Language Updates
 
 ### Session Continuity
 

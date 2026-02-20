@@ -39,7 +39,7 @@ fun ArticleCard(
                 vertical = ProjectTheme.spacing.s
             )
             .pulseEffect(onClick = onClick) // Reactive Pulse
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surface) // Slate900/White
     ) {
         Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
@@ -100,7 +100,7 @@ fun ArticleCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(MaterialTheme.shapes.small),
                     contentScale = ContentScale.Crop
                 )
             }

@@ -61,7 +61,7 @@ fun BiasHeatmap(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(28.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .background(ProjectTheme.bias.gradient)
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {

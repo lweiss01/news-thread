@@ -1,7 +1,6 @@
 package com.newsthread.app.presentation.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -13,129 +12,169 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// --- Extension Systems (Pulse Effects) ---
-
+// ---------------------------------------------------------------------------
+// Glow Extension
+// Neon glow now uses Amber rather than Cyan, anchoring the brand feel.
+// ---------------------------------------------------------------------------
 data class NewsGlow(
-    val neon: Brush,
-    val subtle: Brush
+    val neon: Brush,   // Amber-tinted vertical glow for hero elements
+    val subtle: Brush  // Slate-tinted subtle glow for cards
 )
 
 val LocalGlow = staticCompositionLocalOf<NewsGlow> { error("No Glow provided") }
 
+// ---------------------------------------------------------------------------
+// Bias Extension
+// Carries spectrum gradient + perspective label colors.
+// These values are identical in light and dark — intentional, see Color.kt.
+// ---------------------------------------------------------------------------
 data class NewsBiasColors(
     val gradient: Brush,
-    val unrated: Color
+    val unrated: Color,
+    // Perspective section label colors, matched to spectrum endpoints.
+    // Use these wherever you render "Left Perspective" / "Right Perspective" labels
+    // so that the label color always agrees with the bar.
+    val leftLabel: Color,
+    val rightLabel: Color
 )
 
 val LocalBias = staticCompositionLocalOf<NewsBiasColors> { error("No Bias provided") }
 
 
-// --- Material Theme Mapping ---
+// ---------------------------------------------------------------------------
+// Material Color Schemes
+// ---------------------------------------------------------------------------
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Cyan500,
-    onPrimary = NewsOnPrimary,
-    primaryContainer = Slate800,
-    onPrimaryContainer = Cyan500,
-    secondary = Violet500,
-    onSecondary = Color.White,
-    background = NewsBackground, // Slate950
-    onBackground = NewsOnSurface, // Slate300
-    surface = NewsSurface, // Slate900
-    onSurface = NewsOnSurface,
-    surfaceVariant = Slate800,
-    onSurfaceVariant = NewsOnSurfaceVariant,
-    outline = NewsOutline,
-    error = Color(0xFFEF4444),
-    onError = Color.White
+    // Brand — Amber
+    primary            = Amber500,
+    onPrimary          = NewsOnPrimary,       // Slate900 — dark text on amber
+    primaryContainer   = Slate800,            // Amber-tinted container not needed in dark
+    onPrimaryContainer = Amber300,            // Amber300 for text inside containers
+
+    // Secondary — Neutral slate (Violet is reserved for spectrum only)
+    secondary          = Slate400,
+    onSecondary        = Slate900,
+    secondaryContainer = Slate700,
+    onSecondaryContainer = Slate300,
+
+    // Surfaces
+    background         = NewsBackground,      // Slate950
+    onBackground       = NewsOnSurface,       // Slate300
+    surface            = NewsSurface,         // Slate900
+    onSurface          = NewsOnSurface,       // Slate300
+    surfaceVariant     = Slate800,
+    onSurfaceVariant   = NewsOnSurfaceVariant, // Slate400
+
+    // Chrome
+    outline            = NewsOutline,         // Slate700
+    error              = Color(0xFFEF4444),
+    onError            = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Cyan500, // Keep Cyan as brand identity
-    onPrimary = Color.White,
-    primaryContainer = Slate100,
-    onPrimaryContainer = Slate900,
-    secondary = Violet500,
-    onSecondary = Color.White,
-    background = Slate50, // Soft White
-    onBackground = Slate900,
-    surface = Color.White,
-    onSurface = Slate900,
-    surfaceVariant = Slate100,
-    onSurfaceVariant = Slate600,
-    outline = Slate200,
-    error = Color(0xFFDC2626),
-    onError = Color.White
+    // Brand — Amber
+    primary            = Amber500,
+    onPrimary          = Slate900,            // Dark text on amber button
+    primaryContainer   = Amber200,            // Soft amber container fill
+    onPrimaryContainer = Slate900,            // Dark text inside amber containers
+
+    // Secondary — Neutral slate
+    secondary          = Slate500,
+    onSecondary        = Color.White,
+    secondaryContainer = Slate100,
+    onSecondaryContainer = Slate700,
+
+    // Surfaces
+    background         = Slate50,            // #F8FAFC near-white
+    onBackground       = Slate900,
+    surface            = Color.White,
+    onSurface          = Slate900,
+    surfaceVariant     = Slate100,
+    onSurfaceVariant   = Slate600,
+
+    // Chrome
+    outline            = Slate200,
+    error              = Color(0xFFDC2626),
+    onError            = Color.White
 )
 
+
+// ---------------------------------------------------------------------------
+// Theme Composable
+// ---------------------------------------------------------------------------
 
 @Composable
 fun NewsThreadTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // We disable dynamic color for now to enforce our Brand Identity (Cyan/Slate)
-    // dynamicColor: Boolean = true, 
+    // Dynamic color disabled — Amber brand identity must be enforced.
+    // dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-    
-    // Define Extensions based on Theme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    // Glow: Amber-tinted in both modes, adjusted for surface brightness
     val glow = if (darkTheme) {
         NewsGlow(
-            neon = Brush.verticalGradient(listOf(Cyan500.copy(alpha=0.6f), Color.Transparent)),
-            subtle = Brush.verticalGradient(listOf(Slate700.copy(alpha=0.3f), Color.Transparent))
+            neon   = Brush.verticalGradient(listOf(Amber500.copy(alpha = 0.5f), Color.Transparent)),
+            subtle = Brush.verticalGradient(listOf(Slate700.copy(alpha = 0.3f), Color.Transparent))
         )
     } else {
         NewsGlow(
-            neon = Brush.verticalGradient(listOf(Cyan500.copy(alpha=0.4f), Color.Transparent)),
-            subtle = Brush.verticalGradient(listOf(Slate200.copy(alpha=0.5f), Color.Transparent))
+            neon   = Brush.verticalGradient(listOf(Amber400.copy(alpha = 0.35f), Color.Transparent)),
+            subtle = Brush.verticalGradient(listOf(Slate200.copy(alpha = 0.5f), Color.Transparent))
         )
     }
 
+    // Bias: Same spectrum in both modes — users never re-learn the bar
     val bias = NewsBiasColors(
-        gradient = Brush.horizontalGradient(listOf(BiasLeft, BiasCenter, BiasRight)),
-        unrated = BiasUnrated
+        gradient   = Brush.horizontalGradient(listOf(BiasLeft, BiasCenter, BiasRight)),
+        unrated    = BiasUnrated,
+        leftLabel  = PerspectiveLeft,   // #60A5FA
+        rightLabel = PerspectiveRight   // #F87171
     )
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb() // Match background for seamless look
+            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     CompositionLocalProvider(
         LocalSpacing provides NewsSpacing(),
-        LocalGlow provides glow,
-        LocalBias provides bias
+        LocalGlow    provides glow,
+        LocalBias    provides bias
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
-            content = content
+            typography  = Typography,
+            shapes      = Shapes,
+            content     = content
         )
     }
 }
 
-// Accessor for easier usage
+
+// ---------------------------------------------------------------------------
+// ProjectTheme Accessor
+// Usage example:
+//   val bias = ProjectTheme.bias
+//   Text("Left Perspective", color = bias.leftLabel)
+//   val linkColor = if (darkTheme) Amber300 else Amber600
+// ---------------------------------------------------------------------------
 object ProjectTheme {
     val spacing: NewsSpacing
-        @Composable
-        get() = LocalSpacing.current
-        
+        @Composable get() = LocalSpacing.current
+
     val glow: NewsGlow
-        @Composable
-        get() = LocalGlow.current
-        
+        @Composable get() = LocalGlow.current
+
     val bias: NewsBiasColors
-        @Composable
-        get() = LocalBias.current
+        @Composable get() = LocalBias.current
 }
