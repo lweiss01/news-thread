@@ -103,6 +103,9 @@ fun NewsThreadApp() {
                         navController.navigate(
                             ArticleDetailRoute.createRoute(encodedUrl)
                         )
+                    },
+                    onStoryClick = { storyId ->
+                        navController.navigate("story/$storyId")
                     }
                 )
             }

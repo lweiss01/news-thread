@@ -228,7 +228,7 @@ private fun DebugSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        )
+
     }
 }
 

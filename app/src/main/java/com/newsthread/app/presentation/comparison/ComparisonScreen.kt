@@ -24,6 +24,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
+import com.newsthread.app.presentation.components.BiasHeatmap
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import java.net.URLEncoder
 
@@ -168,12 +169,23 @@ private fun ComparisonContent(
                         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                     )
                     
-                    BiasSpectrumRail(
-                        articles = ratedArticles,
-                        sourceRatings = sourceRatings,
+                    // Calculate bias counts from rated articles
+                    val biasCounts = remember(ratedArticles, sourceRatings) {
+                        ratedArticles.mapNotNull { article ->
+                            val rating = article.source.id?.let { sourceRatings[it] }
+                                ?: sourceRatings[article.source.name]
+                                ?: comparison.ratings[article.url]
+                            rating?.finalBiasScore
+                        }.groupingBy { it }.eachCount()
+                    }
+                    val unratedCount = allPerspectives.size - ratedArticles.size
+                    
+                    BiasHeatmap(
+                        biasCounts = biasCounts,
+                        unratedCount = unratedCount,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(80.dp)
+                            .padding(horizontal = 16.dp)
                     )
                     
                     HorizontalDivider()

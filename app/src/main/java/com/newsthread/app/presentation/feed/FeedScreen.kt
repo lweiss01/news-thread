@@ -29,6 +29,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import com.newsthread.app.presentation.components.NewsTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -228,12 +229,11 @@ fun FeedScreen(
         }
     }
 
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("NewsThread") }
-            )
+            NewsTopAppBar(title = "NewsThread")
         }
     ) { paddingValues ->
         // M3 Pull-to-Refresh

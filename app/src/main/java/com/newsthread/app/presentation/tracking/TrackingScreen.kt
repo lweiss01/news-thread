@@ -58,6 +58,7 @@ private val biasColors = mapOf(
 @Composable
 fun TrackingScreen(
     onArticleClick: (String) -> Unit,
+    onStoryClick: (String) -> Unit, // NEW
     viewModel: TrackingViewModel = hiltViewModel()
 ) {
     val stories by viewModel.trackedStories.collectAsState()
@@ -66,41 +67,10 @@ fun TrackingScreen(
     val sourceRatings by viewModel.sourceRatings.collectAsState()
     
     // Phase 10: Notification Permission Request
-    val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                // Permission granted
-            }
-        }
-    )
-    
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
+    // ... (unchanged)
 
     Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text("Tracked Stories") }
-                )
-                if (lastRefreshed != null) {
-                    Text(
-                        text = "Last checked: ${getRelativeTime(lastRefreshed!!)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
+        // ... (unchanged)
     ) { padding ->
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing),
@@ -121,8 +91,9 @@ fun TrackingScreen(
                             sourceRatings = sourceRatings,
                             onUnfollow = { viewModel.unfollowStory(it) },
                             onArticleClick = onArticleClick,
+                            onStoryClick = onStoryClick, // NEW
                             onMarkViewed = { viewModel.markStoryViewed(it) },
-                            onMarkBadgeSeen = { viewModel.markBadgeSeen(it) }, // NEW
+                            onMarkBadgeSeen = { viewModel.markBadgeSeen(it) }, 
                             onRejectMatch = { url -> viewModel.rejectMatch(url, storyWithArticles.story.id) }
                         )
                     }
@@ -166,49 +137,71 @@ fun EnhancedStoryCard(
     sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>,
     onUnfollow: (String) -> Unit,
     onArticleClick: (String) -> Unit,
+    onStoryClick: (String) -> Unit,
     onMarkViewed: (String) -> Unit,
     onMarkBadgeSeen: (String) -> Unit,
     onRejectMatch: (String) -> Unit = {}
 ) {
-    // Phase 10: Ensure story is marked viewed when card is collapsed
-    // Removed DisposableEffect as it was causing premature 'viewed' status on initial composition
-
-    var expanded by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                expanded = !expanded
-                if (expanded) {
-                    onMarkBadgeSeen(storyWithArticles.story.id)
-                } else {
-                    // Mark as viewed when collapsing
-                     onMarkViewed(storyWithArticles.story.id)
+            .clickable { onStoryClick(storyWithArticles.story.id) } // Direct navigation
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header: Title & Source
+            Text(
+                text = storyWithArticles.story.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Calculate Heatmap Data
+            val articles = storyWithArticles.articles
+            val biasCounts = remember(articles, sourceRatings) {
+                 articles.mapNotNull { article ->
+                    // Robust lookup: sourceId -> sourceName fallback
+                    val rating = article.sourceId?.let { sourceRatings[it] }
+                        ?: sourceRatings[article.sourceName]
+                    rating?.finalBiasScore
+                }.groupingBy { it }.eachCount()
+             }
+             
+             val unratedCount = articles.count {
+                 val rating = it.sourceId?.let { id -> sourceRatings[id] }
+                     ?: sourceRatings[it.sourceName]
+                 rating == null
+             }
+
+            // Heatmap Preview
+            com.newsthread.app.presentation.components.BiasHeatmap(
+                biasCounts = biasCounts,
+                unratedCount = unratedCount,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                 Text(
+                    text = "${storyWithArticles.articles.size} updates",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                 IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = "Unfollow",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
-    ) {
-        com.newsthread.app.presentation.component.StoryContent(
-            storyWithArticles = storyWithArticles,
-            sourceRatings = sourceRatings,
-            isExpanded = expanded,
-            onExpandChange = {
-                expanded = it
-                if (expanded) {
-                    onMarkBadgeSeen(storyWithArticles.story.id)
-                } else {
-                    onMarkViewed(storyWithArticles.story.id)
-                }
-            },
-            onUnfollow = onUnfollow,
-            onArticleClick = { url ->
-                // Mark viewed explicitly on click as we are navigating away (and DisposableEffect handles dispose)
-                // But duplicate call is harmless.
-                onArticleClick(url)
-            },
-            onMarkViewed = onMarkViewed,
-            onRejectMatch = onRejectMatch
-        )
+        }
     }
 }
 

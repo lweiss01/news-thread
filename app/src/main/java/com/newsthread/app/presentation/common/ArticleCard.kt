@@ -1,7 +1,7 @@
 package com.newsthread.app.presentation.common
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,7 +19,7 @@ import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.presentation.comparison.ReliabilityBadge
-import java.net.URI
+import com.newsthread.app.presentation.theme.ProjectTheme
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -30,87 +30,83 @@ fun ArticleCard(
     onBookmarkClick: () -> Unit = {},
     onClick: () -> Unit
 ) {
-    // State for context menu
-    var contextMenuExpanded by remember { mutableStateOf(false) }
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable(onClick = onClick),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                // Header: Source Name & Rating
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = article.source.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val rating = findRatingForArticle(article, sourceRatings)
-                        // Always show badge, even if null (Unrated/Question Mark)
-                        ReliabilityBadge(rating = rating, size = 18.dp)
-                        
-                        IconButton(onClick = onBookmarkClick) {
-                            Icon(
-                                imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = if (isTracked) "Unfollow" else "Follow",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Title
+    // We use a custom Box + pulseEffect instead of default Card
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = ProjectTheme.spacing.m,
+                vertical = ProjectTheme.spacing.s
+            )
+            .pulseEffect(onClick = onClick) // Reactive Pulse
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface) // Slate900/White
+    ) {
+        Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
+            // Header: Source Name & Rating
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = article.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    text = article.source.name,
+                    style = MaterialTheme.typography.labelMedium, // Mono
+                    color = MaterialTheme.colorScheme.primary // Cyan500
                 )
 
-                // Description
-                article.description?.let { description ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Image
-                article.urlToImage?.let { imageUrl ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val rating = findRatingForArticle(article, sourceRatings)
+                    ReliabilityBadge(rating = rating, size = 18.dp)
+                    
+                    IconButton(onClick = onBookmarkClick) {
+                        Icon(
+                            imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = if (isTracked) "Unfollow" else "Follow",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
+
+            // Title
+            Text(
+                text = article.title,
+                style = MaterialTheme.typography.titleMedium, // Inter Medium 16sp
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // Description
+            article.description?.let { description ->
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium, // Inter Normal 14sp
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant // Slate600/400
+                )
+            }
+
+            // Image
+            article.urlToImage?.let { imageUrl ->
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
-
-
+    }
+}
 
 // Helper function to find rating
 private fun findRatingForArticle(

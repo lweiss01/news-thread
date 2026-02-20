@@ -53,11 +53,12 @@ class TrackingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 sourceRatingRepository.getAllSourcesFlow().collect { ratings ->
-                    // Create map: domain -> rating AND sourceId -> rating
+                    // Create map: domain -> rating, sourceId -> rating, AND displayName -> rating
                     val ratingsMap = mutableMapOf<String, com.newsthread.app.domain.model.SourceRating>()
                     ratings.forEach { rating ->
                         if (rating.domain.isNotBlank()) ratingsMap[rating.domain] = rating
                         if (rating.sourceId.isNotBlank()) ratingsMap[rating.sourceId] = rating
+                        if (rating.displayName.isNotBlank()) ratingsMap[rating.displayName] = rating
                     }
                     _sourceRatings.value = ratingsMap
                 }
