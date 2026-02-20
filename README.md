@@ -275,7 +275,7 @@ Not yet accepting contributions as this is early-stage development. Check back l
 
 ## License
 
-Copyright 2026 NewsThread. All rights reserved.
+Copyright © 2026 Lisa Weiss. All rights reserved. See [LICENSE](LICENSE) for details.
 
 ---
 
