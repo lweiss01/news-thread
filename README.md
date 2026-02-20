@@ -33,8 +33,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 0.9.0 (Beta)
-**Status**: Feature-complete beta — final architecture cleanup in progress
+**Version**: 1.1.0 (Stable Beta)
+**Status**: Milestone 1.1 Complete — Production-ready architecture
 
 ### What's Built
 
@@ -67,16 +67,18 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 10 | Notifications | 2026-02-18 | System notifications, deep linking, article highlighting |
 | 10.1 | UI Polish | 2026-02-19 | Source badges, refresh logic, notification suppression |
 | 11 | UI/UX Refinement | 2026-02-19 | Design tokens, bias heatmap, visual consistency |
+| 12 | Architecture Refactor | 2026-02-20 | Domain logic extraction, Hilt DI cleanup, UseCases |
 
 Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 </details>
 
-### Up Next — Architecture Refactor (Phase 12)
+### Up Next — UI Design and Visual Language Updates (Phase 13)
 
-Final milestone phase: refactoring repository-level business logic into domain UseCases and standardizing ViewModel dependencies with Hilt DI cleanup.
+Next focus area: implementing advanced UI design refinements and refreshing the visual language across the application.
 
-**Progress:** 11/12 phases complete — **v0.9.0**.
+**Progress:** 12/12 phases complete — **v1.1.0**.
+
 
 ### Planned (Future Milestones)
 

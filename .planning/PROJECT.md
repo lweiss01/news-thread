@@ -8,12 +8,13 @@ NewsThread is a native Android news reader that shows how different media source
 
 When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
 
-## Current Milestone: v1.1 UI/UX Refinement & Architecture Refactor
+## Current Milestone: v1.1.x UI Design & Visual Updates
 
 **Target features:**
 - UI/UX Redesign (Pulse Dashboard, Heatmap, Modern Style)
 - Domain Logic Extraction (NewsRepository -> UseCases)
 - ViewModel Standardization
+- UI Design and Visual Language Updates
 - Dependency Injection Cleanup
 
 ### Requirements
@@ -51,13 +52,16 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Bias Heatmap (gradient bar with colored dots) — Phase 11
 - ✓ Unified bias visualization across all screens — Phase 11
 - ✓ Articles grouped by Left/Center/Right/Unrated in Story Detail — Phase 11
+- ✓ Refactored business logic into Domain UseCases — Phase 12
+- ✓ Standardized ViewModel dependencies and cleaned up Hilt DI — Phase 12
 
 
-### Active (Phase 12: Architecture)
 
-#### Phase 12: Architecture Refactor
-- [ ] Refactor NewsRepository filtering/clustering to Domain UseCases
-- [ ] Standardize ViewModels to use UseCases only
+### Active (Phase 13: UI Design)
+
+#### Phase 13: UI Design and Visual Language Updates
+- [ ] Refresh visual language and implement UI design refinements
+
 
 ### Backlog (Future)
 
@@ -113,5 +117,5 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
-*Last updated: 2026-02-19*
+*Last updated: 2026-02-20 after Phase 12*
 

@@ -25,7 +25,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Notifications & Updates** - Background alerts for thread updates
 - [x] **Phase 10.1: UI Polish & Bug Fixes** - Source badges, refresh, notification suppression
 - [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
-- [ ] **Phase 12: Architecture Refactor** - Repo-wide cleanup (Domain logic, ViewModels, DI)
+- [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
+- [ ] **Phase 13: UI Design and Visual Language Updates** - Planned UI refinements and aesthetic refresh
+
 
 ## Phase Details
 
@@ -121,11 +123,21 @@ Plans:
 ### Phase 12: Architecture Refactor
 **Goal**: Address repo-wide audit findings (Domain logic, ViewModel cleanup, DI) to improve maintainability.
 
+**Status**: Complete (2026-02-20)
+
+**Delivered**:
+- [x] 12-CONTEXT.md — Phase Context
+- [x] 12-RESEARCH.md — Phase Research
+- [x] 12-01-PLAN.md — Domain Logic Extraction
+- [x] 12-02-PLAN.md — ViewModel Standardization & DI Cleanup
+- [x] 12-VERIFICATION.md — Verification Report
+
+### Phase 13: UI Design and Visual Language Updates
+**Goal**: Implement advanced UI design refinements and refresh the visual language across the app.
+
 **Status**: Planned
 
-**Plans**:
-- [ ] 12-01: Domain Logic Extraction (NewsRepository -> UseCases)
-- [ ] 12-02: ViewModel Standardization & DI Cleanup
+
 
 ## Progress
 
@@ -147,4 +159,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. Notifications & Updates | 6/6 | Complete | 2026-02-18 |
 | 10.1. UI Polish & Bug Fixes | 1/1 | Complete | 2026-02-19 |
 | 11. UI/UX Review & Refinement | 4/4 | Complete | 2026-02-19 |
-| 12. Architecture Refactor | 0/2 | Planned | - |
+| 12. Architecture Refactor | 2/2 | Complete | 2026-02-20 |
+| 13. UI Design Updates | 0/1 | Planned | - |
+

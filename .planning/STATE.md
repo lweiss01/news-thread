@@ -2,18 +2,18 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-19)
+See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 12 - Architecture Refactor
+**Current focus:** Transitioning to Phase 13 (UI Design Updates)
 
 ## Current Position
 
 Phase: 12 of 12 (Architecture Refactor)
 Plan: —
-Status: Phase 11 Complete & Validated — Ready for Phase 12
-Last activity: 2026-02-19 — Completed UI/UX Review and Refinement
-Progress: [███████████▓] 96% (11/12 phases complete)
+Status: Phase 12 Complete & Validated — Transitioning to Milestone v1.2
+Last activity: 2026-02-20 — Completed Architecture Refactor
+Progress: [████████████] 100% (12/12 phases complete)
 
 
 ## Accumulated Context
@@ -89,22 +89,21 @@ Recent decisions affecting current work:
 - Phase 11 added: UI/UX Review and Refinement (Renumbered from 12)
 - Phase 12: Architecture Refactor (Renumbered from 11)
 
-## Session Continuity
+### Session Continuity
 
-Last session: 2026-02-19
-Stopped at: Phase 11 validated and complete
-Resume with: Plan Phase 12 (Architecture Refactor)
+Last session: 2026-02-20
+Stopped at: Phase 12 complete, verified architecture refactor.
+Resume with: Planning Phase 13 (UI Design and Visual Language Updates) or addressing test failures.
 
-### Session Notes (2026-02-19, Phase 11)
-- **Phase 11 Validated & Complete**:
-    - **Design Tokens**: Introduced `ProjectColors`, `ProjectTypography`, `ProjectSpacing` token system.
-    - **BiasHeatmap**: Gradient bar with colored dots (Navy→Blue→Purple→Red→Crimson), sizing by source count.
-    - **Tracking Flow**: Simplified card-click navigation to Story Detail, heatmap preview on cards.
-    - **Story Detail**: "Read original story" link, articles grouped by Left/Center/Right/Unrated.
-    - **Compare Perspectives**: Replaced `BiasSpectrumRail` with gradient `BiasHeatmap`.
-    - **Data Fix**: Robust `sourceRatings` lookup (sourceId → sourceName → displayName fallback).
-    - **TrackingViewModel**: `displayName` added as additional key in ratings map.
-    - **Docs**: Updated ROADMAP, STATE, PROJECT, README.
+### Session Notes (2026-02-20, Phase 12)
+- **Phase 12 Validated & Complete**:
+    - **UseCases**: Extracted `FilterArticles`, `ClusterArticles`, `GetSourceRatingsMap`, `ToggleFollow`.
+    - **Mappers**: Centralized in `ArticleMappers.kt`.
+    - **ViewModels**: Standardized to use UseCases; removed dead dependencies.
+    - **TrackingViewModel**: Converted to plain `ViewModel` with `@ApplicationContext`.
+    - **MainActivity**: Hilt field injection for `DatabaseSeeder`.
+    - **Fixed**: 4 pre-existing out-of-sync fake DAO/service signatures in tests.
+    - **Verified**: `assembleDebug` and compilation pass.
 
 ### Session Notes (2026-02-19)
 - **Phase 10.1 Validated & Complete**:
