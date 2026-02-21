@@ -1,8 +1,10 @@
 package com.newsthread.app.di
 
 import com.newsthread.app.data.repository.ArticleMatchingRepositoryImpl
+import com.newsthread.app.data.repository.RssNewsRepository
 import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
 import com.newsthread.app.domain.repository.ArticleMatchingRepository
+import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.data.repository.TrackingRepositoryImpl
@@ -33,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindArticleMatchingRepository(
         impl: ArticleMatchingRepositoryImpl
     ): ArticleMatchingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNewsRepository(
+        impl: RssNewsRepository
+    ): NewsRepository
 }

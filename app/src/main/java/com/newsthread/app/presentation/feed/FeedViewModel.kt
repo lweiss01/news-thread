@@ -3,10 +3,9 @@ package com.newsthread.app.presentation.feed
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.newsthread.app.data.repository.NewsRepository
-import com.newsthread.app.data.repository.QuotaRepository
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.domain.usecase.GetSourceRatingsMapUseCase
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
@@ -26,7 +25,6 @@ sealed interface FeedUiState {
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
-    private val quotaRepository: QuotaRepository,
     private val getSourceRatingsMapUseCase: GetSourceRatingsMapUseCase,
     private val toggleFollowUseCase: ToggleFollowUseCase,
     private val trackingRepository: TrackingRepository
@@ -41,12 +39,6 @@ class FeedViewModel @Inject constructor(
     private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
     val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
 
-    private val _isRateLimited = MutableStateFlow(false)
-    val isRateLimited: StateFlow<Boolean> = _isRateLimited.asStateFlow()
-
-    private val _rateLimitMinutesRemaining = MutableStateFlow(0)
-    val rateLimitMinutesRemaining: StateFlow<Int> = _rateLimitMinutesRemaining.asStateFlow()
-
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
 
@@ -54,7 +46,6 @@ class FeedViewModel @Inject constructor(
         loadHeadlines()
         loadSourceRatings()
         loadTrackedStories()
-        checkRateLimitState()
     }
 
     fun refresh() {
@@ -62,18 +53,6 @@ class FeedViewModel @Inject constructor(
             _isRefreshing.value = true
             fetchHeadlinesInternal(forceRefresh = true)
             _isRefreshing.value = false
-        }
-    }
-
-    private fun checkRateLimitState() {
-        viewModelScope.launch {
-            val isLimited = quotaRepository.isRateLimitedSync()
-            _isRateLimited.value = isLimited
-            if (isLimited) {
-                val untilMillis = quotaRepository.getRateLimitedUntil()
-                val remainingMs = untilMillis - System.currentTimeMillis()
-                _rateLimitMinutesRemaining.value = (remainingMs / 60_000).toInt().coerceAtLeast(1)
-            }
         }
     }
 
@@ -98,13 +77,11 @@ class FeedViewModel @Inject constructor(
             result.fold(
                 onSuccess = { articles ->
                     _uiState.value = FeedUiState.Success(articles)
-                    checkRateLimitState()
                 },
                 onFailure = { error ->
                     _uiState.value = FeedUiState.Error(
                         error.message ?: "Failed to load articles"
                     )
-                    checkRateLimitState()
                 }
             )
         }
