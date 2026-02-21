@@ -33,8 +33,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 1.1.0 (Stable Beta)
-**Status**: Milestone 1.1 Complete — Production-ready architecture
+**Version**: 1.1.0 (Beta)
+**Status**: Milestone v1.1 Complete — Amber Brand & Production Architecture
 
 ### What's Built
 
@@ -45,7 +45,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | ⚖️ | **Bias Spectrum** | Articles plotted on a continuous left-to-right political axis with heatmap visualization |
 | 📌 | **Story Tracking** | Follow developing stories — new articles auto-cluster into tracked threads |
 | 🔔 | **Notifications** | Background alerts when tracked stories get new coverage, with deep linking |
-| 🎨 | **Design System** | Consistent design tokens, bias heatmap, and polished UI across all screens |
+| 🎨 | **Amber Design System** | New visual language, consistent design tokens, and polished UI across all screens |
 | 🔄 | **Background Sync** | WorkManager pre-computes matches during idle with configurable sync strategies |
 | 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
 
@@ -66,18 +66,19 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 9.5 | Quality & Stability | 2026-02-16 | Hybrid matching (embedding + entity overlap), threshold tuning |
 | 10 | Notifications | 2026-02-18 | System notifications, deep linking, article highlighting |
 | 10.1 | UI Polish | 2026-02-19 | Source badges, refresh logic, notification suppression |
-| 11 | UI/UX Refinement | 2026-02-19 | Design tokens, bias heatmap, visual consistency |
+| 11 | UI/UX Refinement | 2026-02-19 | Design tokens, priority bias heatmap, visual consistency |
 | 12 | Architecture Refactor | 2026-02-20 | Domain logic extraction, Hilt DI cleanup, UseCases |
+| 13 | Amber Brand Design Pattern | 2026-02-21 | Deep visual refresh, high-fidelity app icon, new UI conventions |
 
 Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 </details>
 
-### Up Next — UI Design and Visual Language Updates (Phase 13)
+### Up Next — Quality and Beta Release (Phase 14)
 
-Next focus area: implementing advanced UI design refinements and refreshing the visual language across the application.
+Next focus area: conducting comprehensive end-to-end testing, catching any final hidden bugs, and preparing app store assets for the upcoming Beta Release.
 
-**Progress:** 12/12 phases complete — **v1.1.0**.
+**Progress:** 14/14 phases complete — **v1.1.x Milestone Achieved**.
 
 
 ### Planned (Future Milestones)
@@ -161,13 +162,13 @@ NewsThread was built using a hybrid AI-augmented workflow, moving from foundatio
  
 ### Matching Pipeline
 
-```
-Article Feed
-  → Text Extraction (fetch URL + parse with Readability4J)
-  → Embedding Generation (TF Lite sentence embeddings)
-  → Hybrid Matching (cosine similarity + entity overlap)
-  → Bias Clustering (join with source ratings)
-  → Bias Spectrum UI (continuous left-to-right visualization)
+```mermaid
+graph TD
+    A[Article Feed] --> B[Text Extraction]
+    B -->|Readability4J| C[Embedding Generation]
+    C -->|TF Lite| D[Hybrid Matching]
+    D -->|Cosine Sim + NLP| E[Bias Clustering]
+    E --> F[Amber Design System Visualization]
 ```
 
 ---

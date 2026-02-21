@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Transitioning to Phase 13 (UI Design Updates)
+**Current focus:** Phase 14 / Milestone Verification
 
 ## Current Position
 
-Phase: 13.1 of 13 (App Icon Brand Refresh)
-Plan: 1 of 1 (13.1-01 Complete)
-Status: Phase 13 & 13.1 Complete & Validated — Visual Refresh Finalized
-Last activity: 2026-02-20 — Completed App Icon Brand Refresh
-Progress: [████████████] 100% (All plans complete)
+Phase: 14 of 14 (Milestone Complete)
+Plan: 0 of 0
+Status: Complete (Milestone Finished)
+Last activity: 2026-02-21 — Verified UI Deep Links and Feed Footer
+Progress: [███████████░░░░░░░░░] 24/43 plans (56%)
 
 
 ## Accumulated Context
@@ -93,9 +93,18 @@ Recent decisions affecting current work:
 
 ### Session Continuity
 
-Last session: 2026-02-20
-Stopped at: Phase 12 complete, verified architecture refactor.
-Resume with: Planning Phase 13 (UI Design and Visual Language Updates) or addressing test failures.
+Last session: 2026-02-21
+Stopped at: Phase 13.1.2 complete, all Mockup visual parities verified!
+Resume with: Milestone Release or final E2E testing.
+
+### Session Notes (2026-02-21, Phase 13/13.1)
+- **Phase 13 Complete / Phase 13.1.1 & 13.1.2 (Visual Parity)**:
+    - **Adaptive App Icon**: Fixed SVG scaling bounds + generated high-fidelity vector gradients inside the 72dp safe area.
+    - **Global Brand**: Transitioned system to Amber500 natively.
+    - **ArticleCard**: Replaced the Left Border with a static bottom bias-dot footer on tracked feeds.
+    - **TrackingScreen**: Added UI updates alert count + ExtraBold styling for tracked stories with unseen events.
+    - **ComparisonScreen Layout**: Pulled 'Original Article' out of standard iteration group to prevent duplicates.
+    - **Deep-Links**: Anchored the click segments of the top sticky heatmap to perfectly scroll to perspective segments below without clipping.
 
 ### Session Notes (2026-02-20, Phase 12)
 - **Phase 12 Validated & Complete**:

@@ -54,13 +54,15 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Articles grouped by Left/Center/Right/Unrated in Story Detail — Phase 11
 - ✓ Refactored business logic into Domain UseCases — Phase 12
 - ✓ Standardized ViewModel dependencies and cleaned up Hilt DI — Phase 12
+- ✓ Refresh visual language and implement UI design refinements (Amber brand) — Phase 13
+- ✓ Update app icon to match Amber Brand and spectrum visual language — Phase 13.1
+- ✓ Achieve visual parity with Amber Brand mockups (ArticleCard footer, typography, metrics styling, deep-linking) — Phase 13.1.1 & 13.1.2
 
+### Active (Phase 14: Quality & Release)
 
-
-### Active (Phase 13: UI Design)
-
-#### Phase 13: UI Design and Visual Language Updates
-- [ ] Refresh visual language and implement UI design refinements
+#### Phase 14: Quality and Release
+- [ ] Final end-to-end testing
+- [ ] Prepare app store assets
 
 
 ### Backlog (Future)
@@ -116,6 +118,8 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-4ql | Add track hint tooltip | Closed | Cancelled/Removed feature per user decision |
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
+| newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
+
 ---
-*Last updated: 2026-02-20 after Phase 12*
+*Last updated: 2026-02-21 after Phases 13/13.1.1*
 

@@ -168,3 +168,15 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 - Goal: Update app icon to match Amber Brand and spectrum visual language.
 - Status: [Done] (2026-02-20)
 - Detail: [13.1-app-icon-brand-refresh](phases/13.1-app-icon-brand-refresh/)
+
+### Phase 13.1.1: Visual Polish and Parity (INSERTED)
+
+**Goal:** Achieve visual parity with Amber Brand mockups (ArticleCard footer, typography, high-fidelity app icon).
+**Depends on:** Phase 13.1
+**Status:** [Done] (2026-02-21)
+**Plans:** 3 plans
+
+Plans:
+- [x] 13.1.1-01: Feed UI Polish ([ArticleCard](phases/13.1.1-visual-polish-and-parity/13.1.1-01-PLAN.md))
+- [x] 13.1.1-02: Story Analysis UI Polish ([ComparisonScreen](phases/13.1.1-visual-polish-and-parity/13.1.1-02-PLAN.md))
+- [x] 13.1.1-03: High-Fidelity App Icon ([Gradients](phases/13.1.1-visual-polish-and-parity/13.1.1-03-PLAN.md))
