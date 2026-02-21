@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 14 of 15 (RSS Feed Migration — In progress)
-Plan: 4 of 7
+Plan: 5 of 7
 Status: In progress
-Last activity: 2026-02-21 — Completed SUMMARY for Plan 14-02 (RssFeedParser + ParsedFeedItem + 12 unit tests)
+Last activity: 2026-02-21 — Completed Plan 14-05 (RssNewsRepository + NewsRepository interface + DI wiring)
 Progress: [████████████░░░░░░░░] 28/54 plans (52%)
 
 
@@ -100,6 +100,11 @@ Recent decisions affecting current work:
 - Phase 12: Architecture Refactor (Renumbered from 11)
 - Phase 13 added: UI Design and Visual Language Updates
 
+**New decisions from 14-05:**
+- fetchFeed() uses synchronous OkHttp execute() in coroutine context — correct pattern, avoids callback inversion
+- Targeted Layer 2 strategy: fetch only top 6 outlet domains found in Layer 1 results — avoids 46-request per-refresh explosion
+- Domain interface swap path confirmed: Phase 15 new impl = new @Binds line in RepositoryModule only
+
 **New decisions from 14-04:**
 - No Retrofit stub in NetworkModule: ArticleMatchingRepositoryImpl was already migrated to domain NewsRepository interface before 14-04 ran, so the precautionary stub was not needed
 - HttpLoggingInterceptor.Level.HEADERS chosen for RSS (not BODY) — RSS XML too verbose at BODY level
@@ -112,8 +117,8 @@ Recent decisions affecting current work:
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 14-02-PLAN.md (RssFeedParser + ParsedFeedItem + 12 unit tests)
-Resume with: Plan 14-05 (RssNewsRepository) — Plans 14-01, 14-02, 14-03, 14-04 complete.
+Stopped at: Completed 14-05-PLAN.md (RssNewsRepository + NewsRepository interface + DI wiring)
+Resume with: Plan 14-06 (FeedScreen/SettingsScreen cleanup) — Plans 14-01 through 14-05 complete.
 
 ### Session Notes (2026-02-21, Phase 14/15 Planning)
 - **NewsAPI → RSS Migration Planned**:
