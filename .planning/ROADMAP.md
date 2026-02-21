@@ -165,10 +165,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 
 ### Phase 13.1: App Icon Brand Refresh (INSERTED)
-
-**Goal:** [Urgent work - to be planned]
-**Depends on:** Phase 13
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 13.1 to break down)
+- Goal: Update app icon to match Amber Brand and spectrum visual language.
+- Status: [Done] (2026-02-20)
+- Detail: [13.1-app-icon-brand-refresh](phases/13.1-app-icon-brand-refresh/)
