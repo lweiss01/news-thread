@@ -84,6 +84,7 @@ Recent decisions affecting current work:
 - OEM battery optimization behavior (Samsung/Xiaomi) needs physical device testing
 
 ### Roadmap Evolution
+- Phase 13.1 inserted after Phase 13: App Icon Brand Refresh (URGENT)
 
 - Phase 10.1 inserted after Phase 10: UI Polish & Bug Fixes (URGENT)
 - Phase 11 added: UI/UX Review and Refinement (Renumbered from 12)
