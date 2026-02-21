@@ -240,17 +240,17 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 <table>
   <tr>
     <td width="33%" align="center">
-      <img src="screenshots/tracked_stories.png" width="100%" alt="Android app screen showing tracked stories with bias heatmap previews">
+      <img src="screenshots/Tracking_Screen_New_Updates_Bias_Distribution.png" width="100%" alt="Android app screen showing tracked stories with bias heatmap previews">
       <br><b>Tracked Stories</b><br>
       Follow developing stories with auto-clustered updates.
     </td>
     <td width="33%" align="center">
-      <img src="screenshots/tracked_story_coverage_analysis.png" width="100%" alt="Android app screen showing coverage analysis for a tracked story">
-      <br><b>Coverage Analysis</b><br>
-      See how a story is covered across the political spectrum.
+      <img src="screenshots/Article_Page_with_New_Updates_Toast.jpg" width="100%" alt="Android app screen showing the article detail view with a toast notification for new updates">
+      <br><b>Live Updates & Notifications</b><br>
+      Get instantly notified when new perspectives are added to stories you track.
     </td>
     <td width="33%" align="center">
-      <img src="screenshots/story_compare_perspectives_view.png" width="100%" alt="Android app screen displaying the Compare Perspectives view with bias heatmap">
+      <img src="screenshots/Compare_Perspectives_Page.png" width="100%" alt="Android app screen displaying the Compare Perspectives view with bias heatmap">
       <br><b>Compare Perspectives</b><br>
       Semantic matching along a political bias spectrum.
     </td>

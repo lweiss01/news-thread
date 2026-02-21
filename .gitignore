@@ -98,7 +98,6 @@ nul
 build_err_*.txt
 log.txt
 log_final.txt
-screenshots/
 .DS_Store
 test_output.txt
 
