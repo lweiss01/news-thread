@@ -45,19 +45,8 @@ fun FeedScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle()
     val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
-    val isRateLimited by viewModel.isRateLimited.collectAsStateWithLifecycle()
-    val rateLimitMinutes by viewModel.rateLimitMinutesRemaining.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(isRateLimited, rateLimitMinutes) {
-        if (isRateLimited) {
-            snackbarHostState.showSnackbar(
-                message = "Using cached data - API limit reached. Fresh data in ~$rateLimitMinutes min",
-                withDismissAction = true
-            )
-        }
-    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
