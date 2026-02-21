@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 ## Current Position
 
-Phase: 14 of 15 (RSS Feed Migration — Not started)
-Plan: 0 of 7
-Status: Ready for planning
-Last activity: 2026-02-21 — Planned Phase 14 (RSS Migration) and Phase 15 (Cloudflare Backend). CONTEXT.md files created for both. Ready to run /gsd:plan-phase 14.
-Progress: [███████████░░░░░░░░░] 24/54 plans (44%)
+Phase: 14 of 15 (RSS Feed Migration — In progress)
+Plan: 1 of 7
+Status: In progress
+Last activity: 2026-02-21 — Executed Plan 14-01: RSS Feed Source Registry (RssFeedSource + FeedSourceRegistry with 46 outlets)
+Progress: [███████████░░░░░░░░░] 25/54 plans (46%)
 
 
 ## Accumulated Context
@@ -28,6 +28,12 @@ Recent decisions affecting current work:
 - Pre-compute matches in background (user shouldn't wait)
 - Bias spectrum UI over L/C/R buckets (more nuanced visualization)
 - User-controlled article text fetching (respects data usage preferences)
+
+**New decisions from 14-01:**
+- sourceId = domain in FeedSourceRegistry for alignment with SourceRatingEntity.domain (no extra join needed)
+- Google News site-specific fallback used from day 1 for reuters.com, ground.news, oann.com
+- CategoryTopics nested inside FeedSourceRegistry — Layer 1 and Layer 2 co-located
+- 46 outlets: 8 Left, 11 Lean Left, 10 Center, 9 Lean Right, 8 Right
 
 **New decisions from 01-01:**
 - Feed TTL: 3 hours (midpoint of 2-4h requirement)
@@ -94,8 +100,8 @@ Recent decisions affecting current work:
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Phase 13.1.2 complete, all Mockup visual parities verified!
-Resume with: Milestone Release or final E2E testing.
+Stopped at: Completed 14-01-PLAN.md (RSS Feed Source Registry)
+Resume with: Plan 14-02 (RssFeedParser).
 
 ### Session Notes (2026-02-21, Phase 14/15 Planning)
 - **NewsAPI → RSS Migration Planned**:
