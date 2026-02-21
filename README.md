@@ -50,7 +50,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
 
 <details>
-<summary><b>📋 Development History (12 phases completed)</b></summary>
+<summary><b>📋 Development History (13+ phases completed)</b></summary>
 
 | Phase | Name | Completed | Highlights |
 |-------|------|-----------|------------|
@@ -68,7 +68,10 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 10.1 | UI Polish | 2026-02-19 | Source badges, refresh logic, notification suppression |
 | 11 | UI/UX Refinement | 2026-02-19 | Design tokens, priority bias heatmap, visual consistency |
 | 12 | Architecture Refactor | 2026-02-20 | Domain logic extraction, Hilt DI cleanup, UseCases |
-| 13 | Amber Brand Design Pattern | 2026-02-21 | Deep visual refresh, high-fidelity app icon, new UI conventions |
+| 13 | UI Design Refresh | 2026-02-20 | Amber Brand identity, editorial shields, UI softening |
+| 13.1 | App Icon Refresh | 2026-02-21 | Adaptive icon gradients, mirroring and scaling fixes |
+| 13.1.1| Visual Parity | 2026-02-21 | ArticleCard footer, typography, metrics styling |
+| 13.1.2| Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
 
 Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
@@ -78,7 +81,7 @@ Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 Next focus area: conducting comprehensive end-to-end testing, catching any final hidden bugs, and preparing app store assets for the upcoming Beta Release.
 
-**Progress:** 14/14 phases complete — **v1.1.x Milestone Achieved**.
+**Progress:** 13/13 phases complete — **Milestone 1.1 Achieved** 🚀.
 
 
 ### Planned (Future Milestones)
