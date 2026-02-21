@@ -9,5 +9,5 @@ trigger: always_on
     - **NO TODOs**: Do not use TODO comments for work tracking. Do not use GSD Todo (/gsd:add-todo) for work tracking.
 
 - **Git Commits**:
-    - Do not commit any changes to github without permssion. Always wait for approval to commit. 
-    
+    - After executing a phase (`/gsd:execute-phase`), stage and prepare all modified files in app/ along with the planning docs to be pushed to github in a single commit. When the files are staged, ask for permission to commit and push all changes to github.
+    - Do not commit any changes to github without permssion. Always wait for approval to commit.
