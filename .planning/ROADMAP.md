@@ -180,3 +180,9 @@ Plans:
 - [x] 13.1.1-01: Feed UI Polish ([ArticleCard](phases/13.1.1-visual-polish-and-parity/13.1.1-01-PLAN.md))
 - [x] 13.1.1-02: Story Analysis UI Polish ([ComparisonScreen](phases/13.1.1-visual-polish-and-parity/13.1.1-02-PLAN.md))
 - [x] 13.1.1-03: High-Fidelity App Icon ([Gradients](phases/13.1.1-visual-polish-and-parity/13.1.1-03-PLAN.md))
+
+### Phase 13.1.2: Visual Polish Bug Fixes (INSERTED)
+**Goal:** Address user QA feedback on app icon scaling, feed deep-linking, and tracking indicators.
+**Depends on:** Phase 13.1.1
+**Status:** [Done] (2026-02-21)
+**Detail:** Final polish round based on real-world device testing and deep-link verification.
