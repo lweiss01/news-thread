@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 // Unchanged from original; these anchor both light and dark surfaces.
 // ---------------------------------------------------------------------------
 val Slate950 = Color(0xFF020617) // Deepest Background (dark)
-val Slate900 = Color(0xFF0F172A) // Surface / App Bar (dark)
+val Slate900 = Color(0xFF0F172B) // Surface / App Bar (dark) - Official Tailwind Slate900
 val Slate800 = Color(0xFF1E293B) // Cards / Sheets (dark)
 val Slate700 = Color(0xFF334155) // Borders / Dividers (dark)
 val Slate600 = Color(0xFF475569) // Subtitles (dark mode secondary)

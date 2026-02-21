@@ -39,7 +39,9 @@ fun BiasHeatmap(
     biasCounts: Map<Int, Int>,
     unratedCount: Int,
     modifier: Modifier = Modifier,
-    onSegmentClick: (Int) -> Unit = {} // NEW: Interactive segments
+    interactive: Boolean = true, // NEW: Control segment interactivity
+    onSegmentClick: (Int) -> Unit = {},
+    onUnratedClick: () -> Unit = {} // NEW: Deep link for unrated text
 ) {
     // Distinct dot colors — deliberately different from app primary
     val dotColors = mapOf(
@@ -68,15 +70,17 @@ fun BiasHeatmap(
                 .background(ProjectTheme.bias.gradient)
         ) {
             // Interactive Segments Layer
-            Row(modifier = Modifier.fillMaxSize()) {
-                val biasScores = listOf(-2, -1, 0, 1, 2)
-                biasScores.forEach { score ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable { onSegmentClick(score) }
-                    )
+            if (interactive) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    val biasScores = listOf(-2, -1, 0, 1, 2)
+                    biasScores.forEach { score ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { onSegmentClick(score) }
+                        )
+                    }
                 }
             }
 
@@ -155,9 +159,12 @@ fun BiasHeatmap(
             Text(
                 text = "+$unratedCount unrated sources",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .then(if (interactive) Modifier.clickable { onUnratedClick() } else Modifier)
             )
         }
     }
