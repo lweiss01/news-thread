@@ -1,10 +1,14 @@
 package com.newsthread.app.presentation.comparison
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,6 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -27,6 +32,7 @@ import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.presentation.common.glassBackground
 import com.newsthread.app.presentation.components.BiasHeatmap
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
+import com.newsthread.app.presentation.theme.MonoFamily
 import com.newsthread.app.presentation.theme.ProjectTheme
 import java.net.URLEncoder
 
@@ -121,6 +127,7 @@ fun ComparisonScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ComparisonContent(
     comparison: ArticleComparison,
@@ -128,27 +135,57 @@ private fun ComparisonContent(
     sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>, // NEW
     onArticleClick: (Article) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    val hasHint = hintMessage != null
+    val sectionIndices = remember(comparison, hasHint) {
+        val indices = mutableMapOf<Int, Int>()
+        // Index 0: Bias Spectrum (stickyHeader)
+        // Index 1: Hint (if hasHint)
+        // Next: Original Article (1 item)
+        var currentIndex = 1 + (if (hasHint) 1 else 0) + 1
+        
+        if (comparison.leftPerspective.isNotEmpty()) {
+            indices[-2] = currentIndex
+            indices[-1] = currentIndex
+            currentIndex += 1 + comparison.leftPerspective.size
+        }
+        if (comparison.centerPerspective.isNotEmpty()) {
+            indices[0] = currentIndex
+            currentIndex += 1 + comparison.centerPerspective.size
+        }
+        if (comparison.rightPerspective.isNotEmpty()) {
+            indices[1] = currentIndex
+            indices[2] = currentIndex
+            currentIndex += 1 + comparison.rightPerspective.size
+        }
+        if (comparison.unratedPerspective.isNotEmpty()) {
+            indices[999] = currentIndex
+        }
+        indices
+    }
+
     // Capture colors outside LazyListScope (which is not @Composable)
     val primaryColor = MaterialTheme.colorScheme.primary
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val outlineColor = MaterialTheme.colorScheme.outline
     
-    // Captured for LazyColumn context
-    val leftLabel = ProjectTheme.bias.leftLabel
-    val centerColor = MaterialTheme.colorScheme.secondary
-    val rightLabel = ProjectTheme.bias.rightLabel
+    // Extract bias colors directly from the theme
+    val bias = ProjectTheme.bias
 
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp), // Add bottom padding for list
+        contentPadding = PaddingValues(bottom = 300.dp), // Massive padding allows deep-linking to scroll the bottom sections up
         verticalArrangement = Arrangement.spacedBy(0.dp) // Reset default spacing, manage manually
     ) {
         // 1. Bias Spectrum Rail (Sticky or just top item)
-        item {
+        stickyHeader {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .background(MaterialTheme.colorScheme.surface) // Solid background prevents scroll bleed
                     .padding(bottom = 8.dp)
             ) {
                 // Collect only rated articles for visualization
@@ -187,6 +224,8 @@ private fun ComparisonContent(
                     val unratedCount = allPerspectives.size - ratedArticles.size
                     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                     
+                    val density = androidx.compose.ui.platform.LocalDensity.current
+                    
                     BiasHeatmap(
                         biasCounts = biasCounts,
                         unratedCount = unratedCount,
@@ -195,6 +234,21 @@ private fun ComparisonContent(
                             .padding(horizontal = 16.dp),
                         onSegmentClick = { score ->
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            sectionIndices[score]?.let { targetIndex ->
+                                coroutineScope.launch {
+                                    val offset = with(density) { -160.dp.toPx().toInt() }
+                                    listState.animateScrollToItem(targetIndex, scrollOffset = offset)
+                                }
+                            }
+                        },
+                        onUnratedClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                            sectionIndices[999]?.let { targetIndex ->
+                                coroutineScope.launch {
+                                    val offset = with(density) { -160.dp.toPx().toInt() }
+                                    listState.animateScrollToItem(targetIndex, scrollOffset = offset)
+                                }
+                            }
                         }
                     )
                     
@@ -216,22 +270,26 @@ private fun ComparisonContent(
         item {
              Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
-                    text = "Original Story",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = comparison.originalArticle.title,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "Read original story ▶",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable {
+                        onArticleClick(comparison.originalArticle)
+                    }
+                )
             }
-            MatchedArticleCard(
-                article = comparison.originalArticle,
-                // Robust lookup: ID -> Name -> URL
-                rating = sourceRatings[comparison.originalArticle.source.id] 
-                    ?: sourceRatings[comparison.originalArticle.source.name] 
-                    ?: comparison.ratings[comparison.originalArticle.url],
-                similarityScore = 1.0f, // Original
-                accentColor = MaterialTheme.colorScheme.primary, // Default Amber for original
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         // 4. Perspectives List
@@ -258,9 +316,9 @@ private fun ComparisonContent(
         }
 
 
-        renderSection("Left Perspective", comparison.leftPerspective, leftLabel)
-        renderSection("Center Perspective", comparison.centerPerspective, centerColor)
-        renderSection("Right Perspective", comparison.rightPerspective, rightLabel)
+        renderSection("Left Perspective", comparison.leftPerspective, bias.leftLabel)
+        renderSection("Center Perspective", comparison.centerPerspective, com.newsthread.app.presentation.theme.BiasCenter)
+        renderSection("Right Perspective", comparison.rightPerspective, bias.rightLabel)
         renderSection("Related Stories", comparison.unratedPerspective, outlineColor)
     }
 }
@@ -298,23 +356,39 @@ private fun PerspectiveHeader(
     count: Int,
     color: androidx.compose.ui.graphics.Color
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Badge(containerColor = color.copy(alpha = 0.1f), contentColor = color) {
-            Text(text = count.toString(), modifier = Modifier.padding(horizontal = 4.dp))
+    Column {
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Surface(
+                color = color.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
-        HorizontalDivider(modifier = Modifier.width(120.dp), color = color.copy(alpha = 0.2f))
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            thickness = 1.dp,
+            color = color.copy(alpha = 0.3f)
+        )
     }
 }

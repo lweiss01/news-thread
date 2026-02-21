@@ -1,26 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     
-    <!-- N letterform (Amber gradient placeholder - using solid Amber400 for vector simplicity) -->
+    <!-- N letterform (Amber300 -> Amber600 Gradient) -->
+    <!-- Forward-facing orientation, scaled and centered in Adaptive Icon 72dp safe zone -->
     <path
-        android:fillColor="#FBBF24"
-        android:pathData="M34,24 L44,24 L44,84 L34,84 Z M64,24 L74,24 L74,84 L64,84 Z M44,24 L54,24 L74,84 L64,84 Z"/>
+        android:pathData="M 38,34 L 38,70 L 44.5,70 L 44.5,41 L 62,70 L 70,70 L 70,34 L 63.5,34 L 63.5,63 L 46,34 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="38"
+                android:startY="34"
+                android:endX="70"
+                android:endY="70"
+                android:type="linear">
+                <item android:offset="0" android:color="#FCD34D" /> <!-- Amber300 -->
+                <item android:offset="1" android:color="#D97706" /> <!-- Amber600 -->
+            </gradient>
+        </aapt:attr>
+    </path>
     
-    <!-- Spectrum Bar (3 sections) sits below the N -->
-    <!-- Left: BiasLeft (#60A5FA) -->
+    <!-- Spectrum Bar (Blue -> Purple -> Red Gradient) -->
+    <!-- Scaled uniformly to fit safely below the N -->
     <path
-        android:fillColor="#60A5FA"
-        android:pathData="M18,92 h24 v6 h-24 Z"/>
-    <!-- Center: BiasCenter (#A78BFA) -->
-    <path
-        android:fillColor="#A78BFA"
-        android:pathData="M42,92 h24 v6 h-24 Z"/>
-    <!-- Right: BiasRight (#F87171) -->
-    <path
-        android:fillColor="#F87171"
-        android:pathData="M66,92 h24 v6 h-24 Z"/>
+        android:pathData="M 33,74.5 L 75,74.5 L 75,77.5 L 33,77.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="33"
+                android:startY="76"
+                android:endX="75"
+                android:endY="76"
+                android:type="linear">
+                <item android:offset="0" android:color="#60A5FA" /> <!-- BiasLeft -->
+                <item android:offset="0.5" android:color="#A78BFA" /> <!-- BiasCenter -->
+                <item android:offset="1" android:color="#F87171" /> <!-- BiasRight -->
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

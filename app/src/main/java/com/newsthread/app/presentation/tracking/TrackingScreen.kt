@@ -145,22 +145,25 @@ fun EnhancedStoryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onStoryClick(storyWithArticles.story.id) } // Direct navigation
+            .clickable { onStoryClick(storyWithArticles.story.id) }
     ) {
+        val isUpdated = storyWithArticles.story.hasUnseenUpdates
+
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Title & Source
+            // Header: Title
             Text(
                 text = storyWithArticles.story.title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = if (isUpdated) FontWeight.ExtraBold else FontWeight.Bold,
+                color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Calculate Heatmap Data
             val articles = storyWithArticles.articles
             val biasCounts = remember(articles, sourceRatings) {
                  articles.mapNotNull { article ->
-                    // Robust lookup: sourceId -> sourceName fallback
                     val rating = article.sourceId?.let { sourceRatings[it] }
                         ?: sourceRatings[article.sourceName]
                     rating?.finalBiasScore
@@ -173,14 +176,15 @@ fun EnhancedStoryCard(
                  rating == null
              }
 
-            // Heatmap Preview
+            // Heatmap Preview (Uninteractive)
             com.newsthread.app.presentation.components.BiasHeatmap(
                 biasCounts = biasCounts,
                 unratedCount = unratedCount,
+                interactive = false, // Disable clicks per user feedback
                 modifier = Modifier.fillMaxWidth()
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -188,9 +192,10 @@ fun EnhancedStoryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                  Text(
-                    text = "${storyWithArticles.articles.size} updates",
+                    text = if (isUpdated) "${articles.size} NEW updates" else "${articles.size} updates",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (isUpdated) FontWeight.Bold else FontWeight.Normal
                 )
                 
                  IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
