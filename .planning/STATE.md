@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 Phase: 14 of 15 (RSS Feed Migration — In progress)
 Plan: 4 of 7
 Status: In progress
-Last activity: 2026-02-21 — Executed Plan 14-04: Simplify NetworkModule (OkHttpClient for RSS, removed all NewsAPI infrastructure)
+Last activity: 2026-02-21 — Completed SUMMARY for Plan 14-02 (RssFeedParser + ParsedFeedItem + 12 unit tests)
 Progress: [████████████░░░░░░░░] 28/54 plans (52%)
 
 
@@ -68,6 +68,8 @@ Recent decisions affecting current work:
 - Paywall detection increments count twice for immediate permanent failure
 - MIN_CONTENT_LENGTH threshold 100 chars catches stub content
 - [Phase 14-rss-migration]: Fake OkHttp interceptors used for testing GoogleNewsUrlDecoder (not Mockito mocks) — OkHttpClient is final, interceptors are cleaner and more idiomatic
+- [Phase 14-rss-migration]: XmlPullParserFactory.newInstance() used instead of android.util.Xml — enables JVM unit testing of RssFeedParser
+- [Phase 14-rss-migration]: kxml2:2.3.0 added as testImplementation + testOptions.unitTests.isReturnDefaultValues=true for JVM-compatible XML unit tests
 
 ### Pending Todos
 
@@ -103,11 +105,15 @@ Recent decisions affecting current work:
 - HttpLoggingInterceptor.Level.HEADERS chosen for RSS (not BODY) — RSS XML too verbose at BODY level
 - Two-client pattern confirmed: NetworkModule OkHttpClient (50 MiB, http_cache) for RSS; ArticleFetchModule OkHttpClient (100 MiB, article_html_cache) for article HTML
 
+**New decisions from 14-02:**
+- XmlPullParserFactory.newInstance() used instead of android.util.Xml — enables JVM unit testing of RssFeedParser
+- kxml2:2.3.0 added as testImplementation + testOptions.unitTests.isReturnDefaultValues=true for JVM-compatible XML unit tests
+
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 14-03-PLAN.md (GoogleNewsUrlDecoder)
-Resume with: Plan 14-05 (RssNewsRepository) — Plans 14-01, 14-03, 14-04 complete.
+Stopped at: Completed 14-02-PLAN.md (RssFeedParser + ParsedFeedItem + 12 unit tests)
+Resume with: Plan 14-05 (RssNewsRepository) — Plans 14-01, 14-02, 14-03, 14-04 complete.
 
 ### Session Notes (2026-02-21, Phase 14/15 Planning)
 - **NewsAPI → RSS Migration Planned**:
