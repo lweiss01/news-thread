@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 14 / Milestone Verification
+**Current focus:** Phase 14 — RSS Feed Migration
 
 ## Current Position
 
-Phase: 14 of 14 (Milestone Complete)
-Plan: 0 of 0
-Status: Complete (Milestone Finished)
-Last activity: 2026-02-21 — Verified UI Deep Links and Feed Footer
-Progress: [███████████░░░░░░░░░] 24/43 plans (56%)
+Phase: 14 of 15 (RSS Feed Migration — Not started)
+Plan: 0 of 7
+Status: Ready for planning
+Last activity: 2026-02-21 — Planned Phase 14 (RSS Migration) and Phase 15 (Cloudflare Backend). CONTEXT.md files created for both. Ready to run /gsd:plan-phase 14.
+Progress: [███████████░░░░░░░░░] 24/54 plans (44%)
 
 
 ## Accumulated Context
@@ -96,6 +96,17 @@ Recent decisions affecting current work:
 Last session: 2026-02-21
 Stopped at: Phase 13.1.2 complete, all Mockup visual parities verified!
 Resume with: Milestone Release or final E2E testing.
+
+### Session Notes (2026-02-21, Phase 14/15 Planning)
+- **NewsAPI → RSS Migration Planned**:
+    - Reviewed full codebase: NewsAPI surface area is contained to `NewsApiService`, `NetworkModule`, `NewsRepository`, `ArticleDto`, `QuotaRepository`, `RateLimitInterceptor`. Everything above `NewsRepository` is untouched.
+    - Reviewed RSS sources spreadsheet (46 outlets, Political Spectrum sheet + Google News RSS sheet + Architecture Notes).
+    - Architecture decision: two-layer RSS (Google News for discovery, direct outlet feeds for depth/bias coverage).
+    - Privacy decision: "you control your data" philosophy is compatible with a stateless public-content backend — personal data never leaves device.
+    - Sequencing decision: Phase 14 = on-device RSS migration first; Phase 15 = Cloudflare Workers backend as follow-on.
+    - Google News URL resolution: Base64 decoder primary, HTTP redirect fallback.
+    - Created CONTEXT.md for Phase 14 and Phase 15 with full implementation decisions.
+    - Added Phase 14 and Phase 15 to ROADMAP.md.
 
 ### Session Notes (2026-02-21, Phase 13/13.1)
 - **Phase 13 Complete / Phase 13.1.1 & 13.1.2 (Visual Parity)**:

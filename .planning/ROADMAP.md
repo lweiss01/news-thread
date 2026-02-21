@@ -27,6 +27,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
 - [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
 - [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
+- [ ] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system
+- [ ] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution
 
 
 ## Phase Details
@@ -161,6 +163,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 11. UI/UX Review & Refinement | 4/4 | Complete | 2026-02-19 |
 | 12. Architecture Refactor | 2/2 | Complete | 2026-02-20 |
 | 13. UI Design & Visual Updates | 4/4 | Complete | 2026-02-20 |
+| 14. RSS Feed Migration | 0/7 | Not started | — |
+| 15. Cloudflare Workers Backend | 0/4 | Not started | — |
 
 
 
@@ -186,3 +190,45 @@ Plans:
 **Depends on:** Phase 13.1.1
 **Status:** [Done] (2026-02-21)
 **Detail:** Final polish round based on real-world device testing and deep-link verification.
+
+---
+
+### Phase 14: RSS Feed Migration (On-Device)
+
+**Goal:** Replace NewsAPI with a two-layer on-device RSS feed system — Google News RSS for discovery/trending, plus 46 curated direct-source feeds for depth and bias coverage — while preserving the existing `Article` domain model, Room cache, and all layers above `NewsRepository`.
+**Depends on:** Phase 13 (stable architecture)
+**Status:** Not started
+
+**Architecture:**
+- Layer 1: Google News RSS category feeds (discovery — what's trending)
+- Layer 2: Direct outlet RSS feeds (depth — how each source covers it)
+- Google News URLs decoded on-device (Base64 decoder + HTTP redirect fallback)
+- No API keys, no quota, no rate limiting
+- `NewsRepository` public interface preserved; internals replaced
+
+**Plans:**
+- [ ] 14-01: `FeedSourceRegistry` + `RssFeedSource` model (46 outlets, bias metadata, RSS URLs from spreadsheet)
+- [ ] 14-02: `RssFeedParser` (RSS/Atom XML parsing, field normalization, image extraction, date format handling)
+- [ ] 14-03: `GoogleNewsUrlDecoder` (Base64 decode + HTTP redirect fallback for Google News article URLs)
+- [ ] 14-04: `NetworkModule` refactor (remove NewsAPI key interceptor, generic RSS OkHttpClient)
+- [ ] 14-05: `RssNewsRepository` (two-layer fetch: Google News → direct source feeds, replaces `NewsRepository`)
+- [ ] 14-06: Dead code removal (`NewsApiService`, `QuotaRepository`, `RateLimitInterceptor`, quota UI)
+- [ ] 14-07: WorkManager + background polling update (RSS polling cadence, remove quota-aware scheduling)
+
+### Phase 15: Cloudflare Workers RSS Backend
+
+**Goal:** Move RSS feed fetching and URL resolution to a Cloudflare Workers edge backend, so the app consumes a clean normalized JSON API instead of parsing XML on-device. Improves performance, battery life, and operational flexibility (feed URL changes without app updates).
+**Depends on:** Phase 14
+**Status:** Not started
+
+**Architecture:**
+- Cloudflare Worker: fetches all feeds on schedule, resolves Google News URLs server-side, normalizes to JSON, caches in Workers KV (15-30 min TTL)
+- App: replaces on-device RSS fetching with a single HTTP call to Worker endpoint; same `Article` output, same Room cache
+- No user data ever touches the backend — purely public content aggregation
+- Feed config (URLs, new outlets, bias changes) updatable without app release
+
+**Plans:**
+- [ ] 15-01: Cloudflare Worker (TypeScript — fetch + normalize all feeds, KV caching, JSON API endpoint)
+- [ ] 15-02: App HTTP client swap (replace `RssNewsRepository` fetch with Worker API calls)
+- [ ] 15-03: On-device cleanup (remove XML parser, URL decoder, RSS-specific OkHttp config)
+- [ ] 15-04: Feed health monitoring (Worker exposes feed status; surfaced in app Settings)
