@@ -5,16 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.newsthread.app.data.repository.QuotaRepository
 import com.newsthread.app.data.repository.UserPreferencesRepository
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.SyncStrategy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,11 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userPreferencesRepository: UserPreferencesRepository,
-    private val quotaRepository: QuotaRepository
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
-
-    // ... (existing flows)
 
     fun forceStorySync() {
         viewModelScope.launch {
@@ -36,11 +30,6 @@ class SettingsViewModel @Inject constructor(
             WorkManager.getInstance(context).enqueue(request)
         }
     }
-    
-    // ... (existing methods)
-
-    private val _rateLimitCleared = MutableStateFlow(false)
-    val rateLimitCleared: StateFlow<Boolean> = _rateLimitCleared.asStateFlow()
 
     /**
      * Current article fetch preference.
@@ -107,22 +96,5 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             userPreferencesRepository.setMeteredSyncAllowed(allowed)
         }
-    }
-
-    /**
-     * Clears the persisted rate limit state (debug feature).
-     */
-    fun clearRateLimit() {
-        viewModelScope.launch {
-            quotaRepository.clearRateLimit()
-            _rateLimitCleared.value = true
-        }
-    }
-
-    /**
-     * Reset the cleared confirmation state.
-     */
-    fun resetRateLimitClearedState() {
-        _rateLimitCleared.value = false
     }
 }

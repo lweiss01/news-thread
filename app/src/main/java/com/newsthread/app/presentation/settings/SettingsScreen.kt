@@ -16,14 +16,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,19 +36,8 @@ fun SettingsScreen(
     val backgroundSyncEnabled by viewModel.backgroundSyncEnabled.collectAsStateWithLifecycle()
     val syncStrategy by viewModel.syncStrategy.collectAsStateWithLifecycle()
     val meteredSyncAllowed by viewModel.meteredSyncAllowed.collectAsStateWithLifecycle()
-    val rateLimitCleared by viewModel.rateLimitCleared.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(rateLimitCleared) {
-        if (rateLimitCleared) {
-            snackbarHostState.showSnackbar("Rate limit cleared")
-            viewModel.resetRateLimitClearedState()
-        }
-    }
-
-    androidx.compose.material3.Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+    androidx.compose.material3.Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -100,7 +85,6 @@ fun SettingsScreen(
             // Debug Section
             Spacer(modifier = Modifier.height(16.dp))
             DebugSection(
-                onClearRateLimit = viewModel::clearRateLimit,
                 onForceSync = viewModel::forceStorySync
             )
         }
@@ -172,7 +156,6 @@ private fun FetchPreferenceOption(
 
 @Composable
 private fun DebugSection(
-    onClearRateLimit: () -> Unit,
     onForceSync: () -> Unit
 ) {
     Column {
@@ -206,29 +189,8 @@ private fun DebugSection(
             text = "Triggers immediate background matching for all stories.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-             modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
         )
-
-        Button(
-            onClick = onClearRateLimit,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            ),
-             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Clear Rate Limit")
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "Clears the persisted API rate limit state. Use if you're seeing stale rate limit warnings.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-
     }
 }
 
