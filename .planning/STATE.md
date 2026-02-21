@@ -106,6 +106,10 @@ Recent decisions affecting current work:
 - ExistingPeriodicWorkPolicy.KEEP for FeedRefreshWorker: prevents schedule drift on app restart
 - Workers inject NewsRepository domain interface — Phase 15 swap requires no worker changes
 
+**New decisions from 14-06:**
+- Use .last() on Flow<Result<List<Article>>> from newsRepository.searchArticles() for one-shot search in suspend funs — cleaner than collect{} because only final (fresh) emission matters
+- All NewsAPI dead code removed: 8 files deleted, quota UI stripped from 2 VMs + 2 screens, Retrofit gone from build
+
 **New decisions from 14-05:**
 - fetchFeed() uses synchronous OkHttp execute() in coroutine context — correct pattern, avoids callback inversion
 - Targeted Layer 2 strategy: fetch only top 6 outlet domains found in Layer 1 results — avoids 46-request per-refresh explosion
