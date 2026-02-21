@@ -67,6 +67,7 @@ Recent decisions affecting current work:
 - Permanent failure at extractionRetryCount >= 2
 - Paywall detection increments count twice for immediate permanent failure
 - MIN_CONTENT_LENGTH threshold 100 chars catches stub content
+- [Phase 14-rss-migration]: Fake OkHttp interceptors used for testing GoogleNewsUrlDecoder (not Mockito mocks) — OkHttpClient is final, interceptors are cleaner and more idiomatic
 
 ### Pending Todos
 
@@ -105,8 +106,8 @@ Recent decisions affecting current work:
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 14-04-PLAN.md (Simplify NetworkModule)
-Resume with: Plan 14-05 (RssNewsRepository).
+Stopped at: Completed 14-03-PLAN.md (GoogleNewsUrlDecoder)
+Resume with: Plan 14-05 (RssNewsRepository) — Plans 14-01, 14-03, 14-04 complete.
 
 ### Session Notes (2026-02-21, Phase 14/15 Planning)
 - **NewsAPI → RSS Migration Planned**:
