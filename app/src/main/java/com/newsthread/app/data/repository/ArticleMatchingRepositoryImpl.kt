@@ -7,8 +7,6 @@ import com.newsthread.app.data.local.dao.MatchResultDao
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.local.entity.MatchResultEntity
-import com.newsthread.app.data.remote.NewsApiService
-import com.newsthread.app.data.remote.dto.toArticle
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.Source
@@ -20,9 +18,11 @@ import com.newsthread.app.domain.similarity.SimilarityMatcher
 import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.TimeWindowCalculator
 import com.newsthread.app.util.CacheConstants
+import com.newsthread.app.domain.repository.NewsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.last
 import java.net.URI
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -50,7 +50,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ArticleMatchingRepositoryImpl @Inject constructor(
-    private val newsApiService: NewsApiService,
+    private val newsRepository: NewsRepository,
     private val sourceRatingRepository: SourceRatingRepository,
     private val matchResultDao: MatchResultDao,
     private val cachedArticleDao: CachedArticleDao,
@@ -221,17 +221,9 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         visitedUrls: MutableSet<String>
     ): List<ScoredArticle> {
         try {
-            val response = newsApiService.searchArticles(
-                query = query,
-                language = "en",
-                sortBy = "relevancy",
-                from = fromDate,
-                to = toDate,
-                pageSize = 20
-            )
-
-            val candidates = response.articles
-                .mapNotNull { it.toArticle() }
+            // RSS search via NewsRepository (Google News keyword RSS, ~7-day window)
+            val searchResult = newsRepository.searchArticles(query, forceRefresh = true).last()
+            val candidates = searchResult.getOrElse { emptyList() }
                 .filter { it.url !in visitedUrls }
                 .distinctBy { it.url }
 
@@ -409,17 +401,9 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         visitedUrls: MutableSet<String>
     ): List<Article> {
         try {
-            val response = newsApiService.searchArticles(
-                query = query,
-                language = "en",
-                sortBy = "relevancy",
-                from = fromDate,
-                to = toDate,
-                pageSize = 20
-            )
-
-            val candidates = response.articles
-                .mapNotNull { it.toArticle() }
+            // RSS search via NewsRepository (Google News keyword RSS, ~7-day window)
+            val searchResult = newsRepository.searchArticles(query, forceRefresh = true).last()
+            val candidates = searchResult.getOrElse { emptyList() }
                 .filter { it.url !in visitedUrls }
                 .distinctBy { it.url }
 
