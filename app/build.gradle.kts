@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,13 +5,6 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
     id("kotlin-parcelize")
-}
-
-// Load secrets from secrets.properties
-val secretsFile = rootProject.file("secrets.properties")
-val secrets = Properties()
-if (secretsFile.exists()) {
-    secrets.load(secretsFile.inputStream())
 }
 
 android {
@@ -32,13 +23,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        // API Keys from secrets.properties
-        buildConfigField(
-            "String",
-            "NEWS_API_KEY",
-            "\"${secrets.getProperty("NEWS_API_KEY", "")}\""
-        )
 
         // Room schema export for migrations
         ksp {
@@ -94,6 +78,12 @@ android {
     aaptOptions {
         noCompress("tflite")
     }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -125,9 +115,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // Retrofit + OkHttp (Networking)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // OkHttp (Networking — RSS feeds + article HTML fetching)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
@@ -179,6 +167,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.mockito:mockito-core:5.10.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    // kxml2 provides XmlPullParser implementation for JVM unit tests
+    testImplementation("net.sf.kxml:kxml2:2.3.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.00"))
