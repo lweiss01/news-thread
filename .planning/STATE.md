@@ -10,10 +10,10 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
 
 Phase: 14 of 15 (RSS Feed Migration — In progress)
-Plan: 1 of 7
+Plan: 4 of 7
 Status: In progress
-Last activity: 2026-02-21 — Executed Plan 14-01: RSS Feed Source Registry (RssFeedSource + FeedSourceRegistry with 46 outlets)
-Progress: [███████████░░░░░░░░░] 25/54 plans (46%)
+Last activity: 2026-02-21 — Executed Plan 14-04: Simplify NetworkModule (OkHttpClient for RSS, removed all NewsAPI infrastructure)
+Progress: [████████████░░░░░░░░] 28/54 plans (52%)
 
 
 ## Accumulated Context
@@ -79,7 +79,7 @@ Recent decisions affecting current work:
 - [x] Quantization quality verified (HuggingFace quantized model used)
 - [x] Readability4J Android compatibility verified (App launches)
 - ⚠ 16 KB alignment warning: `libtensorflowlite_jni.so` is not aligned. Filed `newsthread-1k6`.
-- 🛑 NewsAPI quota hit: Testing of article fetching/embedding blocked until reset.
+- [x] NewsAPI quota hit: RESOLVED — Phase 14 migrates off NewsAPI entirely to RSS feeds.
 
 **Phase 4 & 5 (Matching Engine):**
 - [x] Similarity engine verified with 100% logic coverage
@@ -97,11 +97,16 @@ Recent decisions affecting current work:
 - Phase 12: Architecture Refactor (Renumbered from 11)
 - Phase 13 added: UI Design and Visual Language Updates
 
+**New decisions from 14-04:**
+- No Retrofit stub in NetworkModule: ArticleMatchingRepositoryImpl was already migrated to domain NewsRepository interface before 14-04 ran, so the precautionary stub was not needed
+- HttpLoggingInterceptor.Level.HEADERS chosen for RSS (not BODY) — RSS XML too verbose at BODY level
+- Two-client pattern confirmed: NetworkModule OkHttpClient (50 MiB, http_cache) for RSS; ArticleFetchModule OkHttpClient (100 MiB, article_html_cache) for article HTML
+
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 14-01-PLAN.md (RSS Feed Source Registry)
-Resume with: Plan 14-02 (RssFeedParser).
+Stopped at: Completed 14-04-PLAN.md (Simplify NetworkModule)
+Resume with: Plan 14-05 (RssNewsRepository).
 
 ### Session Notes (2026-02-21, Phase 14/15 Planning)
 - **NewsAPI → RSS Migration Planned**:
