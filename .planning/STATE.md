@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 
 ## Current Position
 
-Phase: 14 of 15 (RSS Feed Migration — In progress)
-Plan: 5 of 7
-Status: In progress
-Last activity: 2026-02-21 — Completed Plan 14-05 (RssNewsRepository + NewsRepository interface + DI wiring)
-Progress: [████████████░░░░░░░░] 28/54 plans (52%)
+Phase: 14 of 15 (RSS Feed Migration — Complete)
+Plan: 7 of 7
+Status: Phase complete — ready for Phase 15
+Last activity: 2026-02-21 — Completed Plan 14-07 (FeedRefreshWorker + BackgroundWorkScheduler wiring)
+Progress: [█████████████░░░░░░░] 30/54 plans (56%)
 
 
 ## Accumulated Context
@@ -100,6 +100,12 @@ Recent decisions affecting current work:
 - Phase 12: Architecture Refactor (Renumbered from 11)
 - Phase 13 added: UI Design and Visual Language Updates
 
+**New decisions from 14-07:**
+- FeedRefreshWorker uses forceRefresh = false: respects 3-hour TTL, exits immediately if cache is fresh
+- collect (not first) for Flow collection in worker: triggers full cold Flow including network path when stale
+- ExistingPeriodicWorkPolicy.KEEP for FeedRefreshWorker: prevents schedule drift on app restart
+- Workers inject NewsRepository domain interface — Phase 15 swap requires no worker changes
+
 **New decisions from 14-05:**
 - fetchFeed() uses synchronous OkHttp execute() in coroutine context — correct pattern, avoids callback inversion
 - Targeted Layer 2 strategy: fetch only top 6 outlet domains found in Layer 1 results — avoids 46-request per-refresh explosion
@@ -117,8 +123,8 @@ Recent decisions affecting current work:
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 14-05-PLAN.md (RssNewsRepository + NewsRepository interface + DI wiring)
-Resume with: Plan 14-06 (FeedScreen/SettingsScreen cleanup) — Plans 14-01 through 14-05 complete.
+Stopped at: Completed 14-07-PLAN.md (FeedRefreshWorker + BackgroundWorkScheduler wiring)
+Resume with: Phase 15 (Cloudflare Workers backend) — Phase 14 fully complete (all 7 plans).
 
 ### Session Notes (2026-02-21, Phase 14/15 Planning)
 - **NewsAPI → RSS Migration Planned**:
