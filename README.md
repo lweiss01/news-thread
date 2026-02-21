@@ -33,14 +33,14 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 1.1.0 (Beta)
-**Status**: Milestone v1.1 Complete — Amber Brand & Production Architecture
+**Version**: 1.1.0 (Beta) → 1.2.0 in development
+**Status**: Milestone v1.1 Complete ✅ — RSS Migration (Phase 14) underway 🚧
 
 ### What's Built
 
 | | Feature | Description |
 |---|---------|-------------|
-| 📰 | **News Feed** | Live headlines from NewsAPI with bias ratings and reliability stars |
+| 📰 | **News Feed** | Live headlines with bias ratings and reliability stars — powered by RSS (Phase 14, replacing NewsAPI) |
 | 🧠 | **On-Device NLP** | TF Lite sentence embeddings for semantic article matching — no data leaves your device |
 | ⚖️ | **Bias Spectrum** | Articles plotted on a continuous left-to-right political axis with heatmap visualization |
 | 📌 | **Story Tracking** | Follow developing stories — new articles auto-cluster into tracked threads |
@@ -70,27 +70,56 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 12 | Architecture Refactor | 2026-02-20 | Domain logic extraction, Hilt DI cleanup, UseCases |
 | 13 | UI Design Refresh | 2026-02-20 | Amber Brand identity, editorial shields, UI softening |
 | 13.1 | App Icon Refresh | 2026-02-21 | Adaptive icon gradients, mirroring and scaling fixes |
-| 13.1.1| Visual Parity | 2026-02-21 | ArticleCard footer, typography, metrics styling |
-| 13.1.2| Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
+| 13.1.1 | Visual Parity | 2026-02-21 | ArticleCard footer, typography, metrics styling |
+| 13.1.2 | Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
+| **14** | **RSS Migration** | **In progress** | **Replace NewsAPI with free, unlimited two-layer RSS system** |
+| 15 | Cloudflare Backend | Planned | Edge backend for feed fetching — no API keys, no limits, ever |
 
 Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 </details>
 
-### Up Next — Quality and Beta Release (Phase 14)
+---
 
-Next focus area: conducting comprehensive end-to-end testing, catching any final hidden bugs, and preparing app store assets for the upcoming Beta Release.
+## 🚀 What's Next — The Road to Scale
 
-**Progress:** 13/13 phases complete — **Milestone 1.1 Achieved** 🚀.
+> NewsThread is making its most significant architectural leap yet.
 
+### Phase 14: Cutting the API Cord 🔌 → 🌐
+
+Until now, NewsThread has run on [NewsAPI](https://newsapi.org) — a fantastic service, but one that comes with rate limits, cost at scale, and a single point of dependency. That changes in Phase 14.
+
+**We're replacing NewsAPI with a free, unlimited, two-layer RSS system covering 46 curated news outlets across the full political spectrum.**
+
+**Layer 1 — Google News RSS (Discovery)**
+Google News aggregates thousands of sources in real time. NewsThread taps their public RSS feeds to discover what's actually trending — no API key, no quota, no cost. Nine category feeds (Top Stories, World, US, Business, Tech, Health, Science, Sports, Entertainment) plus keyword search.
+
+**Layer 2 — Direct Outlet Feeds (Depth)**
+46 handpicked outlets, rated and mapped by political bias, polled directly via RSS. From The Nation and Daily Kos on the left, to AP and Reuters in the center, to The Daily Wire and Newsmax on the right — the full spectrum, not just whatever NewsAPI happens to return.
+
+| Bias | Outlets |
+|------|---------|
+| ◄◄ Left | MSNBC, The Guardian, The Atlantic, Vox, Slate, HuffPost + more |
+| ◄ Lean Left | CNN, NYT, NPR, Washington Post, NBC, ABC, CBS, Politico + more |
+| ● Center | AP, Reuters, BBC, The Hill, PBS NewsHour, AllSides, Ground News + more |
+| ► Lean Right | WSJ, Fox News, Washington Examiner, National Review, The Dispatch + more |
+| ►► Right | Breitbart, The Daily Wire, The Federalist, Newsmax, OAN + more |
+
+This isn't just a cost optimization — it's what makes NewsThread genuinely scalable. No per-request charges. No throttling at 100 users or 10,000 users. The bias spectrum comparison that is NewsThread's core value proposition will finally have the source depth it deserves.
+
+### Phase 15: Cloudflare Workers (The Scale Layer) ⚡
+
+After Phase 14 ships and stabilizes, NewsThread will add an optional edge backend using [Cloudflare Workers](https://workers.cloudflare.com/) — serving pre-fetched, pre-normalized feed JSON from the edge, with feed config updatable without an app release.
+
+Critically, this is **fully consistent with NewsThread's privacy-first design**. The Worker is a stateless public content proxy — it has no concept of users, stores no personal data, and serves the same cached response to everyone. Your reading history, tracked stories, and preferences never leave your device.
 
 ### Planned (Future Milestones)
 
-- [ ] ⏳ Timeline visualization — see the evolution of a story
-- [ ] 🔑 Google Sign-In and Google Drive backup
-- [ ] 📊 Reading analytics — track your bias exposure
-- [ ] ⚠️ Filter bubble warnings when habits become one-sided
-- [ ] 🖱️ Interactive bias spectrum (tap/drag to filter)
+- [ ] ⏳ Timeline visualization — see how a story evolves hour by hour
+- [ ] 🔑 Google Sign-In and Google Drive backup for your tracked stories
+- [ ] 📊 Reading analytics — understand your own media diet
+- [ ] ⚠️ Filter bubble warnings when your reading habits skew one-sided
+- [ ] 🖱️ Interactive bias spectrum (tap to filter by political lean)
 
 ---
 
@@ -99,6 +128,7 @@ Next focus area: conducting comprehensive end-to-end testing, catching any final
 | Decision | Rationale |
 |----------|-----------|
 | 🔒 **On-device NLP only** | Privacy-first — all data stays on your device |
+| 🌐 **Two-layer RSS (Phase 14)** | Google News for discovery + 46 direct outlet feeds for depth — free, unlimited, no API keys |
 | 🤖 **TF Lite with all-MiniLM-L6-v2** | 2.17.0+ quantized model for 16KB alignment |
 | ⚡ **Pre-compute matches** | Results ready before user taps Compare |
 | 🎨 **Bias spectrum UI** | Continuous axis is more nuanced than buckets |
@@ -214,7 +244,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 - Android Studio Hedgehog or newer
 - Android SDK 34
 - Kotlin 1.9+
-- NewsAPI key ([newsapi.org](https://newsapi.org))
+- ~~NewsAPI key~~ *(Phase 14 removes this requirement — no API keys needed)*
 
 ### Setup
 
@@ -224,7 +254,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
    cd news-thread
    ```
 
-2. **Add API key**
+2. **Add API key** *(current build only — removed in Phase 14)*
    Create `secrets.properties` in the project root:
    ```
    NEWS_API_KEY=your_key_here
