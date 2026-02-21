@@ -4,10 +4,23 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    
+    <!-- N letterform (Amber gradient placeholder - using solid Amber400 for vector simplicity) -->
     <path
-        android:fillColor="#1565C0"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+        android:fillColor="#FBBF24"
+        android:pathData="M34,24 L44,24 L44,84 L34,84 Z M64,24 L74,24 L74,84 L64,84 Z M44,24 L54,24 L74,84 L64,84 Z"/>
+    
+    <!-- Spectrum Bar (3 sections) sits below the N -->
+    <!-- Left: BiasLeft (#60A5FA) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M40,38h28v4h-28zM40,46h28v4h-28zM40,54h20v4h-20zM40,62h28v4h-28z"/>
+        android:fillColor="#60A5FA"
+        android:pathData="M18,92 h24 v6 h-24 Z"/>
+    <!-- Center: BiasCenter (#A78BFA) -->
+    <path
+        android:fillColor="#A78BFA"
+        android:pathData="M42,92 h24 v6 h-24 Z"/>
+    <!-- Right: BiasRight (#F87171) -->
+    <path
+        android:fillColor="#F87171"
+        android:pathData="M66,92 h24 v6 h-24 Z"/>
 </vector>
