@@ -24,8 +24,10 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
+import com.newsthread.app.presentation.common.glassBackground
 import com.newsthread.app.presentation.components.BiasHeatmap
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
+import com.newsthread.app.presentation.theme.ProjectTheme
 import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,8 +131,12 @@ private fun ComparisonContent(
     // Capture colors outside LazyListScope (which is not @Composable)
     val primaryColor = MaterialTheme.colorScheme.primary
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
     val outlineColor = MaterialTheme.colorScheme.outline
+    
+    // Captured for LazyColumn context
+    val leftLabel = ProjectTheme.bias.leftLabel
+    val centerColor = MaterialTheme.colorScheme.secondary
+    val rightLabel = ProjectTheme.bias.rightLabel
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -251,10 +257,11 @@ private fun ComparisonContent(
             }
         }
 
-        renderSection("Left Perspective", comparison.leftPerspective, ProjectTheme.bias.leftLabel)
-        renderSection("Center Perspective", comparison.centerPerspective, ProjectTheme.bias.gradient.let { MaterialTheme.colorScheme.secondary }) // Amber/Secondary for Center
-        renderSection("Right Perspective", comparison.rightPerspective, ProjectTheme.bias.rightLabel)
-        renderSection("Related Stories", comparison.unratedPerspective, MaterialTheme.colorScheme.outline)
+
+        renderSection("Left Perspective", comparison.leftPerspective, leftLabel)
+        renderSection("Center Perspective", comparison.centerPerspective, centerColor)
+        renderSection("Right Perspective", comparison.rightPerspective, rightLabel)
+        renderSection("Related Stories", comparison.unratedPerspective, outlineColor)
     }
 }
 
