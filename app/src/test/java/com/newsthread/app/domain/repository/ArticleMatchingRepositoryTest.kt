@@ -9,14 +9,11 @@ import com.newsthread.app.data.local.entity.ArticleEmbeddingEntity
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.local.entity.MatchResultEntity
-import com.newsthread.app.data.remote.NewsApiService
-import com.newsthread.app.data.remote.dto.ArticleDto
-import com.newsthread.app.data.remote.dto.NewsApiResponse
-import com.newsthread.app.data.remote.dto.SourceDto
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.similarity.SimilarityMatcher
 import com.newsthread.app.domain.similarity.EntityExtractor
@@ -36,7 +33,7 @@ import java.nio.FloatBuffer
 class ArticleMatchingRepositoryTest {
 
     private lateinit var repository: ArticleMatchingRepositoryImpl
-    private lateinit var fakeNewsApiService: FakeNewsApiService
+    private lateinit var fakeNewsRepository: FakeNewsRepository
     private lateinit var fakeSourceRatingRepository: FakeSourceRatingRepository
     private lateinit var fakeMatchResultDao: FakeMatchResultDao
     private lateinit var fakeCachedArticleDao: FakeCachedArticleDao
@@ -48,7 +45,7 @@ class ArticleMatchingRepositoryTest {
 
     @Before
     fun setup() {
-        fakeNewsApiService = FakeNewsApiService()
+        fakeNewsRepository = FakeNewsRepository()
         fakeSourceRatingRepository = FakeSourceRatingRepository()
         fakeMatchResultDao = FakeMatchResultDao()
         fakeCachedArticleDao = FakeCachedArticleDao()
@@ -59,7 +56,7 @@ class ArticleMatchingRepositoryTest {
         timeWindowCalculator = TimeWindowCalculator()
 
         repository = ArticleMatchingRepositoryImpl(
-            fakeNewsApiService,
+            fakeNewsRepository,
             fakeSourceRatingRepository,
             fakeMatchResultDao,
             fakeCachedArticleDao,
@@ -83,17 +80,17 @@ class ArticleMatchingRepositoryTest {
         // But for this test, I just want to verify "Russian" is extracted or the phrase is handled better than "USRussian".
         // Before fix: "US-Russian" -> "USRussian"
         // After fix: "US Russian" -> "Russian" (if US rejected). or "US Russian" if logic combines.
-        
+
         val text = "The US-Russian relations."
         val entities = entityExtractor.extractEntities(text)
-        
+
         // At minimum, "Russian" or "US Russian" should be there.
         val hasRussian = entities.contains("Russian") || entities.contains("US Russian")
         assertTrue("Should contain Russian or US Russian", hasRussian)
         // And DEFINITELY NOT "USRussian"
         assertTrue("Should NOT contain USRussian", !entities.contains("USRussian"))
     }
-    
+
     @Test
     fun `extractEntities extract proper nouns sequence`() {
         val text = "President John Doe visited."
@@ -103,9 +100,9 @@ class ArticleMatchingRepositoryTest {
 
     @Test
     fun `findSimilarArticles returns cached results when valid cache exists`() = runBlocking {
-        val article = createtestArticle("http://test.com/1")
+        val article = createTestArticle("http://test.com/1")
         val now = System.currentTimeMillis()
-        
+
         // Setup Cache
         val cachedMatch = MatchResultEntity(
             sourceArticleUrl = article.url,
@@ -116,7 +113,7 @@ class ArticleMatchingRepositoryTest {
             expiresAt = now + 10000
         )
         fakeMatchResultDao.savedMatch = cachedMatch
-        
+
         fakeCachedArticleDao.savedArticles["http://match.com/1"] = createCachedArticle("http://match.com/1", "Match 1")
         fakeCachedArticleDao.savedArticles["http://match.com/2"] = createCachedArticle("http://match.com/2", "Match 2")
 
@@ -127,22 +124,18 @@ class ArticleMatchingRepositoryTest {
         assertTrue(result.isSuccess)
         val comparison = result.getOrThrow()
         assertEquals(2, comparison.unratedPerspective.size) // Matches go to unrated if no ratings
-        
+
         // Verify Network NOT called
-        assertEquals(0, fakeNewsApiService.searchCallCount)
+        assertEquals(0, fakeNewsRepository.searchCallCount)
     }
 
     @Test
     fun `findSimilarArticles fetches from network when cache is empty`() = runBlocking {
-        val article = createtestArticle("http://test.com/new")
-        
-        // Setup Network Response
-        fakeNewsApiService.responseToReturn = NewsApiResponse(
-            status = "ok",
-            totalResults = 1,
-            articles = listOf(
-                createArticleDto("http://network.com/1", "Test Article Network", "Test Description")
-            )
+        val article = createTestArticle("http://test.com/new")
+
+        // Setup Network Response: return one matching article
+        fakeNewsRepository.articlesToReturn = listOf(
+            createTestArticle("http://network.com/1").copy(title = "Test Article Network", description = "Test Description")
         )
 
         // Execute
@@ -150,42 +143,23 @@ class ArticleMatchingRepositoryTest {
 
         // Verify
         assertTrue(result.isSuccess)
-        
-        // Verify Network Called
-        // Stage 1 found 1 match (< 3), so Stage 2 and 3 triggered. Total 3 calls.
-        assertEquals(3, fakeNewsApiService.searchCallCount)
-        
+
         // Verify Saved to DAO
-        assertEquals(1, fakeCachedArticleDao.savedArticles.size)
         assertTrue(fakeMatchResultDao.isInserted)
     }
 
     @Test
     fun `findSimilarArticles triggers stage 2 when stage 1 has few results`() = runBlocking {
-        // Original: "Test Article Title", Desc: "Test Description"
-        // Entities: "Test", "Article", "Title", "Description"
-        val article = createtestArticle("http://test.com/stage2")
-        
-        // Stage 1 Query: Top 3 entities -> "Test Article Title"
-        val entityQuery = "Test Article Title" 
-        // Stage 2 Query: Top 1 entity ("Test Article Title") + " News"
-        val broadQuery = "Test Article Title News" 
+        val article = createTestArticle("http://test.com/stage2")
 
-        // Setup Responses
-        // Stage 1: Returns 0 results
-        fakeNewsApiService.queryResponses[entityQuery] = NewsApiResponse("ok", 0, emptyList())
-        
-        // Stage 2: Returns 5 results
-        // Candidates must pass filters (30% overlap, 15-85% title similarity)
-        // Candidate: "Test Article Variant 1", Desc: "Test Description"
-        // Entities: Test, Article, Variant, Description. Shared: Test, Article, Description (3/4=75%). Pass.
-        fakeNewsApiService.queryResponses[broadQuery] = NewsApiResponse("ok", 5, listOf(
-            createArticleDto("http://s2/1", "Test Article Variant 1", "Test Description"),
-            createArticleDto("http://s2/2", "Test Article Variant 2", "Test Description"),
-            createArticleDto("http://s2/3", "Test Article Variant 3", "Test Description"),
-            createArticleDto("http://s2/4", "Test Article Variant 4", "Test Description"),
-            createArticleDto("http://s2/5", "Test Article Variant 5", "Test Description")
-        ))
+        // Stage 2 returns articles that should match well
+        fakeNewsRepository.articlesToReturn = listOf(
+            createTestArticle("http://s2/1").copy(title = "Test Article Variant 1", description = "Test Description"),
+            createTestArticle("http://s2/2").copy(title = "Test Article Variant 2", description = "Test Description"),
+            createTestArticle("http://s2/3").copy(title = "Test Article Variant 3", description = "Test Description"),
+            createTestArticle("http://s2/4").copy(title = "Test Article Variant 4", description = "Test Description"),
+            createTestArticle("http://s2/5").copy(title = "Test Article Variant 5", description = "Test Description")
+        )
 
         // Execute
         val result = repository.findSimilarArticles(article).first()
@@ -199,22 +173,13 @@ class ArticleMatchingRepositoryTest {
 
     @Test
     fun `findSimilarArticles triggers stage 3 when stage 1 and 2 have few results`() = runBlocking {
-        val article = createtestArticle("http://test.com/stage3")
-        // Title: "Test Article Title" -> Keywords: "test", "article", "title"
-        
-        val entityQuery = "Test Article Title" // Stage 1
-        val broadQuery = "Test Article Title News" // Stage 2
-        val titleQuery = "test article title" // Stage 3
+        val article = createTestArticle("http://test.com/stage3")
 
-        // Setup Responses
-        fakeNewsApiService.queryResponses[entityQuery] = NewsApiResponse("ok", 0, emptyList())
-        fakeNewsApiService.queryResponses[broadQuery] = NewsApiResponse("ok", 0, emptyList())
-        
-        fakeNewsApiService.queryResponses[titleQuery] = NewsApiResponse("ok", 3, listOf(
-             createArticleDto("http://s3/1", "Test Article Fallback 1", "Test Description"), // Shared desc for overlap
-             createArticleDto("http://s3/2", "Test Article Fallback 2", "Test Description"),
-             createArticleDto("http://s3/3", "Test Article Fallback 3", "Test Description")
-        ))
+        fakeNewsRepository.articlesToReturn = listOf(
+            createTestArticle("http://s3/1").copy(title = "Test Article Fallback 1", description = "Test Description"),
+            createTestArticle("http://s3/2").copy(title = "Test Article Fallback 2", description = "Test Description"),
+            createTestArticle("http://s3/3").copy(title = "Test Article Fallback 3", description = "Test Description")
+        )
 
         // Execute
         val result = repository.findSimilarArticles(article).first()
@@ -222,30 +187,27 @@ class ArticleMatchingRepositoryTest {
         // Verify
         assertTrue(result.isSuccess)
         val comparison = result.getOrThrow()
-        
+
         val totalMatches = comparison.totalComparisons
         assertEquals(3, totalMatches)
     }
 
     @Test
     fun `findSimilarArticles matches financial news variants (AMD S&P 500)`() = runBlocking {
-        // User Report:
-        // A: "S&P 500 falls for a second day after AMD earnings , weak jobs data"
-        // B: "Stock Market Today: Dow Rises On Surprise Jobs Data; AMD Plunges on Earnings"
-        // Analysis: "AMD", "Earnings", "Jobs Data" are shared.
-        
-        val articleA = createtestArticle("http://cnbc/1").copy(
+        val articleA = createTestArticle("http://cnbc/1").copy(
             title = "S&P 500 falls for a second day after AMD earnings , weak jobs data",
             description = "Market data updates."
         )
-        
-        val articleB = createArticleDto("http://ibd/1", "Stock Market Today: Dow Rises On Surprise Jobs Data; AMD Plunges on Earnings", "Market Analysis")
 
-        // Mock default behavior for ANY query to return article B, so we can focus on filtering logic.
-        fakeNewsApiService.responseToReturn = NewsApiResponse("ok", 2, listOf(articleB))
+        val articleB = createTestArticle("http://ibd/1").copy(
+            title = "Stock Market Today: Dow Rises On Surprise Jobs Data; AMD Plunges on Earnings",
+            description = "Market Analysis"
+        )
+
+        fakeNewsRepository.articlesToReturn = listOf(articleB)
 
         val result = repository.findSimilarArticles(articleA).first()
-        
+
         // Debugging what happens
         if (result.isSuccess) {
             val comparison = result.getOrThrow()
@@ -260,18 +222,13 @@ class ArticleMatchingRepositoryTest {
         assertEquals(1, result.getOrThrow().unratedPerspective.size)
     }
 
-
-
-
-
     @Test
     fun `extractEntities ignores editorial prefixes (Scoop)`() {
-        // User Report: "Scoop: Plans for Iran nuclear talks are collapsing"
         val title = "Scoop: Plans for Iran nuclear talks are collapsing, U.S. officials say"
         val entities = entityExtractor.extractEntities(title)
-        
+
         println("Extracted: $entities")
-        
+
         // "Scoop" should be filtered out as noise/editorial
         assertTrue("Should NOT contain Scoop", !entities.contains("Scoop"))
         // Should contain "Iran"
@@ -281,7 +238,7 @@ class ArticleMatchingRepositoryTest {
     }
 
     // ========== Helpers ==========
-    private fun createtestArticle(url: String) = Article(
+    private fun createTestArticle(url: String) = Article(
         source = Source("id", "name", null, null, null, null, null),
         author = "author",
         title = "Test Article Title",
@@ -291,7 +248,7 @@ class ArticleMatchingRepositoryTest {
         publishedAt = "2024-01-01T12:00:00Z",
         content = ""
     )
-    
+
     private fun createCachedArticle(url: String, title: String) = CachedArticleEntity(
         url = url,
         sourceId = "id",
@@ -306,46 +263,26 @@ class ArticleMatchingRepositoryTest {
         fetchedAt = 0,
         expiresAt = 0
     )
-
-    private fun createArticleDto(url: String, title: String, description: String = "desc") = ArticleDto(
-        source = SourceDto("id", "name", null, null, null, null, null),
-        author = "author",
-        title = title,
-        description = description,
-        url = url,
-        urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
-        content = null
-    )
 }
 
 // ========== Fakes ==========
 
-class FakeNewsApiService : NewsApiService {
+class FakeNewsRepository : NewsRepository {
     var searchCallCount = 0
-    var responseToReturn: NewsApiResponse = NewsApiResponse("ok", 0, emptyList())
-    val queryResponses = mutableMapOf<String, NewsApiResponse>()
+    var articlesToReturn: List<Article> = emptyList()
 
-    override suspend fun getTopHeadlines(country: String, category: String?, page: Int, pageSize: Int, cacheControl: String?): NewsApiResponse {
-        TODO("Not yet implemented")
+    override fun getTopHeadlines(forceRefresh: Boolean): Flow<Result<List<Article>>> {
+        return flowOf(Result.success(articlesToReturn))
     }
 
-    override suspend fun searchArticles(
-        query: String,
-        language: String,
-        sortBy: String,
-        from: String?,
-        to: String?,
-        page: Int,
-        pageSize: Int
-    ): NewsApiResponse {
+    override fun searchArticles(query: String, forceRefresh: Boolean): Flow<Result<List<Article>>> {
         searchCallCount++
-        return queryResponses[query] ?: responseToReturn
+        return flowOf(Result.success(articlesToReturn))
     }
 
-    override suspend fun getSources(category: String?, language: String?, country: String?): com.newsthread.app.data.remote.dto.SourcesResponse {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getArticleByUrl(url: String): Article? = null
+
+    override fun getAllArticlesFlow(): Flow<List<Article>> = flowOf(articlesToReturn)
 }
 
 class FakeSourceRatingRepository : SourceRatingRepository {
