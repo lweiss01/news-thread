@@ -45,6 +45,9 @@ class BackgroundWorkScheduler @Inject constructor(
         
         // Phase 9: Always schedule story updates (independent of sync preferences)
         scheduleStoryUpdates()
+
+        // Phase 14: Always schedule RSS feed pre-warming (independent of sync preferences)
+        scheduleFeedRefresh()
     }
 
     private fun scheduleWork(
@@ -104,6 +107,29 @@ class BackgroundWorkScheduler @Inject constructor(
 
         workManager.enqueueUniquePeriodicWork(
             StoryUpdateWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+    }
+
+    /**
+     * Phase 14: Schedule periodic RSS feed cache pre-warming.
+     * Runs every 30 minutes when network is available.
+     * Respects the 3-hour feed TTL — exits early if cache is still fresh.
+     */
+    private fun scheduleFeedRefresh() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val request = PeriodicWorkRequestBuilder<FeedRefreshWorker>(
+            30, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            FeedRefreshWorker.WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
             request
         )
