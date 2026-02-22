@@ -59,11 +59,8 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Achieve visual parity with Amber Brand mockups (ArticleCard footer, typography, metrics styling, deep-linking) — Phase 13.1.1 & 13.1.2
 - ✓ Replaced NewsAPI with on-device dual-layer RSS feed parsing and Google News URL decoding — Phase 14
 
-### Active (Phase 15: Cloudflare Backend)
-
-#### Phase 15: Cloudflare Workers RSS Backend
-- [ ] Move RSS feed fetching and XML parsing to edge worker
-- [ ] Final end-to-end testing
+- ✓ Move RSS feed fetching and XML parsing to edge worker — Phase 15
+- ✓ Final end-to-end testing — Phase 15
 - [ ] Prepare app store assets
 
 

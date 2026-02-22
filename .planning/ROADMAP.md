@@ -323,7 +323,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 12. Architecture Refactor | 2/2 | Complete | 2026-02-20 |
 | 13. UI Design & Visual Updates | 4/4 | Complete | 2026-02-20 |
 | 14. RSS Feed Migration | 7/7 | Complete | 2026-02-21 |
-| 15. Cloudflare Workers Backend | 0/4 | Active | — |
+| 15. Cloudflare Workers Backend | 4/4 | Complete | 2026-02-22 |
 
 
 
@@ -368,8 +368,14 @@ Plans:
 **Plans:**
 7/7 plans complete
 
-**Plans:**
-- [ ] 15-01: Cloudflare Worker (TypeScript — fetch + normalize all feeds, KV caching, JSON API endpoint)
-- [ ] 15-02: App HTTP client swap (replace `RssNewsRepository` fetch with Worker API calls)
-- [ ] 15-03: On-device cleanup (remove XML parser, URL decoder, RSS-specific OkHttp config)
-- [ ] 15-04: Feed health monitoring (Worker exposes feed status; surfaced in app Settings)
+### Phase 15: Cloudflare Workers RSS Backend
+
+**Goal:** Move RSS feed fetching and URL resolution from the Android app to a Cloudflare Workers edge backend.
+
+**Status:** Complete (2026-02-22)
+
+**Delivered:**
+- [x] 15-01: Cloudflare Worker (TypeScript — fetch + normalize all feeds, KV caching, JSON API endpoint)
+- [x] 15-02: App HTTP client swap (replace `RssNewsRepository` fetch with Worker API calls)
+- [x] 15-03: On-device cleanup (remove XML parser, URL decoder, RSS-specific OkHttp config)
+- [x] 15-04: Feed health monitoring (Worker exposes feed status; surfaced in app Settings)
