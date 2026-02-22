@@ -2,7 +2,7 @@
 
 ## What This Is
 
-NewsThread is a native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. It's an offline-first, privacy-first app built with Kotlin and Jetpack Compose where user data stays on their device (backed up to their own Google Drive).
+NewsThread is a native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. It's an offline-first, privacy-first app built with Kotlin and Jetpack Compose where user data stays on their device, powered by a stateless Cloudflare Workers edge backend.
 
 ## Core Value
 
@@ -120,5 +120,5 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
-*Last updated: 2026-02-21 after Phases 13/13.1.1*
+*Last updated: 2026-02-22 after v1.1 milestone (Phases 1-15)*
 
