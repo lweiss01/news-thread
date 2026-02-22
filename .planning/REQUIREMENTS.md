@@ -45,16 +45,16 @@
 
 | REQ-ID | Phase |
 |---|---|
-| ICON-01 | TBD |
-| ICON-02 | TBD |
-| INFRA-01 | TBD |
-| INFRA-02 | TBD |
-| INFRA-03 | TBD |
-| INFRA-04 | TBD |
-| FEAT-01 | TBD |
-| FEAT-02 | TBD |
-| STORE-01 | TBD |
-| STORE-02 | TBD |
-| STORE-03 | TBD |
-| QUAL-01 | TBD |
-| QUAL-02 | TBD |
+| ICON-01 | Phase 16 |
+| ICON-02 | Phase 16 |
+| INFRA-01 | Phase 17 |
+| INFRA-02 | Phase 17 |
+| INFRA-03 | Phase 17 |
+| INFRA-04 | Phase 17 |
+| FEAT-01 | Phase 17 |
+| FEAT-02 | Phase 18 |
+| STORE-01 | Phase 16 |
+| STORE-02 | Phase 16 |
+| STORE-03 | Phase 18 |
+| QUAL-01 | Phase 18 |
+| QUAL-02 | Phase 18 |
