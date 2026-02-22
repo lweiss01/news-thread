@@ -8,14 +8,16 @@ NewsThread is a native Android news reader that shows how different media source
 
 When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
 
-## Current Milestone: v1.1.x UI Design & Visual Updates
+## Current Milestone: v1.2 Google Play Release
+
+**Goal:** Prepare the NewsThread app for its initial release on the Google Play Store, including polishing the app, fixing bugs, and generating necessary store assets.
 
 **Target features:**
-- UI/UX Redesign (Pulse Dashboard, Heatmap, Modern Style)
-- Domain Logic Extraction (NewsRepository -> UseCases)
-- ViewModel Standardization
-- UI Design and Visual Language Updates
-- Dependency Injection Cleanup
+- Final Bug Fixes and UI Polish
+- Privacy Policy and Terms of Service creation
+- App Store Assets (Screenshots, Feature Graphic, Description)
+- Release Build Configuration (ProGuard rules, keystore setup)
+- Internal Testing / Closed Alpha rollout
 
 ### Requirements
 

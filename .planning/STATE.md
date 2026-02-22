@@ -7,13 +7,12 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
 **Current focus:** Planning next milestone (v1.2).
  
- ## Current Position
+## Current Position
  
-- Phase: complete (Milestone v1.1 shipped)
-- Plan: complete 
-- Status: Idle — v1.1 shipped. Ready for next phase planning.
-- Last activity: 2026-02-22 — Completed v1.1 milestone, archived ROADMAP, and published Cloudflare backend
-- Progress: [████████████████████] 15/15 phases (100%)
+- Phase: Not started (defining requirements)
+- Plan: —
+- Status: Defining requirements
+- Last activity: 2026-02-22 — Milestone v1.2 started
 
 
 ## Accumulated Context
