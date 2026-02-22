@@ -74,13 +74,13 @@ When a user reads an article, they can instantly see how the same story is cover
 - Google Drive backup integration — deferred, not related to matching
 - Firebase authentication — deferred, not related to matching
 - Settings screen beyond article fetch preference — deferred
-- Alternative news APIs (GNews, Newscatcher) — stick with NewsAPI for now
+- Alternative news APIs (GNews, Newscatcher) — Replaced by free dual-layer RSS + Cloudflare Workers edge backend in Phases 14 & 15.
 
 ## Context
 
 - The current matching algorithm uses regex-based entity extraction (capitalized words) and string similarity with magic thresholds (40% entity overlap, 20-80% title similarity). It produces mostly empty results or irrelevant matches.
-- NewsAPI free tier is limited to 100 requests/day. Caching and rate limit handling are critical to not burn through the quota.
-- The `content` field from NewsAPI returns ~200 chars of article body — an underused data source.
+- Previously, NewsAPI's free tier was limited to 100 requests/day, making caching and rate limit handling critical. We migrated to a custom Cloudflare Workers edge backend that serves RSS feeds with no per-user quota or keys required.
+- Earlier in the project, the `content` field from NewsAPI returned ~200 chars of article body, which necessitated the custom Readability4J text extraction pipeline.
 - TensorFlow Lite is the standard approach for on-device ML on Android. MobileBERT provides sentence embeddings suitable for similarity matching.
 - Google News "Full Coverage" feature is the UX inspiration — but NewsThread adds the bias spectrum layer on top.
 - The codebase already has a TODO (ArticleMatchingRepositoryImpl lines 26-29) mentioning TF Lite + BERT as the intended direction.
@@ -91,7 +91,7 @@ When a user reads an article, they can instantly see how the same story is cover
 - **Platform**: Android only, min SDK 26 (Android 8.0)
 - **Processing**: All NLP/matching must run on-device — no backend server
 - **Performance**: Matches should be pre-computed in background; comparison view should load in 5-10 seconds max with progress indicator
-- **API budget**: NewsAPI free tier (100 req/day) — must cache aggressively
+- **API budget**: None. The Cloudflare Workers edge backend handles all feed discovery without per-user API constraints.
 - **Model size**: TF Lite model must be reasonable for mobile (< 100MB)
 - **Network**: Article text fetching controlled by user preference (WiFi-only option)
 
