@@ -125,12 +125,20 @@ Recent decisions affecting current work:
 - kxml2:2.3.0 added as testImplementation + testOptions.unitTests.isReturnDefaultValues=true for JVM-compatible XML unit tests
 
 ### Session Continuity
+ 
+ Last session: 2026-02-22
+ Stopped at: Fixed the redirect notice issue and finalized Phase 15 summaries. Ready to transition to Beta release.
+ Resume with: Determine next steps for Beta release.
+ 
+### Session Notes (2026-02-22, Phase 15 Cloudflare Backend)
+- **Phase 15 Validated & Complete**:
+    - **Cloudflare Edge Worker**: Deployed a stateless Hono/TypeScript worker to fetch and process dual-layer RSS feeds, caching results in Cloudflare KV.
+    - **Google News Redirect Fix**: Resolved the "invalid web address" bug by normalizing URLs at the edge and spoofing a modern Android 14 Chrome User-Agent in the Android `WebView`.
+    - **Android Client Swap**: Swapped the `RssNewsRepository` direct XML fetching with a clean, fast JSON API call to the Worker, saving on-device processing power.
+    - **Codebase Cleanup**: Removed obsoleted XML parser logic, URL decoders, Python test scripts, and redundant network interceptors.
+    - **Feed Health UI**: Introduced a Feed Status settings screen relying on the Worker's health endpoint.
 
-Last session: 2026-02-22
-Stopped at: Fixed the redirect notice issue and finalized Phase 15 summaries. Ready to transition to Beta release.
-Resume with: Determine next steps for Beta release.
-
-### Session Notes (2026-02-21, Phase 14 Validation & Optimization)
+ ### Session Notes (2026-02-21, Phase 14 Validation & Optimization)
 - **Phase 14 Validated & Complete**:
     - **Google News URLs**: Fixed the API obfuscation changes by reverse-engineering `batchexecute`, fetching the HTML first to glean the signature and timestamp.
     - **Performance Optimization**: Re-wrote the `decodeAndMapItems` logic to execute concurrently via Coroutines `async` and `awaitAll()`, dropping fetch times from 6s down to <1s.
