@@ -34,13 +34,13 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 ## Current Status 🚀
 
 **Version**: 1.1.0 (Beta) → 1.2.0 in development
-**Status**: Milestone v1.1 Complete ✅ — RSS Migration (Phase 14) underway 🚧
+**Status**: Milestone v1.1 Complete ✅ — Core Backend Migration (Phases 14 & 15) Complete ✅
 
 ### What's Built
 
 | | Feature | Description |
 |---|---------|-------------|
-| 📰 | **News Feed** | Live headlines with bias ratings and reliability stars — powered by RSS (Phase 14, replacing NewsAPI) |
+| 📰 | **News Feed** | Live headlines with bias ratings and reliability stars — powered by a custom Cloudflare edge worker |
 | 🧠 | **On-Device NLP** | TF Lite sentence embeddings for semantic article matching — no data leaves your device |
 | ⚖️ | **Bias Spectrum** | Articles plotted on a continuous left-to-right political axis with heatmap visualization |
 | 📌 | **Story Tracking** | Follow developing stories — new articles auto-cluster into tracked threads |
@@ -50,7 +50,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
 
 <details>
-<summary><b>📋 Development History (13+ phases completed)</b></summary>
+<summary><b>📋 Development History (15+ phases completed)</b></summary>
 
 | Phase | Name | Completed | Highlights |
 |-------|------|-----------|------------|
@@ -72,8 +72,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 13.1 | App Icon Refresh | 2026-02-21 | Adaptive icon gradients, mirroring and scaling fixes |
 | 13.1.1 | Visual Parity | 2026-02-21 | ArticleCard footer, typography, metrics styling |
 | 13.1.2 | Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
-| **14** | **RSS Migration** | **In progress** | **Replace NewsAPI with free, unlimited two-layer RSS system** |
-| 15 | Cloudflare Backend | Planned | Edge backend for feed fetching — no API keys, no limits, ever |
+| 14 | RSS Migration | 2026-02-21 | Replaced NewsAPI with free, unlimited two-layer on-device RSS system |
+| 15 | Cloudflare Backend | 2026-02-22 | Serverless edge backend for feed fetching & Google News proxy rendering |
 
 Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
@@ -81,15 +81,15 @@ Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 ---
 
-## 🚀 What's Next — The Road to Scale
+## 🚀 The Core Engine Is Complete
 
-> NewsThread is making its most significant architectural leap yet.
+> NewsThread has officially cut the API cord.
 
-### Phase 14: Cutting the API Cord 🔌 → 🌐
+### Phase 14 & 15: The Cloudflare RSS Engine 🌐 ⚡
 
-Until now, NewsThread has run on [NewsAPI](https://newsapi.org) — a fantastic service, but one that comes with rate limits, cost at scale, and a single point of dependency. That changes in Phase 14.
+Until now, NewsThread relied on [NewsAPI](https://newsapi.org) — a fantastic service, but one that comes with rate limits, cost at scale, and a single point of dependency. That changed entirely in Phases 14 & 15.
 
-**We're replacing NewsAPI with a free, unlimited, two-layer RSS system covering 46 curated news outlets across the full political spectrum.**
+**We replaced NewsAPI with a free, unlimited, two-layer RSS system covering 46 curated news outlets across the full political spectrum, powered by a Cloudflare Edge Worker.**
 
 **Layer 1 — Google News RSS (Discovery)**
 Google News aggregates thousands of sources in real time. NewsThread taps their public RSS feeds to discover what's actually trending — no API key, no quota, no cost. Nine category feeds (Top Stories, World, US, Business, Tech, Health, Science, Sports, Entertainment) plus keyword search.
@@ -105,11 +105,8 @@ Google News aggregates thousands of sources in real time. NewsThread taps their 
 | ► Lean Right | WSJ, Fox News, Washington Examiner, National Review, The Dispatch + more |
 | ►► Right | Breitbart, The Daily Wire, The Federalist, Newsmax, OAN + more |
 
-This isn't just a cost optimization — it's what makes NewsThread genuinely scalable. No per-request charges. No throttling at 100 users or 10,000 users. The bias spectrum comparison that is NewsThread's core value proposition will finally have the source depth it deserves.
-
-### Phase 15: Cloudflare Workers (The Scale Layer) ⚡
-
-After Phase 14 ships and stabilizes, NewsThread will add an optional edge backend using [Cloudflare Workers](https://workers.cloudflare.com/) — serving pre-fetched, pre-normalized feed JSON from the edge, with feed config updatable without an app release.
+**Edge Computing with Cloudflare Workers**
+The new Worker resolves Google News redirect links server-side, leverages Cloudflare KV caching for fast response times, mitigates bot-challenges, and standardizes feed parsing into a clean interface.
 
 Critically, this is **fully consistent with NewsThread's privacy-first design**. The Worker is a stateless public content proxy — it has no concept of users, stores no personal data, and serves the same cached response to everyone. Your reading history, tracked stories, and preferences never leave your device.
 

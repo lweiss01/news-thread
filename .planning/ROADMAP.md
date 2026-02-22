@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
 - [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system
  (completed 2026-02-22)
-- [ ] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution
+- [x] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution (completed 2026-02-22)
 
 
 ## Phase Details
@@ -187,7 +187,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
 - [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
 - [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system (completed 2026-02-21)
-- [ ] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution
+- [x] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution (completed 2026-02-22)
 
 
 ## Phase Details

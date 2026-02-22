@@ -138,9 +138,13 @@ fun ArticleDetailScreen(
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
+                    WebView.setWebContentsDebuggingEnabled(true)
                     webViewClient = WebViewClient()
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // Set a modern Chrome User-Agent to bypass Google's "Redirect Notice"
+                    settings.userAgentString = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UD1A.230803.041) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                    android.util.Log.d("ArticleDetailScreen", "Loading URL in WebView: $articleUrl")
                     loadUrl(articleUrl)
                 }
             },

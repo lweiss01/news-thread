@@ -120,14 +120,18 @@ app.get('/v1/feeds/search', async (c) => {
 });
 
 async function fetchAndNormalize(url: string, sourceName: string, env: Bindings): Promise<Article[]> {
-    // Check cache first
-    const cacheKey = `feed:${url}`;
+    // Check cache first (using v2 prefix to bypass stale [object Object] data)
+    const cacheKey = `feed:v2:${url}`;
     const cached = await env.FEED_CACHE.get(cacheKey);
     if (cached) {
-        return JSON.parse(cached);
+        try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) { }
     }
 
     try {
+        console.log(`[Fetching] ${url}`);
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -135,26 +139,67 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings)
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP ${response.status} from ${url}`);
         }
 
         const xml = await response.text();
         const items = parseRss(xml, sourceName);
+        console.log(`[Parsed] ${items.length} items from ${sourceName}`);
 
-        // Resolve all URLs concurrently
-        const articles = await Promise.all(items.map(async (item) => {
-            const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
-            return mapToArticle({ ...item, link: resolvedUrl });
-        }));
+        // Limit to top 30 to save resources and stay within limits
+        const limitedItems = items.slice(0, 30);
 
-        // Cache for 15 minutes
-        await env.FEED_CACHE.put(cacheKey, JSON.stringify(articles), { expirationTtl: 900 });
+        // Resolve URLs in small batches to stay within Cloudflare subrequest limits (6 for Free tier)
+        const articles: Article[] = [];
+        const batchSize = 5;
+        for (let i = 0; i < limitedItems.length; i += batchSize) {
+            const batch = limitedItems.slice(i, i + batchSize);
+            const resolvedBatch = await Promise.all(batch.map(async (item) => {
+                try {
+                    const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
+                    const article = mapToArticle({ ...item, link: resolvedUrl });
+                    if (article.source.name === '[object Object]') {
+                        console.warn(`[Found Bug] [object Object] source for item: ${article.title.substring(0, 30)}...`);
+                        console.warn(`Original Link: ${item.link}`);
+                        console.warn(`Original SourceName: ${typeof item.sourceName} ${JSON.stringify(item.sourceName)}`);
+                    }
+                    return article;
+                } catch (e) {
+                    // Fallback to original link on error
+                    return mapToArticle(item);
+                }
+            }));
+            articles.push(...resolvedBatch);
+        }
+
+        // Only cache if we actually got results
+        if (articles.length > 0) {
+            await env.FEED_CACHE.put(cacheKey, JSON.stringify(articles), { expirationTtl: 900 });
+            console.log(`[Cache Set] ${articles.length} articles for ${url}`);
+        } else {
+            console.log(`[No Articles] Not caching empty result for ${url}`);
+        }
 
         return articles;
-    } catch (e) {
-        console.error(`Fetch error for ${url}:`, e);
+    } catch (e: any) {
+        console.error(`[Fetch Error] for ${url}:`, e.message);
+        // Don't just return [] silently if it's a main fetch
         return [];
     }
+}
+
+function getText(obj: any): string {
+    if (obj === null || obj === undefined) return '';
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'object') {
+        if (obj['#text'] !== undefined) return String(obj['#text']);
+        // If it's an array for some reason (rare for these fields)
+        if (Array.isArray(obj) && obj.length > 0) return getText(obj[0]);
+        // If it's a JSON object without #text, stringify it for debug visibility if it would normally be [object Object]
+        // But for source names, let's just return empty string to fallback to domain
+        return '';
+    }
+    return String(obj);
 }
 
 export default app;

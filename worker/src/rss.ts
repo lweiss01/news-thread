@@ -8,6 +8,17 @@ const parser = new XMLParser({
     parseAttributeValue: true,
 });
 
+function getText(obj: any): string {
+    if (obj === null || obj === undefined) return '';
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'object') {
+        if (obj['#text'] !== undefined) return String(obj['#text']);
+        // Some feeds might have nested structures we don't handle well with just .toString()
+        return '';
+    }
+    return String(obj);
+}
+
 export function parseRss(xml: string, fallbackSourceName: string | null = null): ParsedFeedItem[] {
     try {
         const jsonObj = parser.parse(xml);
@@ -57,14 +68,14 @@ function parseRss20(json: any, fallbackSourceName: string | null): ParsedFeedIte
         }
 
         return {
-            title: item.title?.toString() || '',
-            link: item.link?.toString() || '',
-            description: stripHtml(item.description?.toString() || ''),
-            content: item['content:encoded']?.toString() || null,
+            title: getText(item.title),
+            link: getText(item.link),
+            description: stripHtml(getText(item.description)),
+            content: getText(item['content:encoded']) || null,
             imageUrl,
-            publishedAt: normalizeDate(item.pubDate?.toString() || ''),
-            author: item['dc:creator']?.toString() || item.author?.toString() || null,
-            sourceName: item.source?.toString() || feedTitle?.toString() || null,
+            publishedAt: normalizeDate(getText(item.pubDate)),
+            author: getText(item['dc:creator']) || getText(item.author) || null,
+            sourceName: getText(item.source) || getText(feedTitle) || null,
         };
     }).filter((item: any) => item.title && item.link);
 }
@@ -92,14 +103,14 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
         }
 
         return {
-            title: entry.title?.toString() || '',
+            title: getText(entry.title),
             link,
-            description: stripHtml(entry.summary?.toString() || ''),
-            content: entry.content?.toString() || null,
+            description: stripHtml(getText(entry.summary)),
+            content: getText(entry.content) || null,
             imageUrl,
-            publishedAt: normalizeDate(entry.published?.toString() || entry.updated?.toString() || ''),
-            author: entry.author?.name?.toString() || null,
-            sourceName: feedTitle?.toString() || null,
+            publishedAt: normalizeDate(getText(entry.published) || getText(entry.updated)),
+            author: getText(entry.author?.name) || null,
+            sourceName: getText(feedTitle) || null,
         };
     }).filter((item: any) => item.title && item.link);
 }

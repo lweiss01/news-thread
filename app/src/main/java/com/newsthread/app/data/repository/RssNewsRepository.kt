@@ -46,7 +46,7 @@ class RssNewsRepository @Inject constructor(
         private const val FEED_KEY_TOP = "top_headlines_rss"
         private const val MAX_ARTICLES = 30
         // TODO: Move to a config or BuildConfig
-        private const val WORKER_URL = "https://newsthread-api.lweiss01.workers.dev" 
+        private const val WORKER_URL = "https://newsthread-api.newsthread.workers.dev" 
     }
 
     override fun getTopHeadlines(forceRefresh: Boolean): Flow<Result<List<Article>>> = flow {
@@ -154,16 +154,21 @@ class RssNewsRepository @Inject constructor(
         return try {
             val request = Request.Builder()
                 .url(WORKER_URL + endpoint)
+                // Use the shared key. In a real app, this would be in BuildConfig or encrypted.
+                .header("X-API-Key", "newsthread-v1-key") 
                 .header("User-Agent", "NewsThread/1.0")
                 .build()
+            
             okHttpClient.newCall(request).execute().use { response ->
-                if (response.isSuccessful) response.body?.string() else {
-                    Log.w(TAG, "Worker fetch failed (${response.code}): $endpoint")
+                if (response.isSuccessful) {
+                    response.body?.string()
+                } else {
+                    Log.e(TAG, "Worker HTTP Error: ${response.code} ${response.message} at $endpoint")
                     null
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Network error calling worker: ${e.message}")
+            Log.e(TAG, "Worker Connection Error: ${e.javaClass.simpleName} - ${e.message} (Try checking if worker is deployed and URL is correct)", e)
             null
         }
     }
