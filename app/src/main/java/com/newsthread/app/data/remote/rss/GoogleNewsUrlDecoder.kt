@@ -34,7 +34,7 @@ class GoogleNewsUrlDecoder @Inject constructor(
         data class Failure(val reason: String) : DecodeResult()
     }
 
-    enum class Strategy { BASE64, HTTP_REDIRECT, PASSTHROUGH }
+    enum class Strategy { BASE64, HTTP_REDIRECT, BATCH_EXECUTE_RPC, PASSTHROUGH }
 
     /**
      * Decode a Google News URL to the original article URL.
@@ -63,18 +63,26 @@ class GoogleNewsUrlDecoder @Inject constructor(
         // Strategy 1: Base64 decode
         val base64Result = tryBase64Decode(encodedUrl)
         if (base64Result != null) {
-            Log.d(TAG, "Base64 decoded: ${base64Result.take(80)}")
+            Log.d(TAG, "Base64 decoded success: ${base64Result.take(60)}...")
             return DecodeResult.Success(base64Result, Strategy.BASE64)
         }
 
         // Strategy 2: HTTP redirect follow
         val redirectResult = tryHttpRedirect(encodedUrl)
         if (redirectResult != null) {
-            Log.d(TAG, "HTTP redirect resolved: ${redirectResult.take(80)}")
+            Log.d(TAG, "HTTP redirect success: ${redirectResult.take(60)}...")
             return DecodeResult.Success(redirectResult, Strategy.HTTP_REDIRECT)
         }
 
-        return DecodeResult.Failure("Both Base64 and HTTP redirect strategies failed")
+        // Strategy 3: BatchExecute RPC (replaces old HTML parse strategy)
+        val rpcResult = tryBatchExecute(encodedUrl)
+        if (rpcResult != null) {
+            Log.d(TAG, "BatchExecute RPC success: ${rpcResult.take(60)}...")
+            return DecodeResult.Success(rpcResult, Strategy.BATCH_EXECUTE_RPC)
+        }
+
+        Log.w(TAG, "All decoding strategies failed for: $encodedUrl")
+        return DecodeResult.Failure("Base64, HTTP redirect, and BatchExecute RPC strategies failed")
     }
 
     private fun tryBase64Decode(encodedUrl: String): String? {
@@ -126,10 +134,15 @@ class GoogleNewsUrlDecoder @Inject constructor(
             }
 
             val url = String(urlBytes.toByteArray(), Charsets.US_ASCII)
-            if (isValidArticleUrl(url)) url else null
+            if (isValidArticleUrl(url)) {
+                url
+            } else {
+                Log.d(TAG, "Decoded URL invalid or still a redirect: $url")
+                null
+            }
 
         } catch (e: Exception) {
-            Log.d(TAG, "Base64 decode failed: ${e.message}")
+            Log.d(TAG, "Base64 decode failed: ${e.message} for segment: ${encodedUrl.substringAfterLast("/")}")
             null
         }
     }
@@ -149,10 +162,100 @@ class GoogleNewsUrlDecoder @Inject constructor(
 
             noRedirectClient.newCall(request).execute().use { response ->
                 val location = response.header("Location")
+                Log.d(TAG, "HTTP HEAD result: ${response.code}, Location: $location")
                 if (location != null && isValidArticleUrl(location)) location else null
             }
         } catch (e: Exception) {
             Log.d(TAG, "HTTP redirect failed: ${e.message}")
+            null
+        }
+    }
+
+    private suspend fun tryBatchExecute(encodedUrl: String): String? {
+        return try {
+            // Step 1: Need a standard client to fetch the HTML to extract signature and timestamp
+            val request = Request.Builder()
+                .url(encodedUrl)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .build()
+
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Log.d(TAG, "HTML fetch failed with code: ${response.code}")
+                    return null
+                }
+                
+                val html = response.body?.string() ?: return null
+                
+                // Extract timestamp
+                val tsStart = html.indexOf("data-n-a-ts=\"")
+                if (tsStart == -1) return null
+                val tsValueStart = tsStart + "data-n-a-ts=\"".length
+                val tsValueEnd = html.indexOf("\"", tsValueStart)
+                val timestamp = html.substring(tsValueStart, tsValueEnd)
+                
+                // Extract signature
+                val sgStart = html.indexOf("data-n-a-sg=\"")
+                if (sgStart == -1) return null
+                val sgValueStart = sgStart + "data-n-a-sg=\"".length
+                val sgValueEnd = html.indexOf("\"", sgValueStart)
+                val signature = html.substring(sgValueStart, sgValueEnd)
+
+                val id = encodedUrl.substringAfter("articles/").substringBefore("?")
+                
+                // Step 2: Construct the batchExecute payload
+                val innerArrayStr = """["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0],"$id",${timestamp},"$signature"]"""
+                val escapedInnerString = innerArrayStr.replace("\"", "\\\"")
+                val reqData = """[[["Fbv4je","$escapedInnerString",null,"generic"]]]"""
+                
+                val formBody = okhttp3.FormBody.Builder()
+                    .add("f.req", reqData)
+                    .build()
+
+                val rpcRequest = Request.Builder()
+                    .url("https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je")
+                    .post(formBody)
+                    .header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .build()
+
+                // Step 3: Execute RPC call and parse result
+                okHttpClient.newCall(rpcRequest).execute().use { rpcResponse ->
+                    if (!rpcResponse.isSuccessful) return null
+                    val rpcText = rpcResponse.body?.string() ?: return null
+                    
+                    val header = "[\"garturlres\",\""
+                    val footer = "\","
+                    
+                    var startIndex = rpcText.indexOf(header)
+                    if (startIndex != -1) {
+                        startIndex += header.length
+                        val endIndex = rpcText.indexOf(footer, startIndex)
+                        if (endIndex != -1) {
+                            val url = rpcText.substring(startIndex, endIndex)
+                            if (isValidArticleUrl(url)) return url
+                        }
+                    } else {
+                        // Sometimes the string is further escaped
+                        val altHeader = "[\\\"garturlres\\\",\\\""
+                        val altFooter = "\\\","
+                        startIndex = rpcText.indexOf(altHeader)
+                        if (startIndex != -1) {
+                            startIndex += altHeader.length
+                            val endIndex = rpcText.indexOf(altFooter, startIndex)
+                            if (endIndex != -1) {
+                                val url = rpcText.substring(startIndex, endIndex)
+                                if (isValidArticleUrl(url)) return url
+                            }
+                        }
+                    }
+                    
+                    Log.d(TAG, "Failed to find URL in batchexecute response")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "BatchExecute strategy failed: ${e.message}")
             null
         }
     }

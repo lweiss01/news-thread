@@ -154,4 +154,7 @@ interface CachedArticleDao {
 
     @Query("SELECT storyId FROM cached_articles WHERE url = :articleUrl")
     suspend fun getStoryIdForArticle(articleUrl: String): String?
+
+    @Query("DELETE FROM cached_articles WHERE isTracked = 0")
+    suspend fun deleteUntracked()
 }

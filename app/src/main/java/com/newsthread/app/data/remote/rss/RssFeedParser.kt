@@ -38,7 +38,8 @@ class RssFeedParser @Inject constructor() {
             "EEE, dd MMM yyyy HH:mm:ss Z",
             "dd MMM yyyy HH:mm:ss zzz",
             "yyyy-MM-dd'T'HH:mm:ssXXX",
-            "yyyy-MM-dd'T'HH:mm:ss'Z'"
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "EEE, MMMM dd, yyyy 'at' hh:mm a z" // e.g. "Sat, February 21, 2026 at 09:46 PM EST"
         )
         private const val OUTPUT_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'"
     }
@@ -65,8 +66,14 @@ class RssFeedParser @Inject constructor() {
             }
 
             when (parser.name) {
-                "rss", "rdf:RDF" -> parseRss(parser, feedSourceName)
-                "feed" -> parseAtom(parser, feedSourceName)
+                "rss", "rdf:RDF" -> {
+                    Log.d(TAG, "Detected RSS feed")
+                    parseRss(parser, feedSourceName)
+                }
+                "feed" -> {
+                    Log.d(TAG, "Detected Atom feed")
+                    parseAtom(parser, feedSourceName)
+                }
                 else -> {
                     Log.w(TAG, "Unknown feed root element: ${parser.name}")
                     emptyList()
@@ -145,9 +152,15 @@ class RssFeedParser @Inject constructor() {
                             name == "content" && ns == NS_MEDIA -> {
                                 val url = parser.getAttributeValue(null, "url")
                                 val medium = parser.getAttributeValue(null, "medium")
-                                if (imageUrl == null && url != null &&
-                                    (medium == "image" || medium == null)) {
-                                    imageUrl = url
+                                // Sometimes RSS feeds omit 'medium' entirely but the content is still an image
+                                if (imageUrl == null && url != null) {
+                                    val isImageExtension = url.contains(".jpg", ignoreCase = true) || 
+                                                           url.contains(".png", ignoreCase = true) || 
+                                                           url.contains(".webp", ignoreCase = true) ||
+                                                           url.contains(".jpeg", ignoreCase = true)
+                                    if (medium == "image" || medium == null || isImageExtension) {
+                                        imageUrl = url
+                                    }
                                 }
                             }
                             name == "enclosure" && ns.isEmpty() && imageUrl == null -> {

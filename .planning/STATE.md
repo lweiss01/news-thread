@@ -5,15 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** When a user reads an article, they can instantly see how the same story is covered across the political spectrum — with reliable, relevant matches from diverse sources.
-**Current focus:** Phase 14 — RSS Feed Migration
+**Current focus:** Phase 15 — Cloudflare Workers RSS Backend
 
 ## Current Position
 
-Phase: 14 of 15 (RSS Feed Migration — Complete)
-Plan: 7 of 7
-Status: Phase complete — ready for Phase 15
-Last activity: 2026-02-21 — Completed Plan 14-07 (FeedRefreshWorker + BackgroundWorkScheduler wiring)
-Progress: [█████████████░░░░░░░] 30/54 plans (56%)
+Phase: 15 of 15 (Cloudflare Workers RSS Backend)
+Plan: 0 of 4
+Status: Planning — Validating Phase 14 completion, ready to initialize Phase 15
+Last activity: 2026-02-21 — Finished testing and documenting Phase 14 URL decoding performance optimizations
+Progress: [██████████████░░░░░░] 37/58 plans (63%)
 
 
 ## Accumulated Context
@@ -127,10 +127,15 @@ Recent decisions affecting current work:
 ### Session Continuity
 
 Last session: 2026-02-21
-Stopped at: Completed 14-07-PLAN.md (FeedRefreshWorker + BackgroundWorkScheduler wiring)
-Resume with: Phase 15 (Cloudflare Workers backend) — Phase 14 fully complete (all 7 plans).
+Stopped at: Completed Phase 14 validation, performance optimization, and background notification bugfixes
+Resume with: Phase 15 (Cloudflare Workers backend) — Create index.ts edge worker
 
-### Session Notes (2026-02-21, Phase 14/15 Planning)
+### Session Notes (2026-02-21, Phase 14 Validation & Optimization)
+- **Phase 14 Validated & Complete**:
+    - **Google News URLs**: Fixed the API obfuscation changes by reverse-engineering `batchexecute`, fetching the HTML first to glean the signature and timestamp.
+    - **Performance Optimization**: Re-wrote the `decodeAndMapItems` logic to execute concurrently via Coroutines `async` and `awaitAll()`, dropping fetch times from 6s down to <1s.
+    - **Data Integrity**: Implemented OkHttp connection/read timeouts and customized Date parsing to stop WaPo and NYT feeds from hanging the async batch. 
+    - **Notifications**: Added Android 13+ `POST_NOTIFICATIONS` runtime permission prompt during `MainActivity.onCreate()` to enable real system background notifications.
 - **NewsAPI → RSS Migration Planned**:
     - Reviewed full codebase: NewsAPI surface area is contained to `NewsApiService`, `NetworkModule`, `NewsRepository`, `ArticleDto`, `QuotaRepository`, `RateLimitInterceptor`. Everything above `NewsRepository` is untouched.
     - Reviewed RSS sources spreadsheet (46 outlets, Political Spectrum sheet + Google News RSS sheet + Architecture Notes).

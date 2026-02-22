@@ -16,8 +16,13 @@ import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
 import com.newsthread.app.domain.usecase.FilterArticlesUseCase
 import com.newsthread.app.util.CacheConstants
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
@@ -71,18 +76,32 @@ class RssNewsRepository @Inject constructor(
         val shouldRefresh = forceRefresh || cacheMetadata == null || cacheMetadata.isStale()
         if (!shouldRefresh) return@flow
 
+        // 2.5 Clear cache on forced refresh to remove any NewsAPI remnants or stale data
+        if (forceRefresh) {
+            Log.d(TAG, "Forced refresh: clearing untracked cached articles")
+            cachedArticleDao.deleteUntracked()
+        }
+
         // 3. Fetch fresh data
         val result = runCatching {
-            // Layer 1: Google News top stories
             val layer1Xml = fetchFeed(FeedSourceRegistry.googleNewsTopStoriesUrl)
                 ?: throw IOException("Failed to fetch Google News top stories feed")
 
+            Log.d(TAG, "Layer 1 XML length: ${layer1Xml.length}")
+            if (layer1Xml.length < 100) {
+                Log.w(TAG, "Layer 1 XML too short: $layer1Xml")
+            }
+
             val layer1Items = rssFeedParser.parse(layer1Xml, "Google News")
+            Log.d(TAG, "Layer 1: parsed ${layer1Items.size} items")
+            layer1Items.take(3).forEachIndexed { index, item ->
+                Log.d(TAG, "Layer 1 item[$index] link: ${item.link}")
+            }
+
             val layer1Articles = decodeAndMapItems(layer1Items, source = null)
+            Log.d(TAG, "Layer 1: mapped ${layer1Articles.size} articles (loss of ${layer1Items.size - layer1Articles.size} during decoding)")
 
-            Log.d(TAG, "Layer 1: ${layer1Articles.size} articles from Google News")
-
-            // Layer 2: Fetch direct feeds for top represented outlet domains
+            // Layer 2: Fetch direct feeds for top represented outlet domains concurrently
             val topDomains = layer1Articles
                 .mapNotNull { extractDomain(it.url) }
                 .groupingBy { it }
@@ -91,13 +110,15 @@ class RssNewsRepository @Inject constructor(
                 .take(MAX_LAYER2_OUTLETS)
                 .map { it.key }
 
-            val layer2Articles = mutableListOf<Article>()
-            for (domain in topDomains) {
-                val feedSource = FeedSourceRegistry.findByDomain(domain) ?: continue
-                val xml = fetchFeed(feedSource.mainFeedUrl) ?: continue
-                val items = rssFeedParser.parse(xml, feedSource.displayName)
-                val articles = decodeAndMapItems(items, feedSource)
-                layer2Articles.addAll(articles)
+            val layer2Articles = coroutineScope {
+                topDomains.map { domain ->
+                    async {
+                        val feedSource = FeedSourceRegistry.findByDomain(domain) ?: return@async emptyList()
+                        val xml = fetchFeed(feedSource.mainFeedUrl) ?: return@async emptyList()
+                        val items = rssFeedParser.parse(xml, feedSource.displayName)
+                        decodeAndMapItems(items, feedSource)
+                    }
+                }.awaitAll().flatten()
             }
 
             Log.d(TAG, "Layer 2: ${layer2Articles.size} articles from ${topDomains.size} outlets")
@@ -138,7 +159,7 @@ class RssNewsRepository @Inject constructor(
                 if (cached.isEmpty()) emit(Result.failure(e))
             }
         )
-    }
+    }.flowOn(Dispatchers.IO)
 
     // ── searchArticles ──────────────────────────────────────────────────────────
 
@@ -185,7 +206,7 @@ class RssNewsRepository @Inject constructor(
                 if (cached.isEmpty()) emit(Result.failure(e))
             }
         )
-    }
+    }.flowOn(Dispatchers.IO)
 
     // ── Simple accessors ────────────────────────────────────────────────────────
 
@@ -208,19 +229,21 @@ class RssNewsRepository @Inject constructor(
     private suspend fun decodeAndMapItems(
         items: List<ParsedFeedItem>,
         source: RssFeedSource?
-    ): List<Article> {
-        return items.mapNotNull { item ->
-            // Decode Google News redirect URLs; pass-through for direct outlet URLs
-            val resolvedUrl = googleNewsUrlDecoder.decode(item.link) ?: return@mapNotNull null
-            val resolvedItem = item.copy(link = resolvedUrl)
+    ): List<Article> = coroutineScope {
+        items.map { item ->
+            async {
+                // Decode Google News redirect URLs; pass-through for direct outlet URLs
+                val resolvedUrl = googleNewsUrlDecoder.decode(item.link) ?: return@async null
+                val resolvedItem = item.copy(link = resolvedUrl)
 
-            // For Layer 1 items, try to match outlet by decoded URL domain
-            val matchedSource = source ?: FeedSourceRegistry.findByDomain(
-                extractDomain(resolvedUrl)
-            )
+                // For Layer 1 items, try to match outlet by decoded URL domain
+                val matchedSource = source ?: FeedSourceRegistry.findByDomain(
+                    extractDomain(resolvedUrl)
+                )
 
-            resolvedItem.toArticle(matchedSource)
-        }
+                resolvedItem.toArticle(matchedSource)
+            }
+        }.awaitAll().filterNotNull()
     }
 
     /**

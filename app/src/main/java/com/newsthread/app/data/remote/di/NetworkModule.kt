@@ -37,6 +37,9 @@ object NetworkModule {
         }
 
         return OkHttpClient.Builder()
+            .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
             .cache(cache)
             .addInterceptor(logging)
             .addInterceptor { chain ->

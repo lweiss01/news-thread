@@ -5,7 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import android.util.Log
-import com.newsthread.app.data.repository.NewsRepository
+import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.usecase.GetSimilarArticlesUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject

@@ -254,10 +254,10 @@ NewsThread uses a **consensus approach** combining three respected media bias or
    cd news-thread
    ```
 
-2. **Add API key** *(current build only — removed in Phase 14)*
-   Create `secrets.properties` in the project root:
-   ```
-   NEWS_API_KEY=your_key_here
+2. **~~Add API key~~** *(Removed in Phase 14 — no API keys needed!)*
+   ~~Create `secrets.properties` in the project root:~~
+   ```text
+   ~~NEWS_API_KEY=your_key_here~~
    ```
 
 3. **Build and run**

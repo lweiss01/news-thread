@@ -57,10 +57,12 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Refresh visual language and implement UI design refinements (Amber brand) — Phase 13
 - ✓ Update app icon to match Amber Brand and spectrum visual language — Phase 13.1
 - ✓ Achieve visual parity with Amber Brand mockups (ArticleCard footer, typography, metrics styling, deep-linking) — Phase 13.1.1 & 13.1.2
+- ✓ Replaced NewsAPI with on-device dual-layer RSS feed parsing and Google News URL decoding — Phase 14
 
-### Active (Phase 14: Quality & Release)
+### Active (Phase 15: Cloudflare Backend)
 
-#### Phase 14: Quality and Release
+#### Phase 15: Cloudflare Workers RSS Backend
+- [ ] Move RSS feed fetching and XML parsing to edge worker
 - [ ] Final end-to-end testing
 - [ ] Prepare app store assets
 
