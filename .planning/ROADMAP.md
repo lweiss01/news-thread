@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
 - [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
 - [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
-- [ ] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system
+- [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system (completed 2026-02-22)
 - [ ] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution
 
 
@@ -163,7 +163,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 11. UI/UX Review & Refinement | 4/4 | Complete | 2026-02-19 |
 | 12. Architecture Refactor | 2/2 | Complete | 2026-02-20 |
 | 13. UI Design & Visual Updates | 4/4 | Complete | 2026-02-20 |
-| 14. RSS Feed Migration | 0/7 | Not started | — |
+| 14. RSS Feed Migration | 0/7 | Complete    | 2026-02-22 |
 | 15. Cloudflare Workers Backend | 0/4 | Not started | — |
 
 
@@ -207,7 +207,7 @@ Plans:
 - `NewsRepository` public interface preserved; internals replaced
 
 **Plans:**
-- [ ] 14-01: `FeedSourceRegistry` + `RssFeedSource` model (46 outlets, bias metadata, RSS URLs from spreadsheet)
+7/7 plans complete
 - [ ] 14-02: `RssFeedParser` (RSS/Atom XML parsing, field normalization, image extraction, date format handling)
 - [ ] 14-03: `GoogleNewsUrlDecoder` (Base64 decode + HTTP redirect fallback for Google News article URLs)
 - [ ] 14-04: `NetworkModule` refactor (remove NewsAPI key interceptor, generic RSS OkHttpClient)
