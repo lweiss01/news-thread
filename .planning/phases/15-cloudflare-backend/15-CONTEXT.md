@@ -1,7 +1,7 @@
 # Phase 15: Cloudflare Workers RSS Backend - Context
 
 **Gathered:** 2026-02-21
-**Status:** Ready for planning (after Phase 14 complete)
+**Status:** Ready for planning
 
 <domain>
 ## Phase Boundary
@@ -20,87 +20,62 @@ Move all RSS feed fetching and Google News URL resolution from on-device to a Cl
 - **Caching**: Workers KV for normalized feed responses (15-30 min TTL per feed)
 - **Schedule**: Cloudflare Cron Triggers to pre-fetch feeds proactively (every 15 min for Google News, every 30 min for direct outlet feeds)
 - **Deployment**: Single Worker, multiple routes (one per feed category / outlet)
-- **Cost target**: Free tier initially; paid plan ($5/mo) only if request volume demands it
+- **Cost target**: Free tier
+- **Dashboard**: Simple HTML status page at the root `/` to monitor feed health.
 
 ### Worker API Design
-- `GET /feeds/top-stories` → normalized articles JSON (Layer 1: Google News top stories)
-- `GET /feeds/category/:category` → normalized articles JSON (Layer 1: Google News by category)
-- `GET /feeds/search?q=[keyword]` → normalized articles JSON (Layer 1: Google News keyword search)
-- `GET /feeds/sources` → array of all outlet article batches with bias metadata (Layer 2: direct feeds)
-- `GET /feeds/source/:sourceId` → articles from a single outlet (Layer 2: targeted)
-- `GET /health` → feed health status (last fetched timestamps, error counts per feed)
-- Response format: same JSON shape as the app's normalized `Article` model — no mapping needed on-device
+- **Versioning**: All endpoints prefixed with `/v1/`
+- **Endpoints**:
+    - `GET /v1/feeds/top-stories` → normalized articles JSON
+    - `GET /v1/feeds/category/:category` → normalized articles JSON
+    - `GET /v1/feeds/search?q=[keyword]` → normalized articles JSON
+    - `GET /v1/feeds/sources` → ONE big batch JSON of all outlet articles (Layer 2)
+    - `GET /v1/feeds/source/:sourceId` → articles from a single outlet (targeted)
+- **Response Format**: Worker returns JSON matching the app's `Article` model. Bias and reliability metadata are **embedded** in each article object.
 
-### Google News URL Resolution (server-side)
-- Base64 decode + HTTP redirect resolution done in the Worker, not on-device
-- Worker caches resolved URLs in KV so the same Google News URL is only decoded once
-- On-device `GoogleNewsUrlDecoder` from Phase 14 can be deleted
+### Access Control & Security
+- **API Key**: App sends a simple static key in the `X-API-Key` header.
+- **User-Agent Filtering**: Worker only responds to requests with the "NewsThread" User-Agent.
+- **Rate Limiting**: 60 requests per minute per IP address.
+- **Abuse Prevention**: Use Cloudflare's built-in firewall for IP blocking if needed (no manual list in code).
 
-### Privacy Architecture
-- No authentication required to call the Worker endpoints (public content proxy)
-- Worker logs: access logs disabled or stripped of IP info (Cloudflare Workers can be configured to not log)
-- No user identifiers, no reading history, no request correlation across users
-- Tracked stories, preferences, and all personal data remain 100% on-device
+### Error Handling & Fallback
+- **No On-Device Fallback**: If the Worker is unreachable, the app stays offline/shows cached data. We will delete the XML parsing and URL decoding code to keep the app lean.
+- **Timeout**: Strict **5-second** timeout for all network requests to save battery and battery life.
+- **Partial Success**: The Worker will return whatever feeds it successfully fetched, even if some sources fail.
+- **Stale Data**: App will show existing cached data without a "stale" indicator (transparency via health dashboard).
 
-### App-Side Changes
-- `RssNewsRepository` replaces its internal RSS fetch calls with `WorkerApiService` (a new Retrofit interface pointing at the Worker URL)
-- Response deserialization: Worker returns JSON matching the `Article` shape → simple Gson/Moshi deserialize, no XML parsing
-- Remove: `RssFeedParser`, `GoogleNewsUrlDecoder`, Rome library (if added in Phase 14), XML-related OkHttp config
-- Keep: Room cache, offline-first pattern, `FeedCacheEntity` staleness logic — unchanged
-- The `NetworkModule` gains a `WorkerApiService` provider; the RSS-specific OkHttpClient from Phase 14 is removed
-
-### Feed Config Without App Updates
-- Feed source list (outlet URLs, new sources, retired feeds) lives in the Worker code
-- Updating feed config = deploy a new Worker version (seconds, no app store review)
-- App has no hardcoded feed URLs after Phase 15 — `FeedSourceRegistry` from Phase 14 is deleted
-
-### Feed Health Monitoring
-- `GET /health` endpoint returns per-feed status: last successful fetch, consecutive error count, last error message
-- App surfaces this in Settings screen: a "Feed Sources" section showing which outlets are active/degraded
-- Degraded feeds (3+ consecutive failures) are automatically excluded from the Worker's response
-
-### Claude's Discretion
-- Whether to use Hono (lightweight TypeScript router for Workers) or raw Worker fetch handler
-- KV key naming scheme for cached feeds
-- Whether `GET /feeds/sources` returns one combined response or per-outlet routes
-- Error handling strategy when a subset of outlet feeds fail (partial responses vs. all-or-nothing)
+### Remote Configuration
+- **Storage**: Feed URLs and metadata list live strictly inside the Worker code for simple deployments.
+- **Health Surfacing**: App Surfaces source health (via `/v1/health` endpoint) in the Settings screen so users know if an outlet is currently down.
 
 </decisions>
 
 <specifics>
 ## Technical Notes
 
-### Why Cloudflare Workers (not Firebase Functions)
-- App already uses Firebase for auth — keeping RSS fetching on a separate, unrelated service avoids any perception that user behavior is correlated with auth identity
-- Workers have no cold start (always warm at the edge)
-- Workers KV is purpose-built for this caching pattern
-- Free tier is very generous for this low-compute, high-cache-hit workload
-- TypeScript Worker for an RSS proxy is ~150 lines — low maintenance burden
+### Why Cloudflare Workers
+- Zero cold starts at the edge.
+- Workers KV is perfect for caching high-traffic RSS feeds.
+- TypeScript ecosystem is great for robust normalization logic.
 
-### On-Device Components Deleted in Phase 15
-From Phase 14 (no longer needed):
-- `RssFeedParser.kt`
+### On-Device Components DELETED
+- `RssFeedParser.kt` (and all XML dependencies)
 - `GoogleNewsUrlDecoder.kt`
-- `FeedSourceRegistry.kt` + `RssFeedSource.kt`
-- Rome library dependency (if added in Phase 14)
-- XML-specific OkHttp configuration
+- `FeedSourceRegistry.kt`
+- Rome library (if present)
 
 ### Retained from Phase 14
-- All Room entities and DAOs
-- Offline-first caching pattern in repository
-- `Article` domain model
-- `FilterArticlesUseCase`, `ClusterArticlesUseCase`
-- Background polling cadence (WorkManager)
+- Room DB schema and DAOs.
+- All domain Use Cases.
+- WorkManager background refresh cadence.
 
 </specifics>
 
 <deferred>
-## Deferred (Out of Scope for Phase 15)
-
-- **User-configurable feed sources**: Letting users pick outlets or bias tiers. Possible future feature built on top of the Worker infrastructure.
-- **Personalized feed ranking**: Using reading patterns to reorder articles. Explicitly out of scope — conflicts with privacy philosophy.
-- **Paid tier / monetization backend**: The Worker is purely a public content proxy; any monetization features are a separate decision.
-
+## Deferred
+- User-configurable feed sources.
+- Personalized feed ranking (out of scope/privacy conflict).
 </deferred>
 
 ---
