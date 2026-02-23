@@ -3,7 +3,7 @@
 ## ✅ Delivered Assets
 - **Store Icon (512x512)**: [app_icon_store.png](file:///c:/Users/lweis/Documents/newsthread/.planning/phases/16-identity-store-assets/app_icon_store.png)
     - **Status**: VERIFIED & APPROVED.
-    - Finalized from the exact "Lisa Vision" refined source (`v2_1771787947426`).
+    - Finalized from the exact refined brand source (`v2_1771787947426`).
     - Correct squared-off "N" proportions and Spectrum Bar alignment preserved.
 
 ## 🚧 Pending Assets (Blocked)

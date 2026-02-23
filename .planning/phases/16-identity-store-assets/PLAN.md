@@ -1,6 +1,6 @@
 # Phase 16: Identity & Store Assets - Plan
 
-Refine the NewsThread app icon to match the "Lisa Vision" (squared-off N) and generate all visual/textual assets required for the Google Play Store release.
+Refine the NewsThread app icon to match the refined brand (squared-off N) and generate all visual/textual assets required for the Google Play Store release.
 
 ## Proposed Changes
 
@@ -28,7 +28,7 @@ Refine the NewsThread app icon to match the "Lisa Vision" (squared-off N) and ge
 - Capture and process standard screenshots for: Pulse Dashboard, Comparison, Heatmap, Onboarding (Privacy), Feed (Badges), and Tracking (Updates).
 - Composite into device frames for a premium appearance.
 
-## Wave 1: Icon Refinement (The "Lisa Vision" N)
+## Wave 1: Icon Refinement (Refined Brand N)
 - Implement the refined `ic_launcher_foreground.xml`.
 - **Verification**: Run the app and inspect the launcher icon on-device/emulator using different system masks (Circle, Square, Squircle).
 

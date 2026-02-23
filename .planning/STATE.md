@@ -124,7 +124,7 @@ Recent decisions affecting current work:
 - kxml2:2.3.0 added as testImplementation + testOptions.unitTests.isReturnDefaultValues=true for JVM-compatible XML unit tests
 
 ### Session Notes (2026-02-22, Phase 16 Identity & Assets)
-- **Store Icon Finalized**: Delivered 512x512 `app_icon_store.png` matching "Lisa Vision" v2 refined proportions.
+- **Store Icon Finalized**: Delivered 512x512 `app_icon_store.png` matching refined brand v2 refined proportions.
 - **Store Copy Finalized**: Verified listing metadata in `PLAY_STORE_LISTING.md`.
 - **Blocked**: Remaining graphics (Feature Graphic/Screenshots) pending real app screenshots from Lisa.
 
