@@ -65,23 +65,22 @@ class RssNewsRepository @Inject constructor(
         val shouldRefresh = forceRefresh || cacheMetadata == null || cacheMetadata.isStale()
         if (!shouldRefresh) return@flow
 
-        if (forceRefresh) {
-            cachedArticleDao.deleteUntracked()
-        }
-
-        // 3. Fetch from Worker
+        // 3. Fetch from Worker — delete stale cache only after a successful fetch
         val result = runCatching {
             val json = fetchWorker("/v1/feeds/top-stories")
                 ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
 
             val articles = parseWorkerJson(json)
-            
+
             // Filter and cluster
             val filtered = filterArticlesUseCase(articles, ratedSources).take(MAX_ARTICLES)
             val clustered = clusterArticlesUseCase(filtered)
 
-            // Persist
+            // Persist — delete old untracked articles only now that we have fresh data
             val now = System.currentTimeMillis()
+            if (forceRefresh) {
+                cachedArticleDao.deleteUntracked()
+            }
             cachedArticleDao.insertAll(clustered.map { it.toEntity(now) })
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = FEED_KEY_TOP,
@@ -94,7 +93,13 @@ class RssNewsRepository @Inject constructor(
         }
 
         result.fold(
-            onSuccess = { emit(Result.success(it)) },
+            onSuccess = { articles ->
+                // Only replace the feed if we got results back; if the Worker returned nothing
+                // (e.g. all sources filtered out), keep showing the existing cached articles.
+                if (articles.isNotEmpty() || cached.isEmpty()) {
+                    emit(Result.success(articles))
+                }
+            },
             onFailure = { e ->
                 Log.e(TAG, "Worker fetch failed: ${e.message}", e)
                 if (cached.isEmpty()) emit(Result.failure(e))
