@@ -224,6 +224,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 13. UI Design & Visual Updates | 4/4 | Complete | 2026-02-20 |
 | 14. RSS Feed Migration | 7/7 | Complete | 2026-02-21 |
 | 15. Cloudflare Workers Backend | 4/4 | Complete | 2026-02-22 |
-| 16. Identity & Store Assets | 0/3 | In Progress | — |
+| 16. Identity & Store Assets | 1/3 | In Progress | — |
 | 17. Release Infrastructure | 0/3 | Planned | — |
 | 18. Quality & Onboarding | 0/4 | Planned | — |

@@ -11,7 +11,7 @@ See: .planning/PROJECT.md (updated 2026-02-20)
  
 - Phase: Phase 16: Identity & Store Assets
 - Plan: 16-01-PLAN.md (Pending)
-- Status: Preparing for identity refinement
+- Status: Icon and Copy finalized; waiting for screenshots for graphics
 - Last activity: 2026-02-22 — Milestone v1.2 started, requirements defined, roadmap created
 
 
@@ -122,6 +122,11 @@ Recent decisions affecting current work:
 **New decisions from 14-02:**
 - XmlPullParserFactory.newInstance() used instead of android.util.Xml — enables JVM unit testing of RssFeedParser
 - kxml2:2.3.0 added as testImplementation + testOptions.unitTests.isReturnDefaultValues=true for JVM-compatible XML unit tests
+
+### Session Notes (2026-02-22, Phase 16 Identity & Assets)
+- **Store Icon Finalized**: Delivered 512x512 `app_icon_store.png` matching "Lisa Vision" v2 refined proportions.
+- **Store Copy Finalized**: Verified listing metadata in `PLAY_STORE_LISTING.md`.
+- **Blocked**: Remaining graphics (Feature Graphic/Screenshots) pending real app screenshots from Lisa.
 
 ### Session Continuity
  
