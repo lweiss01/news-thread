@@ -34,7 +34,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 ## Current Status 🚀
 
 **Version**: 1.1.0 (Beta) → 1.2.0 in development
-**Status**: Milestone v1.1 Complete ✅ — Core Backend Migration (Phases 14 & 15) Complete ✅
+**Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨
 
 ### What's Built
 

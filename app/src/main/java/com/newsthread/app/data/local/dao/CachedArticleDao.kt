@@ -21,10 +21,10 @@ interface CachedArticleDao {
     @Query("SELECT * FROM cached_articles WHERE url IN (:urls)")
     suspend fun getByUrls(urls: List<String>): List<CachedArticleEntity>
 
-    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 20")
+    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 100")
     fun getAllFlow(): Flow<List<CachedArticleEntity>>
 
-    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 20")
+    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 100")
     suspend fun getAll(): List<CachedArticleEntity>
 
     @Query("SELECT * FROM cached_articles WHERE sourceId = :sourceId ORDER BY publishedAt DESC")

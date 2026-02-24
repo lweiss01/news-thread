@@ -18,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.newsthread.app.data.repository.EmbeddingRepository
 import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.Source
 import com.newsthread.app.presentation.navigation.ComparisonRoute
 
 import kotlinx.coroutines.launch
@@ -37,7 +38,8 @@ class ArticleDetailViewModel @Inject constructor(
     private val isArticleTrackedUseCase: com.newsthread.app.domain.usecase.IsArticleTrackedUseCase,
     private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase,
     private val unfollowStoryUseCase: com.newsthread.app.domain.usecase.UnfollowStoryUseCase,
-    private val trackingRepository: com.newsthread.app.domain.repository.TrackingRepository
+    private val trackingRepository: com.newsthread.app.domain.repository.TrackingRepository,
+    private val matchingRepository: com.newsthread.app.domain.repository.ArticleMatchingRepository
 ) : ViewModel() {
 
     private val _isTracked = kotlinx.coroutines.flow.MutableStateFlow(false)
@@ -47,10 +49,17 @@ class ArticleDetailViewModel @Inject constructor(
      * Trigger embedding generation for the article.
      * Called when article detail screen opens.
      */
-    suspend fun generateEmbeddingForArticle(articleUrl: String) {
-        embeddingRepository.getOrGenerateEmbedding(articleUrl)
+    suspend fun generateEmbeddingForArticle(article: Article) {
+        embeddingRepository.getOrGenerateEmbedding(article.url)
         // Also check tracking status
-        _isTracked.value = isArticleTrackedUseCase(articleUrl)
+        _isTracked.value = isArticleTrackedUseCase(article.url)
+        
+        // PROACTIVE MATCHING: Trigger similarity search in background to pre-cache matches
+        viewModelScope.launch {
+            matchingRepository.findSimilarArticles(article).collect {
+                android.util.Log.d("ArticleDetailViewModel", "Proactive matching complete for: ${article.title}")
+            }
+        }
     }
 
     fun toggleTracking(article: Article) = viewModelScope.launch {
@@ -85,11 +94,20 @@ fun ArticleDetailScreen(
 ) {
     val scope = rememberCoroutineScope()
 
-    // Phase 3: Trigger lazy embedding generation when article opens
+    // Phase 3: Trigger lazy embedding generation and proactive matching when article opens
     LaunchedEffect(articleUrl) {
-        scope.launch {
-            viewModel.generateEmbeddingForArticle(articleUrl)
-        }
+        article?.let {
+            viewModel.generateEmbeddingForArticle(it)
+        } ?: viewModel.generateEmbeddingForArticle(Article(
+            source = Source(id = null, name = "Unknown"),
+            author = null,
+            title = "",
+            description = null,
+            url = articleUrl,
+            urlToImage = null,
+            publishedAt = System.currentTimeMillis().toString(),
+            content = null
+        ))
     }
 
     Scaffold(

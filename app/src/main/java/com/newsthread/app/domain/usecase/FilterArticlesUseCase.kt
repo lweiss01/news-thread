@@ -15,27 +15,107 @@ import javax.inject.Inject
  */
 class FilterArticlesUseCase @Inject constructor() {
 
-    operator fun invoke(articles: List<Article>, allowedSources: List<SourceRating>): List<Article> {
-        if (allowedSources.isEmpty()) return articles
+    companion object {
+        private val REPUTABLE_DOMAINS = setOf(
+            "reuters.com", "apnews.com", "nytimes.com", "bloomberg.com", 
+            "wsj.com", "bbc.com", "axios.com", "cnbc.com", "fortune.com", 
+            "theguardian.com", "economist.com", "npr.org", "aljazeera.com",
+            "dw.com", "washingtonpost.com", "usatoday.com", "theatlantic.com",
+            "politico.com", "independent.co.uk", "france24.com", "abcnews.com",
+            "cbsnews.com", "nbcnews.com", "cnn.com", "foxnews.com", "latimes.com"
+        )
 
-        val allowedIds = allowedSources.mapNotNull { it.sourceId }.toSet()
-        val allowedNames = allowedSources.map { it.displayName }.toSet()
-        val allowedDomains = allowedSources.map { it.domain }.toSet()
+        private val BLOCKLIST_DOMAINS = setOf(
+            "facebook.com", "twitter.com", "x.com", "instagram.com", "reddit.com",
+            "youtube.com", "tiktok.com", "pinterest.com", "linkedin.com", "ebay.com",
+            "amazon.com", "craigslist.org", "etsy.com"
+        )
+    }
+
+    operator fun invoke(
+        articles: List<Article>, 
+        allRatings: List<SourceRating>,
+        onlyRated: Boolean = false
+    ): List<Article> {
+        // Build maps for sources the user has explicitly rated
+        val lowReliabilityIds = allRatings.filter { it.finalReliabilityScore <= 1 }.mapNotNull { it.sourceId }.toSet()
+        val lowReliabilityNames = allRatings.filter { it.finalReliabilityScore <= 1 }.map { it.displayName }.toSet()
+        val lowReliabilityDomains = allRatings.filter { it.finalReliabilityScore <= 1 }.map { it.domain }.toSet()
+
+        val highReliabilityIds = allRatings.filter { it.finalReliabilityScore > 1 }.mapNotNull { it.sourceId }.toSet()
+        val highReliabilityNames = allRatings.filter { it.finalReliabilityScore > 1 }.map { it.displayName }.toSet()
+        val highReliabilityDomains = allRatings.filter { it.finalReliabilityScore > 1 }.map { it.domain }.toSet()
 
         return articles.filter { article ->
-            // 1. Match by ID
-            if (article.source.id != null && allowedIds.contains(article.source.id)) return@filter true
+            val urlLower = article.url.lowercase()
 
-            // 2. Match by Name
-            if (allowedNames.contains(article.source.name)) return@filter true
-
-            // 3. Match by Domain
-            if (article.url != null) {
-                if (allowedDomains.any { domain -> article.url.contains(domain, ignoreCase = true) }) return@filter true
+            // 1. GLOBAL BLOCKLIST (Ironclad)
+            if (BLOCKLIST_DOMAINS.any { domain -> urlLower.contains(domain) }) {
+                Log.d("FeedFilter", "Blocked (Blacklist): ${article.source.name}")
+                return@filter false
             }
 
-            Log.d("FeedFilter", "Dropped Unrated/Low: ${article.source.name}")
-            false // Drop if not in allowlist
+            // 2. Find Rating using Smart Tri-Match
+            val rating = findRating(article, allRatings)
+
+            // 3. Evaluation
+            if (rating != null) {
+                // If we found a rating, respect its reliability score
+                if (rating.finalReliabilityScore > 1) {
+                    return@filter true // High/Medium/Mixed: ALLOW
+                } else {
+                    Log.d("FeedFilter", "Blocked (Low Rating): ${article.source.name}")
+                    return@filter false // Low/Fake News: BLOCK
+                }
+            }
+
+            // 4. Fallback: Reputable Baseline (Hardcoded domains)
+            if (REPUTABLE_DOMAINS.any { domain -> urlLower.contains(domain) }) {
+                return@filter true
+            }
+
+            // 5. Strict Mode Enforcement
+            if (onlyRated) {
+                // If we reach here, no rating was found and it's not in the reputable baseline.
+                // In Strict Mode (Main Feed), we BLOCK unrated/unknown sources.
+                Log.d("FeedFilter", "Filtered (Unrated - Feed): ${article.source.name}")
+                return@filter false
+            }
+
+            // 6. Discovery Mode (DEFAULT)
+            // In Comparison/Search, we allow unknown sources to facilitate broad discovery.
+            true
+        }
+    }
+
+    private fun findRating(article: Article, allRatings: List<SourceRating>): SourceRating? {
+        val domain = extractDomain(article.url)
+        
+        // Match by Domain
+        allRatings.find { it.domain.equals(domain, ignoreCase = true) }?.let { return it }
+        
+        // Match by Fuzzy Name
+        val cleanedArticleName = article.source.name.lowercase().removeSuffix(".com").trim()
+        allRatings.find { 
+            it.displayName.lowercase().removeSuffix(".com").trim() == cleanedArticleName ||
+            it.domain.lowercase().removeSuffix(".com").trim() == cleanedArticleName
+        }?.let { return it }
+        
+        // Match by ID
+        article.source.id?.let { id ->
+            allRatings.find { it.sourceId == id }?.let { return it }
+        }
+        
+        return null
+    }
+
+    private fun extractDomain(url: String): String {
+        return try {
+            val uri = java.net.URI(url)
+            val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
+            domain.removePrefix("www.").lowercase()
+        } catch (e: Exception) {
+            url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
         }
     }
 }

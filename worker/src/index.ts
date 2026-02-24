@@ -47,10 +47,11 @@ app.get('/health', async (c) => {
 });
 
 app.get('/v1/feeds/top-stories', async (c) => {
+    const forceRefresh = c.req.header('Cache-Control') === 'no-cache';
     const gnewsUrl = `${GNEWS_BASE}?${GNEWS_PARAMS}`;
 
     // 1. Fetch Layer 1 (Google News)
-    const layer1Articles = await fetchAndNormalize(gnewsUrl, 'Google News', c.env);
+    const layer1Articles = await fetchAndNormalize(gnewsUrl, 'Google News', c.env, forceRefresh);
 
     // 2. Identify top domains for Layer 2
     const domainCounts = new Map<string, number>();
@@ -61,14 +62,14 @@ app.get('/v1/feeds/top-stories', async (c) => {
 
     const topDomains = Array.from(domainCounts.entries())
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
+        .slice(0, 15)
         .map(e => e[0]);
 
     // 3. Fetch Layer 2 (Direct Feeds) concurrently
     const layer2Results = await Promise.all(topDomains.map(async domain => {
         const source = findByDomain(domain);
         if (!source) return [];
-        return fetchAndNormalize(source.mainFeedUrl, source.displayName, c.env);
+        return fetchAndNormalize(source.mainFeedUrl, source.displayName, c.env, forceRefresh);
     }));
 
     const layer2Articles = layer2Results.flat();
@@ -103,8 +104,9 @@ app.get('/v1/feeds/category/:category', async (c) => {
         return c.json({ error: 'Invalid category' }, 400);
     }
 
+    const forceRefresh = c.req.header('Cache-Control') === 'no-cache';
     const url = googleNewsCategoryUrl(topicId);
-    const articles = await fetchAndNormalize(url, 'Google News', c.env);
+    const articles = await fetchAndNormalize(url, 'Google News', c.env, forceRefresh);
     return c.json(articles);
 });
 
@@ -114,20 +116,26 @@ app.get('/v1/feeds/search', async (c) => {
         return c.json({ error: 'Missing query parameter q' }, 400);
     }
 
+    const forceRefresh = c.req.header('Cache-Control') === 'no-cache';
     const url = googleNewsSearchUrl(query);
-    const articles = await fetchAndNormalize(url, 'Google News', c.env);
+    const articles = await fetchAndNormalize(url, 'Google News', c.env, forceRefresh);
     return c.json(articles);
 });
 
-async function fetchAndNormalize(url: string, sourceName: string, env: Bindings): Promise<Article[]> {
-    // Check cache first (using v2 prefix to bypass stale [object Object] data)
-    const cacheKey = `feed:v2:${url}`;
-    const cached = await env.FEED_CACHE.get(cacheKey);
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) { }
+async function fetchAndNormalize(url: string, sourceName: string, env: Bindings, forceRefresh: boolean = false): Promise<Article[]> {
+    // Check cache first (using v3 prefix to purge Feb 18-20 stale data)
+    const cacheKey = `feed:v3:${url}`;
+
+    if (!forceRefresh) {
+        const cached = await env.FEED_CACHE.get(cacheKey);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            } catch (e) { }
+        }
+    } else {
+        console.log(`[Force Refresh] Bypassing KV cache for ${url}`);
     }
 
     try {
@@ -135,6 +143,10 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings)
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            cf: {
+                cacheTtl: 0,
+                cacheEverything: false
             }
         });
 
@@ -146,8 +158,8 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings)
         const items = parseRss(xml, sourceName);
         console.log(`[Parsed] ${items.length} items from ${sourceName}`);
 
-        // Limit to top 30 to save resources and stay within limits
-        const limitedItems = items.slice(0, 30);
+        // Increase to 100 items for broader feed coverage
+        const limitedItems = items.slice(0, 100);
 
         // Resolve URLs in small batches to stay within Cloudflare subrequest limits (6 for Free tier)
         const articles: Article[] = [];

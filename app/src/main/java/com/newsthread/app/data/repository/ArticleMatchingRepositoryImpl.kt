@@ -38,7 +38,7 @@ import javax.inject.Singleton
  * 2. If valid cache exists, return immediately.
  * 3. Get source article embedding (Phase 3 infrastructure).
  * 4. Feed-internal matching: compare against cached articles with embeddings.
- * 5. If <3 matches and API quota available: search NewsAPI.
+ * 5. If <3 matches and API quota available: search backend.
  * 6. Fallback to keyword matching if embedding unavailable.
  * 7. Save results to cache.
  *
@@ -104,21 +104,21 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 safeLogD("Using semantic matching for: ${article.title.take(40)}...")
                 
                 // --- STAGE 1: Feed-Internal Matching (Free, no API calls) ---
-                val feedMatches = findFeedMatches(sourceEmbedding, article.url, visitedUrls)
+                val feedMatches = findFeedMatches(sourceEmbedding, article.url, visitedUrls, article.title)
                 allMatches.addAll(feedMatches)
-                safeLogD("Feed-internal matching found ${feedMatches.size} matches")
+                safeLogD("Feed-internal hybrid matching found ${feedMatches.size} matches")
 
-                // --- STAGE 2: NewsAPI Search (if needed and quota available) ---
+                // --- STAGE 2: Backend Search (if needed and quota available) ---
                 if (allMatches.size < 3) {
                     val titleEntities = entityExtractor.extractEntities(article.title, article.source.name)
                     val query = titleEntities.take(3).joinToString(" ").ifEmpty { article.title.take(50) }
                     
-                    safeLogD("Searching NewsAPI for more matches: $query")
+                    safeLogD("Searching backend for more matches: $query")
                     val apiMatches = searchSemanticMatches(
                         sourceEmbedding, query, article, fromDate, toDate, visitedUrls
                     )
                     allMatches.addAll(apiMatches)
-                    safeLogD("NewsAPI semantic matching found ${apiMatches.size} matches")
+                    safeLogD("Backend semantic matching found ${apiMatches.size} matches")
                 }
             } else {
                 // 4. Fallback to keyword matching (embedding unavailable)
@@ -174,14 +174,11 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * Find matches within the cached feed articles using semantic similarity.
-     * This is free (no API calls) and should be tried first.
-     */
     private suspend fun findFeedMatches(
         sourceEmbedding: FloatArray,
         sourceUrl: String,
-        visitedUrls: MutableSet<String>
+        visitedUrls: MutableSet<String>,
+        sourceTitle: String = ""
     ): List<ScoredArticle> {
         val cachedArticles = cachedArticleDao.getAll()
         val candidateUrls = cachedArticles
@@ -199,18 +196,26 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             .mapNotNull { entity ->
                 val candidateEmbedding = byteArrayToFloatArray(entity.embedding)
                 val similarity = similarityMatcher.cosineSimilarity(sourceEmbedding, candidateEmbedding)
+                val candidateArticle = urlToArticle[entity.articleUrl]?.toDomain() ?: return@mapNotNull null
                 
-                if (similarityMatcher.isMatch(similarity)) {
+                // HYBRID MATCHING: Use thresholds from SimilarityMatcher
+                val entityOverlap = if (sourceTitle.isNotBlank()) {
+                    entityExtractor.titleEntityOverlap(sourceTitle, candidateArticle.title)
+                } else 0
+                
+                val isMatch = similarity >= SimilarityMatcher.STRONG_THRESHOLD || 
+                            (similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1)
+                
+                if (isMatch) {
                     visitedUrls.add(entity.articleUrl)
-                    val cachedArticle = urlToArticle[entity.articleUrl]
-                    cachedArticle?.let { ScoredArticle(it.toDomain(), similarity) }
+                    ScoredArticle(candidateArticle, similarity)
                 } else null
             }
             .sortedByDescending { it.score }
     }
 
     /**
-     * Search NewsAPI and filter results using semantic similarity.
+     * Search backend and filter results using semantic similarity.
      */
     private suspend fun searchSemanticMatches(
         sourceEmbedding: FloatArray,
@@ -222,7 +227,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     ): List<ScoredArticle> {
         try {
             // RSS search via NewsRepository (Google News keyword RSS, ~7-day window)
-            val searchResult = newsRepository.searchArticles(query, forceRefresh = true).last()
+            // Phase 16: Use cached results (forceRefresh=false) to prevent network timeouts during background discovery
+            val searchResult = newsRepository.searchArticles(query, forceRefresh = false).last()
             val candidates = searchResult.getOrElse { emptyList() }
                 .filter { it.url !in visitedUrls }
                 .distinctBy { it.url }
@@ -238,12 +244,15 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 
                 if (candidateEmbedding != null) {
                     val similarity = similarityMatcher.cosineSimilarity(sourceEmbedding, candidateEmbedding)
-                    val strength = similarityMatcher.matchStrength(similarity)
+                    val entityOverlap = entityExtractor.titleEntityOverlap(originalArticle.title, candidate.title)
                     
-                    if (strength != MatchStrength.NONE) {
+                    val isMatch = similarity >= SimilarityMatcher.STRONG_THRESHOLD || 
+                                (similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1)
+                    
+                    if (isMatch) {
                         visitedUrls.add(candidate.url)
                         matches.add(ScoredArticle(candidate, similarity))
-                        safeLogD("Semantic match: ${candidate.title.take(40)}... (score: ${"%.2f".format(similarity)})")
+                        safeLogD("Hybrid match: ${candidate.title.take(40)}... (sim: ${"%.2f".format(similarity)}, entities: $entityOverlap)")
                     }
                 } else {
                     // Fallback: use keyword matching for this candidate
@@ -402,7 +411,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     ): List<Article> {
         try {
             // RSS search via NewsRepository (Google News keyword RSS, ~7-day window)
-            val searchResult = newsRepository.searchArticles(query, forceRefresh = true).last()
+            // Phase 16: Use cached results (forceRefresh=false) for keyword fallback matches
+            val searchResult = newsRepository.searchArticles(query, forceRefresh = false).last()
             val candidates = searchResult.getOrElse { emptyList() }
                 .filter { it.url !in visitedUrls }
                 .distinctBy { it.url }
@@ -462,11 +472,11 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
     private fun extractDomain(url: String): String {
         return try {
-            val uri = URI(url)
-            val host = uri.host ?: ""
-            host.lowercase().removePrefix("www.")
+            val uri = java.net.URI(url)
+            val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
+            domain.removePrefix("www.").lowercase()
         } catch (e: Exception) {
-            ""
+            url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
         }
     }
 

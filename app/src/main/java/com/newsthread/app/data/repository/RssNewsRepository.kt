@@ -44,41 +44,72 @@ class RssNewsRepository @Inject constructor(
     companion object {
         private const val TAG = "RssNewsRepository"
         private const val FEED_KEY_TOP = "top_headlines_rss"
-        private const val MAX_ARTICLES = 30
+        private const val MAX_ARTICLES = 100
         // TODO: Move to a config or BuildConfig
         private const val WORKER_URL = "https://newsthread-api.newsthread.workers.dev" 
     }
 
     override fun getTopHeadlines(forceRefresh: Boolean): Flow<Result<List<Article>>> = flow {
         // 1. Emit cached data immediately
-        val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }
-            .filter { it.finalReliabilityScore > 1 }
-        var cached = cachedArticleDao.getAll().map { it.toDomain() }
+        val allRatings = try {
+            kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                sourceRatingDao.getAll().map { it.toDomain() }
+            }
+        } catch (e: Exception) {
+            null
+        } ?: emptyList()
+        
+        var cached = try {
+            kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                cachedArticleDao.getAll().map { it.toDomain() }
+            }
+        } catch (e: Exception) {
+            null
+        } ?: emptyList()
+        
         if (cached.isNotEmpty()) {
-            cached = filterArticlesUseCase(cached, ratedSources)
+            // Initial emit of cached data — use Strict Mode to keep initial UI high quality
+            cached = filterArticlesUseCase(cached, allRatings, onlyRated = true)
             cached = clusterArticlesUseCase(cached)
             emit(Result.success(cached))
         }
-
-        // 2. Check staleness
-        val cacheMetadata = feedCacheDao.get(FEED_KEY_TOP)
-        val shouldRefresh = forceRefresh || cacheMetadata == null || cacheMetadata.isStale()
-        if (!shouldRefresh) return@flow
+        // 2. Check staleness - with a safety timeout to detect deadlocks
+        val cacheMetadata = try {
+            kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                feedCacheDao.get(FEED_KEY_TOP)
+            }
+        } catch (e: Exception) {
+            null
+        }
+        
+        val isStale = cacheMetadata?.isStale() ?: true
+        val isEmpty = cacheMetadata?.articleCount == 0
+        val shouldRefresh = forceRefresh || cacheMetadata == null || isStale || isEmpty
+        
+        if (!shouldRefresh) {
+            if (cached.isEmpty()) {
+                emit(Result.success(emptyList()))
+            }
+            return@flow
+        }
 
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
+        Log.d(TAG, "Fetching from Worker: $WORKER_URL/v1/feeds/top-stories")
         val result = runCatching {
             val json = fetchWorker("/v1/feeds/top-stories")
                 ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
 
+            Log.d(TAG, "Worker returned JSON (length: ${json.length}). Parsing...")
             val articles = parseWorkerJson(json)
+            Log.d(TAG, "Parsed ${articles.size} articles from Worker")
 
-            // Filter and cluster
-            val filtered = filterArticlesUseCase(articles, ratedSources).take(MAX_ARTICLES)
+            // Filter and cluster — Main Feed uses Strict Mode (onlyRated = true)
+            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true).take(MAX_ARTICLES)
             val clustered = clusterArticlesUseCase(filtered)
 
             // Persist — delete old untracked articles only now that we have fresh data
             val now = System.currentTimeMillis()
-            if (forceRefresh) {
+            if (forceRefresh && articles.isNotEmpty()) {
                 cachedArticleDao.deleteUntracked()
             }
             cachedArticleDao.insertAll(clustered.map { it.toEntity(now) })
@@ -94,15 +125,18 @@ class RssNewsRepository @Inject constructor(
 
         result.fold(
             onSuccess = { articles ->
-                // Only replace the feed if we got results back; if the Worker returned nothing
-                // (e.g. all sources filtered out), keep showing the existing cached articles.
-                if (articles.isNotEmpty() || cached.isEmpty()) {
+                // Always emit on forceRefresh to clear the UI spinner, even if empty
+                if (forceRefresh || articles.isNotEmpty() || cached.isEmpty()) {
                     emit(Result.success(articles))
                 }
             },
             onFailure = { e ->
                 Log.e(TAG, "Worker fetch failed: ${e.message}", e)
-                if (cached.isEmpty()) emit(Result.failure(e))
+                // MANDATORY FEEDBACK: If forceRefresh is true, we MUST emit failure 
+                // so the UI can notify the user (e.g. Snackbar) that the refresh failed.
+                if (forceRefresh || cached.isEmpty()) {
+                    emit(Result.failure(e))
+                }
             }
         )
     }.flowOn(Dispatchers.IO)
@@ -121,10 +155,9 @@ class RssNewsRepository @Inject constructor(
                 ?: throw IOException("Failed to fetch search results from Worker")
             
             val articles = parseWorkerJson(json)
-            val ratedSources = sourceRatingDao.getAll().map { it.toDomain() }
-                .filter { it.finalReliabilityScore > 1 }
+            val allRatings = sourceRatingDao.getAll().map { it.toDomain() }
             
-            val filtered = filterArticlesUseCase(articles, ratedSources)
+            val filtered = filterArticlesUseCase(articles, allRatings)
             val clustered = clusterArticlesUseCase(filtered)
 
             val now = System.currentTimeMillis()
@@ -162,6 +195,7 @@ class RssNewsRepository @Inject constructor(
                 // Use the shared key. In a real app, this would be in BuildConfig or encrypted.
                 .header("X-API-Key", "newsthread-v1-key") 
                 .header("User-Agent", "NewsThread/1.0")
+                .header("Cache-Control", "no-cache")
                 .build()
             
             okHttpClient.newCall(request).execute().use { response ->
@@ -183,35 +217,50 @@ class RssNewsRepository @Inject constructor(
             val array = JSONArray(json)
             val articles = mutableListOf<Article>()
             for (i in 0 until array.length()) {
-                val obj = array.getJSONObject(i)
-                articles.add(obj.toArticle())
+                try {
+                    val obj = array.getJSONObject(i)
+                    articles.add(obj.toArticle())
+                } catch (e: Exception) {
+                    Log.e(TAG, "Skipping malformed article at index $i: ${e.message}")
+                }
             }
             articles
         } catch (e: Exception) {
-            Log.e(TAG, "JSON parse error: ${e.message}")
+            Log.e(TAG, "JSON parse error (entire array): ${e.message}")
             emptyList()
         }
     }
 
     private fun JSONObject.toArticle(): Article {
         val sourceObj = getJSONObject("source")
+        
+        // Robust field extraction with null handling for backend "null" strings
+        fun JSONObject.optStringClean(key: String): String? {
+            val v = optString(key)
+            return if (v == "null" || v.isBlank()) null else v
+        }
+
+        val url = getString("url")
+        val title = getString("title")
+        val publishedAt = optStringClean("publishedAt") ?: System.currentTimeMillis().toString() // Fallback if missing
+
         return Article(
             source = Source(
                 id = sourceObj.optString("id").takeIf { it != "null" && it.isNotBlank() },
-                name = sourceObj.getString("name"),
+                name = sourceObj.optString("name", "Unknown Source"),
                 description = null,
                 url = null,
                 category = null,
                 language = null,
                 country = null
             ),
-            author = optString("author").takeIf { it != "null" && it.isNotBlank() },
-            title = getString("title"),
-            description = optString("description").takeIf { it != "null" && it.isNotBlank() },
-            url = getString("url"),
-            urlToImage = optString("urlToImage").takeIf { it != "null" && it.isNotBlank() },
-            publishedAt = getString("publishedAt"),
-            content = optString("content").takeIf { it != "null" && it.isNotBlank() }
+            author = optStringClean("author"),
+            title = title,
+            description = optStringClean("description"),
+            url = url,
+            urlToImage = optStringClean("urlToImage"),
+            publishedAt = publishedAt,
+            content = optStringClean("content")
         )
     }
 }

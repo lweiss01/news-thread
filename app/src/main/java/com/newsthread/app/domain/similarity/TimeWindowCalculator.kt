@@ -67,7 +67,7 @@ class TimeWindowCalculator @Inject constructor() {
     }
 
     /**
-     * Format window dates for NewsAPI search.
+     * Format window dates for backend search.
      *
      * @param articleDate Publication date of the article
      * @param referenceTime Reference time for age calculation

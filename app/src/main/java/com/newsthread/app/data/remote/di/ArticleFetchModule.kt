@@ -28,7 +28,7 @@ object ArticleFetchModule {
     fun provideArticleOkHttpClient(
         @ApplicationContext context: Context
     ): OkHttpClient {
-        // Separate cache for article HTML (distinct from NewsAPI cache)
+        // Separate cache for article HTML (distinct from feed cache)
         val cacheSize = 100L * 1024L * 1024L // 100 MiB for article HTML
         val cache = Cache(
             directory = File(context.cacheDir, "article_html_cache"),

@@ -98,9 +98,9 @@ fun FeedScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             item {
-                                Text("No stories found.", style = MaterialTheme.typography.bodyLarge)
+                                Text("No stories found matching your quality settings.", style = MaterialTheme.typography.bodyLarge)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text("Pull to refresh", style = MaterialTheme.typography.bodySmall)
+                                Text("Pull to refresh for the latest stories", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     } else {
@@ -129,6 +129,14 @@ fun FeedScreen(
                     }
                 }
                 is FeedUiState.Error -> {
+                    // Show snackbar for refresh errors
+                    val message = state.message
+                    LaunchedEffect(message) {
+                        if (isRefreshing) {
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
+
                     // Error State (Scrollable for Pull-to-Refresh)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

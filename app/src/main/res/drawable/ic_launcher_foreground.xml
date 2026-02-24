@@ -5,39 +5,53 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    
-    <!-- N letterform (Amber300 -> Amber600 Gradient) -->
-    <!-- Authentic SVG Baseline: 64dp wide N, Inter Black style thickness -->
-    <path
-        android:pathData="M 22,74 L 22,14 L 38,14 L 70,59 L 70,14 L 86,14 L 86,74 L 70,74 L 38,29 L 38,74 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:startX="54"
-                android:startY="14"
-                android:endX="54"
-                android:endY="74"
-                android:type="linear">
-                <item android:offset="0" android:color="#FCD34D" /> <!-- Amber300 -->
-                <item android:offset="1" android:color="#D97706" /> <!-- Amber600 -->
-            </gradient>
-        </aapt:attr>
-    </path>
-    
-    <!-- Spectrum Bar (Blue -> Purple -> Red Gradient) -->
-    <!-- Matches SVG: x=18, y=82, width=72, height=7, rx=3.5 -->
-    <path
-        android:pathData="M 21.5,82 C 19.5,82 18,83.5 18,85.5 C 18,87.5 19.5,89 21.5,89 L 86.5,89 C 88.5,89 90,87.5 90,85.5 C 90,83.5 88.5,82 86.5,82 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:startX="18"
-                android:startY="85.5"
-                android:endX="90"
-                android:endY="85.5"
-                android:type="linear">
-                <item android:offset="0" android:color="#60A5FA" /> <!-- Blue -->
-                <item android:offset="0.5" android:color="#A78BFA" /> <!-- Purple -->
-                <item android:offset="1" android:color="#F87171" /> <!-- Red -->
-            </gradient>
-        </aapt:attr>
-    </path>
+
+    <!-- More conservative scale for circular adaptive-icon masks -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:translateY="0">
+
+        <!-- Gold "N" -->
+        <path
+            android:pathData="M 26,76 V 20 H 42 L 76,66 V 20 H 90 V 76 H 74 L 40,30 V 76 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="54"
+                    android:startY="20"
+                    android:endX="54"
+                    android:endY="76">
+                    <item android:offset="0" android:color="#F6C85C"/>
+                    <item android:offset="1" android:color="#D97A17"/>
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Spectrum pill: lifted up slightly + slightly shorter vertical footprint -->
+        <path
+            android:pathData="M 24,74
+                              H 84
+                              C 90,74 94,78 94,81
+                              C 94,85 90,88 84,88
+                              H 24
+                              C 18,88 14,85 14,81
+                              C 14,78 18,74 24,74 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="14"
+                    android:startY="81"
+                    android:endX="94"
+                    android:endY="81">
+                    <item android:offset="0" android:color="#60A5FA"/>
+                    <item android:offset="0.50" android:color="#A78BFA"/>
+                    <item android:offset="1" android:color="#F87171"/>
+                </gradient>
+            </aapt:attr>
+        </path>
+
+    </group>
 </vector>

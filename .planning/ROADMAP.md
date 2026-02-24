@@ -28,7 +28,7 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 - [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
 - [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
 - [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
-- [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system (completed 2026-02-22)
+- [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system (completed 2026-02-21)
 - [x] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution (completed 2026-02-22)
 
 </details>
@@ -42,52 +42,6 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 
 
 
-## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation | 2/2 | Complete | 2026-02-02 |
-| 2. Text Extraction | 4/4 | Complete | 2026-02-05 |
-| 3. Embedding Engine | 4/4 | Complete | 2026-02-06 |
-| 4. Similarity Matching | 2/2 | Complete | 2026-02-06 |
-| 5. Pipeline Integration | 2/2 | Complete | 2026-02-06 |
-| 6. Background Processing | 3/3 | Complete | 2026-02-07 |
-| 7. UI Implementation | 2/2 | Complete | 2026-02-07 |
-| 8. Tracking Foundation | 2/2 | Complete | 2026-02-08 |
-# Roadmap: NewsThread
-
-## Overview
-
-NewsThread has successfully replaced its keyword-based article matching with on-device NLP using TensorFlow Lite embeddings and semantic similarity. The project has now moved into the **Story Tracking** milestone, which allows users to follow developing news threads over time, automatically clustering new articles into existing threads and notifying users of significant updates.
-
-## Phases
-
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 1: Foundation** - Data models, Room schema, and caching infrastructure
-- [x] **Phase 2: Text Extraction** - Full article text fetching with Readability4J
-- [x] **Phase 3: Embedding Engine** - TensorFlow Lite integration for semantic embeddings
-- [x] **Phase 4: Similarity Matching** - Cosine similarity and article clustering
-- [x] **Phase 5: Pipeline Integration** - End-to-end orchestration with use cases
-- [x] **Phase 6: Background Processing** - WorkManager pre-computation
-- [x] **Phase 7: UI Implementation** - Bias spectrum visualization
-- [x] **Phase 8: Tracking Foundation** - Database & UI for followed stories
-- [x] **Phase 9: Story Grouping Logic** - Auto-grouping new articles to threads
-- [x] **Phase 9.5: Quality & Stability** - Fix matching key bugs and feed quality issues
-- [x] **Phase 10: Notifications & Updates** - Background alerts for thread updates
-- [x] **Phase 10.1: UI Polish & Bug Fixes** - Source badges, refresh, notification suppression
-- [x] **Phase 11: UI/UX Review and Refinement** - Design tokens, bias heatmap, visual alignment
-- [x] **Phase 12: Architecture Refactor** - Completed 2026-02-20 (Domain logic, ViewModels, DI)
-- [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
-- [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system (completed 2026-02-21)
-- [x] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution (completed 2026-02-22)
 
 
 ## Phase Details
@@ -185,45 +139,31 @@ Plans:
 **Goal**: Address repo-wide audit findings (Domain logic, ViewModel cleanup, DI) to improve maintainability.
 
 **Status**: Complete (2026-02-20)
-
-**Delivered**:
-- [x] 12-CONTEXT.md — Phase Context
-- [x] 12-RESEARCH.md — Phase Research
-- [x] 12-01-PLAN.md — Domain Logic Extraction
-- [x] 12-02-PLAN.md — ViewModel Standardization & DI Cleanup
-- [x] 12-VERIFICATION.md — Verification Report
+**Goal**: Address repo-wide audit findings.
+**Status**: Complete (2026-02-20)
 
 ### Phase 13: UI Design and Visual Language Updates
-- Goal: Implement the Amber Brand refresh, editorial shields, and premium UI refinements.
-- Dependencies: Phase 12
-- Status: [Done] (2026-02-20)
-- Detail: [13-ui-design-and-visual-language-updates](phases/13-ui-design-and-visual-language-updates/)
+**Goal**: Amber Brand refresh and premium UI refinements.
+**Status**: Complete (2026-02-20)
 
+### Phase 14: RSS Feed Migration (On-Device)
+**Goal**: Replace NewsAPI with two-layer RSS system.
+**Status**: Complete (2026-02-22)
 
-## Progress
+### Phase 15: Cloudflare Workers RSS Backend
+**Goal**: Edge backend for feed fetching and URL resolution.
+**Status**: Complete (2026-02-22)
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
+### Phase 16: Identity & Store Assets
+**Goal**: Refine icon and generate Store assets.
+**Status**: In Progress (Waiting for screenshots)
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation | 2/2 | Complete | 2026-02-02 |
-| 2. Text Extraction | 4/4 | Complete | 2026-02-05 |
-| 3. Embedding Engine | 4/4 | Complete | 2026-02-06 |
-| 4. Similarity Matching | 2/2 | Complete | 2026-02-06 |
-| 5. Pipeline Integration | 2/2 | Complete | 2026-02-06 |
-| 6. Background Processing | 3/3 | Complete | 2026-02-07 |
-| 7. UI Implementation | 2/2 | Complete | 2026-02-07 |
-| 8. Tracking Foundation | 2/2 | Complete | 2026-02-08 |
-| 9. Story Grouping Logic | 2/2 | Complete | 2026-02-08 |
-| 9.5. Quality & Stability | 4/4 | Complete | 2026-02-16 |
-| 10. Notifications & Updates | 6/6 | Complete | 2026-02-18 |
-| 10.1. UI Polish & Bug Fixes | 1/1 | Complete | 2026-02-19 |
-| 11. UI/UX Review & Refinement | 4/4 | Complete | 2026-02-19 |
-| 12. Architecture Refactor | 2/2 | Complete | 2026-02-20 |
-| 13. UI Design & Visual Updates | 4/4 | Complete | 2026-02-20 |
-| 14. RSS Feed Migration | 7/7 | Complete | 2026-02-21 |
-| 15. Cloudflare Workers Backend | 4/4 | Complete | 2026-02-22 |
-| 16. Identity & Store Assets | 1/3 | In Progress | — |
-| 17. Release Infrastructure | 0/3 | Planned | — |
-| 18. Quality & Onboarding | 0/4 | Planned | — |
+## Progress Ground Truth
+
+> [!NOTE]
+> The automated completion percentage (65%) reflects the presence of `*-SUMMARY.md` artifacts on disk. Several early phases (3, 4, 5, 9, 11) lack these artifacts but are fully implemented and shipped.
+
+| Milestone | Status | Completed |
+|-----------|--------|-----------|
+| v1.1 RSS Engine | ✅ Shipped | 2026-02-22 |
+| v1.2 Play Store | 🚧 In Progress | — |

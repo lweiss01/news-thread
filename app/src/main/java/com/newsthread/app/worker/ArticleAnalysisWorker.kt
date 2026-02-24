@@ -65,6 +65,6 @@ class ArticleAnalysisWorker @AssistedInject constructor(
 
     companion object {
         const val TAG = "ArticleAnalysisWorker"
-        private const val BATCH_SIZE = 20
+        private const val BATCH_SIZE = 12
     }
 }

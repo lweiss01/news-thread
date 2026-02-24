@@ -218,21 +218,22 @@ fun ArticleCard(
     }
 }
 
-// Helper function to find rating
 private fun findRatingForArticle(
     article: Article,
     sourceRatings: Map<String, SourceRating>
 ): SourceRating? {
     val domain = extractDomain(article.url)
-    return sourceRatings[domain] ?: article.source.id?.let { sourceRatings[it] }
+    return sourceRatings[domain] 
+        ?: sourceRatings[article.source.name] 
+        ?: article.source.id?.let { sourceRatings[it] }
 }
 
 private fun extractDomain(url: String): String {
     return try {
         val uri = java.net.URI(url)
-        val domain = uri.host ?: return ""
+        val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
         domain.removePrefix("www.").lowercase()
     } catch (e: Exception) {
-        ""
+        url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
     }
 }

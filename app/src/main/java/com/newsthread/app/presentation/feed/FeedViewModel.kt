@@ -36,6 +36,8 @@ class FeedViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private var isFetching = false // Concurrency guard
+
     private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
     val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
 
@@ -49,10 +51,16 @@ class FeedViewModel @Inject constructor(
     }
 
     fun refresh() {
+        if (isFetching) return // Guard against parallel refreshes
         viewModelScope.launch {
-            _isRefreshing.value = true
-            fetchHeadlinesInternal(forceRefresh = true)
-            _isRefreshing.value = false
+            try {
+                isFetching = true
+                _isRefreshing.value = true
+                fetchHeadlinesInternal(forceRefresh = true)
+            } finally {
+                _isRefreshing.value = false
+                isFetching = false
+            }
         }
     }
 
@@ -67,8 +75,14 @@ class FeedViewModel @Inject constructor(
     }
 
     fun loadHeadlines(forceRefresh: Boolean = false) {
+        if (isFetching && forceRefresh) return // Guard
         viewModelScope.launch {
-            fetchHeadlinesInternal(forceRefresh)
+            try {
+                if (forceRefresh) isFetching = true
+                fetchHeadlinesInternal(forceRefresh)
+            } finally {
+                if (forceRefresh) isFetching = false
+            }
         }
     }
 
