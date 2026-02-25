@@ -405,6 +405,8 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles[url]?.isTracked == true
     }
 
+    override suspend fun deleteUntracked() {}
+
     // Phase 9: Story grouping support
     override suspend fun getRecentUnassignedArticlesWithEmbeddings(since: Long): List<CachedArticleEntity> {
         return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
