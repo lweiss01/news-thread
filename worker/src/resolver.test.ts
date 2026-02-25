@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Buffer } from 'node:buffer';
 import { resolveUrl } from './resolver';
 
@@ -11,11 +11,18 @@ const mockKV = {
 } as any;
 
 describe('resolver', () => {
+    let originalFetch: any;
+
     beforeEach(() => {
+        originalFetch = global.fetch;
         vi.restoreAllMocks();
-        vi.stubGlobal('fetch', vi.fn());
+        global.fetch = vi.fn();
         mockKVGet.mockResolvedValue(null);
         mockKVPut.mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+        global.fetch = originalFetch;
     });
 
     it('returns non-Google URLs directly', async () => {
@@ -46,7 +53,7 @@ describe('resolver', () => {
             ok: false,
             text: async () => ''
         };
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+        global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(targetUrl);
@@ -74,7 +81,7 @@ describe('resolver', () => {
             text: async () => html,
             ok: true
         };
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+        global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(targetUrl);
@@ -90,7 +97,7 @@ describe('resolver', () => {
             ok: false,
             url: encodedUrl
         };
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+        global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/'));
@@ -122,7 +129,7 @@ describe('resolver', () => {
             ok: true,
             url: 'https://www.google.com/sorry/index?continue=...'
         };
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+        global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/')); // Should fallback to normalized URL on CAPTCHA
