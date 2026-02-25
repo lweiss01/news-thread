@@ -99,7 +99,15 @@ fun ArticleDetailScreen(
         article?.let {
             viewModel.generateEmbeddingForArticle(it)
         } ?: viewModel.generateEmbeddingForArticle(Article(
-            source = Source(id = null, name = "Unknown"),
+            source = Source(
+                id = null,
+                name = "Unknown",
+                description = null,
+                url = null,
+                category = null,
+                language = null,
+                country = null
+            ),
             author = null,
             title = "",
             description = null,

@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -145,7 +147,17 @@ fun ArticleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 16.dp)
+                            .semantics(mergeDescendants = true) {
+                                val rating = findRatingForArticle(article, sourceRatings)
+                                val biasDescription =
+                                    rating?.getBiasDescription() ?: "Bias information unavailable"
+                                contentDescription = "Bias rating: $biasDescription"
+                            }
+                    ) {
                         Text(
                             text = "BIAS",
                             style = MaterialTheme.typography.labelSmall,
