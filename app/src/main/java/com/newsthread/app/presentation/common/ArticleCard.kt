@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,12 @@ fun ArticleCard(
         shadowElevation = if (darkTheme) ProjectTheme.elevation.none else ProjectTheme.elevation.level2,
         tonalElevation = ProjectTheme.elevation.none
     ) {
+        shadowElevation = if (darkTheme) 0.dp else 2.dp, // Soft shadow in light mode
+        tonalElevation = 0.dp
+    ) {
+        // Calculate rating once to ensure consistency across badges and indicators
+        val rating = remember(article, sourceRatings) { findRatingForArticle(article, sourceRatings) }
+
         Column {
             Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
                 // Header: Source Name & Rating
@@ -147,6 +155,14 @@ fun ArticleCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f).padding(end = ProjectTheme.spacing.m)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 16.dp)
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Bias rating: ${rating?.getBiasDescription() ?: "Unknown"}"
+                            }
+                    ) {
                         Text(
                             text = "BIAS",
                             style = MaterialTheme.typography.labelSmall,
@@ -156,12 +172,14 @@ fun ArticleCard(
                         )
 
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         // Spectrum Bar with Dot
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(ProjectTheme.spacing.sm),
+                                .height(12.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             // Thin bar
