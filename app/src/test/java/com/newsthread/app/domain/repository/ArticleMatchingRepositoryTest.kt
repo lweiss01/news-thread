@@ -419,6 +419,7 @@ class FakeCachedArticleDao : CachedArticleDao {
         }
     }
 
+    override suspend fun deleteUntracked() {}
     override suspend fun getStoryIdForArticle(articleUrl: String): String? {
         return savedArticles[articleUrl]?.storyId
     }
