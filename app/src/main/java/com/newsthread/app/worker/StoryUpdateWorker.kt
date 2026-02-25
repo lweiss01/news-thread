@@ -47,7 +47,6 @@ class StoryUpdateWorker @AssistedInject constructor(
                 - Weak matches (for review): $weakMatches
                 - Novel content: $novelMatches
                 - New perspectives: $perspectiveMatches
-                - New perspectives: $perspectiveMatches
             """.trimIndent())
 
             // Phase 10: Trigger Notifications for interesting updates
