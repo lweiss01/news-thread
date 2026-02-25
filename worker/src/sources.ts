@@ -81,6 +81,6 @@ export function googleNewsCategoryUrl(topicId: string): string {
 }
 
 export function googleNewsSearchUrl(query: string): string {
-    const encoded = query.trim().replace(/\s+/g, "+");
+    const encoded = encodeURIComponent(query.trim());
     return `${GNEWS_BASE}/search?q=${encoded}+when:7d&${GNEWS_PARAMS}`;
 }
