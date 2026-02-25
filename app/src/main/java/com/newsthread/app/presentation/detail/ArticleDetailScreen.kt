@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.newsthread.app.BuildConfig
 import com.newsthread.app.data.repository.EmbeddingRepository
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
@@ -439,7 +440,7 @@ fun ArticleDetailScreen(
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    WebView.setWebContentsDebuggingEnabled(true)
+                    WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
                     webViewClient = WebViewClient()
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
