@@ -3,6 +3,7 @@ package com.newsthread.app.data.remote
 import android.util.Log
 import com.newsthread.app.data.remote.di.ArticleHtmlClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,13 +16,17 @@ import javax.inject.Singleton
 class ArticleHtmlFetcher @Inject constructor(
     @ArticleHtmlClient private val okHttpClient: OkHttpClient
 ) {
+
+    // Default to IO dispatcher, but allow overriding for tests
+    internal var dispatcher: CoroutineDispatcher = Dispatchers.IO
+
     /**
      * Fetches HTML content from the given URL.
      *
      * @param url Article URL to fetch
      * @return HTML string on success, null on any failure (404, 403, timeout, etc.)
      */
-    suspend fun fetch(url: String): String? = withContext(Dispatchers.IO) {
+    suspend fun fetch(url: String): String? = withContext(dispatcher) {
         try {
             val request = Request.Builder()
                 .url(url)
