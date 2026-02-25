@@ -51,21 +51,9 @@ class RssNewsRepository @Inject constructor(
 
     override fun getTopHeadlines(forceRefresh: Boolean): Flow<Result<List<Article>>> = flow {
         // 1. Emit cached data immediately
-        val allRatings = try {
-            kotlinx.coroutines.withTimeoutOrNull(5000L) {
-                sourceRatingDao.getAll().map { it.toDomain() }
-            }
-        } catch (e: Exception) {
-            null
-        } ?: emptyList()
+        val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
         
-        var cached = try {
-            kotlinx.coroutines.withTimeoutOrNull(5000L) {
-                cachedArticleDao.getAll().map { it.toDomain() }
-            }
-        } catch (e: Exception) {
-            null
-        } ?: emptyList()
+        var cached = safeDbCall { cachedArticleDao.getAll().map { it.toDomain() } }
         
         if (cached.isNotEmpty()) {
             // Initial emit of cached data — use Strict Mode to keep initial UI high quality
@@ -143,7 +131,7 @@ class RssNewsRepository @Inject constructor(
 
     override fun searchArticles(query: String, forceRefresh: Boolean): Flow<Result<List<Article>>> = flow {
         val feedKey = "search_${query.lowercase().trim()}"
-        val cached = cachedArticleDao.getAll().map { it.toDomain() }
+        val cached = safeDbCall { cachedArticleDao.getAll().map { it.toDomain() } }
         if (cached.isNotEmpty()) emit(Result.success(cached))
 
         val cacheMetadata = feedCacheDao.get(feedKey)
@@ -155,7 +143,7 @@ class RssNewsRepository @Inject constructor(
                 ?: throw IOException("Failed to fetch search results from Worker")
             
             val articles = parseWorkerJson(json)
-            val allRatings = sourceRatingDao.getAll().map { it.toDomain() }
+            val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
             
             val filtered = filterArticlesUseCase(articles, allRatings)
             val clustered = clusterArticlesUseCase(filtered)
@@ -186,6 +174,18 @@ class RssNewsRepository @Inject constructor(
         cachedArticleDao.getAllFlow().collect { entities ->
             emit(entities.map { it.toDomain() })
         }
+    }
+
+
+    private suspend fun <T> safeDbCall(block: suspend () -> List<T>): List<T> {
+        return try {
+            kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                block()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Database call failed safely", e)
+            null
+        } ?: emptyList()
     }
 
     private fun fetchWorker(endpoint: String): String? {
