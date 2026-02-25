@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { runWithConcurrency } from './concurrency';
 import { parseRss, mapToArticle } from './rss';
 import { resolveUrl } from './resolver';
 import { GNEWS_BASE, GNEWS_PARAMS, CategoryTopics, googleNewsCategoryUrl, googleNewsSearchUrl, findByDomain, allSources } from './sources';
@@ -219,28 +220,23 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings,
         // Increase to 100 items for broader feed coverage
         const limitedItems = items.slice(0, 100);
 
-        // Resolve URLs in small batches to stay within Cloudflare subrequest limits (6 for Free tier)
-        const articles: Article[] = [];
-        const batchSize = 5;
-        for (let i = 0; i < limitedItems.length; i += batchSize) {
-            const batch = limitedItems.slice(i, i + batchSize);
-            const resolvedBatch = await Promise.all(batch.map(async (item) => {
-                try {
-                    const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
-                    const article = mapToArticle({ ...item, link: resolvedUrl });
-                    if (article.source.name === '[object Object]') {
-                        console.warn(`[Found Bug] [object Object] source for item: ${article.title.substring(0, 30)}...`);
-                        console.warn(`Original Link: ${item.link}`);
-                        console.warn(`Original SourceName: ${typeof item.sourceName} ${JSON.stringify(item.sourceName)}`);
-                    }
-                    return article;
-                } catch (e) {
-                    // Fallback to original link on error
-                    return mapToArticle(item);
+        // Resolve URLs using a concurrency pool to avoid head-of-line blocking
+        // Concurrency 5 keeps within typical connection limits while maximizing throughput
+        const articles = await runWithConcurrency(limitedItems, 5, async (item) => {
+            try {
+                const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
+                const article = mapToArticle({ ...item, link: resolvedUrl });
+                if (article.source.name === '[object Object]') {
+                    console.warn(`[Found Bug] [object Object] source for item: ${article.title.substring(0, 30)}...`);
+                    console.warn(`Original Link: ${item.link}`);
+                    console.warn(`Original SourceName: ${typeof item.sourceName} ${JSON.stringify(item.sourceName)}`);
                 }
-            }));
-            articles.push(...resolvedBatch);
-        }
+                return article;
+            } catch (e) {
+                // Fallback to original link on error
+                return mapToArticle(item);
+            }
+        });
 
         // Only cache if we actually got results
         if (articles.length > 0) {
