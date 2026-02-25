@@ -23,8 +23,8 @@ import com.newsthread.app.presentation.navigation.ComparisonRoute
 
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope // NEW
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // NEW
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -53,7 +53,7 @@ class ArticleDetailViewModel @Inject constructor(
         embeddingRepository.getOrGenerateEmbedding(article.url)
         // Also check tracking status
         _isTracked.value = isArticleTrackedUseCase(article.url)
-        
+
         // PROACTIVE MATCHING: Trigger similarity search in background to pre-cache matches
         viewModelScope.launch {
             matchingRepository.findSimilarArticles(article).collect {
@@ -78,7 +78,7 @@ class ArticleDetailViewModel @Inject constructor(
             }
         }
     }
-    
+
     private suspend fun getStoryId(url: String): String? {
         return trackingRepository.getStoryId(url)
     }
@@ -99,7 +99,15 @@ fun ArticleDetailScreen(
         article?.let {
             viewModel.generateEmbeddingForArticle(it)
         } ?: viewModel.generateEmbeddingForArticle(Article(
-            source = Source(id = null, name = "Unknown"),
+            source = Source(
+                id = null,
+                name = "Unknown",
+                description = null,
+                url = null,
+                category = null,
+                language = null,
+                country = null
+            ),
             author = null,
             title = "",
             description = null,
