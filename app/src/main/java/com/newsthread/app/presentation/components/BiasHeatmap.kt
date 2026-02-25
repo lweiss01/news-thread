@@ -93,14 +93,8 @@ fun BiasHeatmap(
                     if (count > 0) {
                         // Map bias -2..2 → x position with padding
                         // -2 → 10%, -1 → 30%, 0 → 50%, 1 → 70%, 2 → 90%
-                        val normalizedX = when (bias) {
-                            -2 -> 0.10f
-                            -1 -> 0.30f
-                            0 -> 0.50f
-                            1 -> 0.70f
-                            2 -> 0.90f
-                            else -> 0.50f
-                        }
+                        // Refactored to use consistent calculation function
+                        val normalizedX = calculateNormalizedBiasX(bias)
                         val x = normalizedX * width
 
                         // Size by count: 1-3 small, 4-6 medium, 7+ large
@@ -157,7 +151,7 @@ fun BiasHeatmap(
         if (unratedCount > 0) {
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
             Text(
-                text = "+$unratedCount unrated sources",
+                text = "+ unrated sources",
                 style = MaterialTheme.typography.labelSmall,
                 color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
@@ -168,4 +162,19 @@ fun BiasHeatmap(
             )
         }
     }
+}
+
+/**
+ * Calculates the normalized X position (0.0 to 1.0) for a given bias score.
+ * Maps -2..2 to 10%..90%.
+ *
+ * Formula: 0.5f + (bias * 0.2f)
+ * -2 -> 0.1 (10%)
+ * -1 -> 0.3 (30%)
+ *  0 -> 0.5 (50%)
+ *  1 -> 0.7 (70%)
+ *  2 -> 0.9 (90%)
+ */
+internal fun calculateNormalizedBiasX(bias: Int): Float {
+    return 0.5f + (bias.coerceIn(-2, 2) * 0.2f)
 }
