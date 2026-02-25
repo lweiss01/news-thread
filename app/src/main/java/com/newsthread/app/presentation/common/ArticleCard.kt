@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,7 +42,7 @@ fun ArticleCard(
 ) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val darkTheme = isSystemInDarkTheme()
-    
+
     // Source name color: Amber300 (dark) / Amber600 (light) for high contrast
     val sourceColor = if (darkTheme) NewsLinkDark else Amber600
 
@@ -54,9 +56,16 @@ fun ArticleCard(
             .pulseEffect(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
+        // Refactored to use elevation tokens. Original 2.dp maps close to level2 (3.dp).
+        shadowElevation = if (darkTheme) ProjectTheme.elevation.none else ProjectTheme.elevation.level2,
+        tonalElevation = ProjectTheme.elevation.none
+    ) {
         shadowElevation = if (darkTheme) 0.dp else 2.dp, // Soft shadow in light mode
         tonalElevation = 0.dp
     ) {
+        // Calculate rating once to ensure consistency across badges and indicators
+        val rating = remember(article, sourceRatings) { findRatingForArticle(article, sourceRatings) }
+
         Column {
             Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
                 // Header: Source Name & Rating
@@ -76,7 +85,7 @@ fun ArticleCard(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.xs)) {
                         val rating = findRatingForArticle(article, sourceRatings)
                         ReliabilityBadge(rating = rating, size = 18.dp)
-                        
+
                         IconButton(
                             onClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
@@ -145,7 +154,15 @@ fun ArticleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Column(modifier = Modifier.weight(1f).padding(end = ProjectTheme.spacing.m)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 16.dp)
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Bias rating: ${rating?.getBiasDescription() ?: "Unknown"}"
+                            }
+                    ) {
                         Text(
                             text = "BIAS",
                             style = MaterialTheme.typography.labelSmall,
@@ -153,13 +170,15 @@ fun ArticleCard(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
-                        
+
+                        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
                         Spacer(modifier = Modifier.height(4.dp))
-                        
+
                         // Spectrum Bar with Dot
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(ProjectTheme.spacing.sm),
                                 .height(12.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -171,7 +190,7 @@ fun ArticleCard(
                                     .clip(CircleShape)
                                     .background(ProjectTheme.bias.gradient)
                             )
-                            
+
                             // Dot Indicator
                             val rating = findRatingForArticle(article, sourceRatings)
                             val biasScore = rating?.finalBiasScore
@@ -182,7 +201,7 @@ fun ArticleCard(
                                     else -> com.newsthread.app.presentation.theme.BiasCenter
                                 }
                                 val biasRatio = ((biasScore + 2f) / 4f).coerceIn(0f, 1f)
-                                
+
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     Box(
                                         modifier = Modifier
@@ -201,7 +220,7 @@ fun ArticleCard(
                             }
                         }
                     }
-                    
+
                     Text(
                         text = if (isTracked) "TRACKING" else "+ Track",
                         style = MaterialTheme.typography.labelSmall,
@@ -223,8 +242,8 @@ private fun findRatingForArticle(
     sourceRatings: Map<String, SourceRating>
 ): SourceRating? {
     val domain = extractDomain(article.url)
-    return sourceRatings[domain] 
-        ?: sourceRatings[article.source.name] 
+    return sourceRatings[domain]
+        ?: sourceRatings[article.source.name]
         ?: article.source.id?.let { sourceRatings[it] }
 }
 
