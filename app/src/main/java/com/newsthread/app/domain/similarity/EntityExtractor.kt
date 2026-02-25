@@ -11,17 +11,6 @@ import javax.inject.Singleton
 @Singleton
 class EntityExtractor @Inject constructor() {
 
-    private val stopWords: Set<String> = setOf(
-        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-        "of", "with", "by", "from", "as", "is", "was", "are", "were", "be",
-        "been", "being", "have", "has", "had", "do", "does", "did", "will",
-        "would", "could", "should", "may", "might", "must", "can", "about",
-        "says", "said", "after", "over", "what", "know", "this", "that",
-        "news", "report", "breaking", "live", "least", "officials", "including",
-        "mum", "video", "photos", "watch", "today", "updates",
-        "scoop", "exclusive", "analysis", "opinion", "review", "fact check", "live", "timeline"
-    )
-
     /**
      * Extract named entities and important keywords from text.
      *
@@ -31,16 +20,16 @@ class EntityExtractor @Inject constructor() {
      */
     fun extractEntities(text: String, excludedText: String? = null): List<String> {
         val entities = mutableListOf<String>()
-        val cleanText = text.replace(Regex("[-_]"), " ")
-        val words = cleanText.split(Regex("\\s+"))
+        val cleanText = text.replace(CLEAN_TEXT_REGEX, " ")
+        val words = cleanText.split(SPLIT_WHITESPACE_REGEX)
 
         // Split excluded text into tokens to filter out
-        val excludedTokens = excludedText?.lowercase()?.split(Regex("\\s+"))?.toSet() ?: emptySet()
+        val excludedTokens = excludedText?.lowercase()?.split(SPLIT_WHITESPACE_REGEX)?.toSet() ?: emptySet()
 
         var currentEntity = mutableListOf<String>()
 
         words.forEach { word ->
-            val cleanWord = word.replace(Regex("[^a-zA-Z0-9&.]"), "")
+            val cleanWord = word.replace(CLEAN_WORD_REGEX, "")
 
             if (cleanWord.isNotEmpty() &&
                 cleanWord[0].isUpperCase() &&
@@ -60,8 +49,8 @@ class EntityExtractor @Inject constructor() {
 
         val importantWords = cleanText
             .lowercase()
-            .replace(Regex("[^a-z0-9&.\\s]"), "")
-            .split("\\s+".toRegex())
+            .replace(IMPORTANT_WORDS_CLEAN_REGEX, "")
+            .split(SPLIT_WHITESPACE_REGEX)
             .filter { it.length > 3 && it !in stopWords }
 
         entities.addAll(importantWords)
@@ -88,5 +77,23 @@ class EntityExtractor @Inject constructor() {
         val entities1 = extractEntities(title1).map { it.lowercase() }.toSet()
         val entities2 = extractEntities(title2).map { it.lowercase() }.toSet()
         return entities1.intersect(entities2).size
+    }
+
+    companion object {
+        private val CLEAN_TEXT_REGEX = Regex("[-_]")
+        private val SPLIT_WHITESPACE_REGEX = Regex("\\s+")
+        private val CLEAN_WORD_REGEX = Regex("[^a-zA-Z0-9&.]")
+        private val IMPORTANT_WORDS_CLEAN_REGEX = Regex("[^a-z0-9&.\\s]")
+
+        private val stopWords: Set<String> = setOf(
+            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+            "of", "with", "by", "from", "as", "is", "was", "are", "were", "be",
+            "been", "being", "have", "has", "had", "do", "does", "did", "will",
+            "would", "could", "should", "may", "might", "must", "can", "about",
+            "says", "said", "after", "over", "what", "know", "this", "that",
+            "news", "report", "breaking", "live", "least", "officials", "including",
+            "mum", "video", "photos", "watch", "today", "updates",
+            "scoop", "exclusive", "analysis", "opinion", "review", "fact check", "live", "timeline"
+        )
     }
 }
