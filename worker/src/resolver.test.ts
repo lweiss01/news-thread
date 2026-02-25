@@ -12,11 +12,13 @@ const mockKV = {
 
 describe('resolver', () => {
     let originalFetch: any;
+    const originalFetch = global.fetch;
 
     beforeEach(() => {
         originalFetch = global.fetch;
         vi.restoreAllMocks();
         global.fetch = vi.fn();
+        global.fetch = vi.fn() as any;
         mockKVGet.mockResolvedValue(null);
         mockKVPut.mockResolvedValue(undefined);
     });
@@ -53,7 +55,7 @@ describe('resolver', () => {
             ok: false,
             text: async () => ''
         };
-        global.fetch = vi.fn().mockResolvedValue(mockResponse);
+        global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(targetUrl);
@@ -81,7 +83,7 @@ describe('resolver', () => {
             text: async () => html,
             ok: true
         };
-        global.fetch = vi.fn().mockResolvedValue(mockResponse);
+        global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(targetUrl);
@@ -97,7 +99,7 @@ describe('resolver', () => {
             ok: false,
             url: encodedUrl
         };
-        global.fetch = vi.fn().mockResolvedValue(mockResponse);
+        global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/'));
@@ -129,7 +131,7 @@ describe('resolver', () => {
             ok: true,
             url: 'https://www.google.com/sorry/index?continue=...'
         };
-        global.fetch = vi.fn().mockResolvedValue(mockResponse);
+        global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/')); // Should fallback to normalized URL on CAPTCHA

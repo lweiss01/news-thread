@@ -38,9 +38,8 @@ describe('sources helpers', () => {
             expect(url).toBe(`${GNEWS_BASE}/search?q=${query}+when:7d&${GNEWS_PARAMS}`);
         });
 
-        it('encodes spaces in query', () => {
+        it('encodes spaces as %20 in query', () => {
             const query = 'artificial intelligence';
-            // encodeURIComponent encodes spaces as %20
             const expectedEncoded = 'artificial%20intelligence';
             const url = googleNewsSearchUrl(query);
             expect(url).toContain(`q=${expectedEncoded}`);
