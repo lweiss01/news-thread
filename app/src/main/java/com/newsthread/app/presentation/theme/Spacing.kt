@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 data class NewsSpacing(
     val xs: Dp = 4.dp,
     val s: Dp = 8.dp,
+    val sm: Dp = 12.dp,
     val m: Dp = 16.dp,
     val l: Dp = 24.dp,
     val xl: Dp = 32.dp,

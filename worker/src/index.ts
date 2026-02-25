@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { runWithConcurrency } from './concurrency';
 import { parseRss, mapToArticle } from './rss';
 import { resolveUrl } from './resolver';
 import { GNEWS_BASE, GNEWS_PARAMS, CategoryTopics, googleNewsCategoryUrl, googleNewsSearchUrl, findByDomain, allSources } from './sources';
@@ -88,12 +89,70 @@ app.get('/v1/feeds/top-stories', async (c) => {
     return c.json(merged);
 });
 
-function extractDomain(url: string): string {
-    try {
-        return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
+export function extractDomain(url: string): string {
+    if (!url || typeof url !== 'string') return 'unknown';
+
+    // Lowercase the URL for consistent parsing and protocol checking
+    // This is safe because we only return the hostname which is case-insensitive,
+    // and we discard path/query/fragment/auth which might be case-sensitive.
+    const lowerUrl = url.toLowerCase();
+
+    // Check for protocol (://)
+    const protocolIndex = lowerUrl.indexOf('://');
+    if (protocolIndex === -1) {
         return 'unknown';
     }
+
+    let hostname = lowerUrl.substring(protocolIndex + 3);
+
+    // Find the end of the hostname (start of path, query, or fragment)
+    const pathIndex = hostname.indexOf('/');
+    const queryIndex = hostname.indexOf('?');
+    const fragmentIndex = hostname.indexOf('#');
+
+    let endIndex = hostname.length;
+
+    if (pathIndex !== -1 && pathIndex < endIndex) {
+        endIndex = pathIndex;
+    }
+    if (queryIndex !== -1 && queryIndex < endIndex) {
+        endIndex = queryIndex;
+    }
+    if (fragmentIndex !== -1 && fragmentIndex < endIndex) {
+        endIndex = fragmentIndex;
+    }
+
+    hostname = hostname.substring(0, endIndex);
+
+    // Check for auth (user:pass@)
+    // We check this AFTER stripping path/query/fragment to avoid @ in those parts causing SSRF issues
+    const atIndex = hostname.lastIndexOf('@');
+    if (atIndex !== -1) {
+        hostname = hostname.substring(atIndex + 1);
+    }
+
+    // Handle port
+    if (hostname.startsWith('[')) {
+        const closingBracket = hostname.indexOf(']');
+        if (closingBracket !== -1) {
+             const colonAfterBracket = hostname.indexOf(':', closingBracket);
+             if (colonAfterBracket !== -1) {
+                 hostname = hostname.substring(0, colonAfterBracket);
+             }
+        }
+    } else {
+        const portIndex = hostname.indexOf(':');
+        if (portIndex !== -1) {
+             hostname = hostname.substring(0, portIndex);
+        }
+    }
+
+    // Remove www.
+    if (hostname.startsWith('www.')) {
+        hostname = hostname.substring(4);
+    }
+
+    return hostname || 'unknown';
 }
 
 app.get('/v1/feeds/category/:category', async (c) => {
@@ -161,28 +220,23 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings,
         // Increase to 100 items for broader feed coverage
         const limitedItems = items.slice(0, 100);
 
-        // Resolve URLs in small batches to stay within Cloudflare subrequest limits (6 for Free tier)
-        const articles: Article[] = [];
-        const batchSize = 5;
-        for (let i = 0; i < limitedItems.length; i += batchSize) {
-            const batch = limitedItems.slice(i, i + batchSize);
-            const resolvedBatch = await Promise.all(batch.map(async (item) => {
-                try {
-                    const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
-                    const article = mapToArticle({ ...item, link: resolvedUrl });
-                    if (article.source.name === '[object Object]') {
-                        console.warn(`[Found Bug] [object Object] source for item: ${article.title.substring(0, 30)}...`);
-                        console.warn(`Original Link: ${item.link}`);
-                        console.warn(`Original SourceName: ${typeof item.sourceName} ${JSON.stringify(item.sourceName)}`);
-                    }
-                    return article;
-                } catch (e) {
-                    // Fallback to original link on error
-                    return mapToArticle(item);
+        // Resolve URLs using a concurrency pool to avoid head-of-line blocking
+        // Concurrency 5 keeps within typical connection limits while maximizing throughput
+        const articles = await runWithConcurrency(limitedItems, 5, async (item) => {
+            try {
+                const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
+                const article = mapToArticle({ ...item, link: resolvedUrl });
+                if (article.source.name === '[object Object]') {
+                    console.warn(`[Found Bug] [object Object] source for item: ${article.title.substring(0, 30)}...`);
+                    console.warn(`Original Link: ${item.link}`);
+                    console.warn(`Original SourceName: ${typeof item.sourceName} ${JSON.stringify(item.sourceName)}`);
                 }
-            }));
-            articles.push(...resolvedBatch);
-        }
+                return article;
+            } catch (e) {
+                // Fallback to original link on error
+                return mapToArticle(item);
+            }
+        });
 
         // Only cache if we actually got results
         if (articles.length > 0) {

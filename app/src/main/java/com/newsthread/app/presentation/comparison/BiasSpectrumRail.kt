@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.presentation.theme.ProjectTheme
 
 /**
  * Visualizes article distribution along a Left-Right bias spectrum.
@@ -46,7 +47,7 @@ fun BiasSpectrumRail(
             val rating = article.source.id?.let { sourceRatings[it] }
                 ?: sourceRatings[article.source.name]
                 // Fallback to URL lookup if needed, though sourceRatings keying might not cover it unless we pass the map
-                
+
             if (rating != null) {
                 val score = rating.finalBiasScore
                 // Clamping just in case, though scores should be -2..2
@@ -59,28 +60,27 @@ fun BiasSpectrumRail(
 
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-    
-    // Semantic Colors for the nodes (Left=Blue, Center=Purple/Grey, Right=Red)
-    // Note: Using a muted palette to avoid being too jarring
-    val leftColor = Color(0xFF4285F4)   // Google Blue-ish
-    val centerColor = Color(0xFF9AA0A6) // Grey
-    val rightColor = Color(0xFFEA4335)  // Google Red-ish
+
+    // Semantic Colors for the nodes (Left=Blue, Center=Violet, Right=Red)
+    val leftColor = ProjectTheme.bias.pointColors[-1] ?: Color.Blue
+    val centerColor = ProjectTheme.bias.pointColors[0] ?: Color.Gray
+    val rightColor = ProjectTheme.bias.pointColors[1] ?: Color.Red
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp) // Fixed height for rail
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(vertical = 8.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant) // updated from surfaceContainer (M3 token mismatch possible, using surfaceVariant)
+            .padding(vertical = ProjectTheme.spacing.s)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
-            
+
             val railY = height * 0.7f // Rail position (lower half)
-            val paddingX = 48.dp.toPx() // Padding for "Left"/"Right" labels text
+            val paddingX = 48.dp.toPx() // Padding for "Left"/"Right" labels text (using 48.dp as xxl token equivalent)
             val usableWidth = width - (paddingX * 2)
-            
+
             // Draw Rail Line
             drawLine(
                 color = centerColor.copy(alpha = 0.3f),
@@ -89,13 +89,13 @@ fun BiasSpectrumRail(
                 strokeWidth = 2.dp.toPx(),
                 cap = androidx.compose.ui.graphics.StrokeCap.Round
             )
-            
+
             // Draw Ticks for -2, -1, 0, 1, 2
             val stepX = usableWidth / 4 // 4 segments between 5 points
-            
+
             for (i in -2..2) {
                 val x = paddingX + ((i + 2) * stepX)
-                
+
                 // Draw Tick
                 drawLine(
                     color = centerColor.copy(alpha = 0.5f),
@@ -103,7 +103,7 @@ fun BiasSpectrumRail(
                     end = Offset(x, railY + 4.dp.toPx()),
                     strokeWidth = 1.dp.toPx()
                 )
-                
+
                 // Draw Article Nodes (Stacked)
                 val count = distribution[i] ?: 0
                 if (count > 0) {
@@ -112,15 +112,15 @@ fun BiasSpectrumRail(
                         i > 0 -> rightColor
                         else -> centerColor
                     }
-                    
+
                     val nodeRadius = 6.dp.toPx()
                     val stackSpacing = 4.dp.toPx() // Vertical gap between stacked nodes
-                    
+
                     // Stack upwards from rail
                     for (j in 0 until count) {
                         val nodeY = railY - (nodeRadius * 2) - (j * (nodeRadius * 2 + stackSpacing))
-                        
-                        // Limit stack height to not go off screen? 
+
+                        // Limit stack height to not go off screen?
                         // For MVP, if > 3 stacked, maybe draw a "+N" label instead.
                         if (j < 3) {
                             drawCircle(
@@ -135,9 +135,9 @@ fun BiasSpectrumRail(
                                 center = Offset(x, nodeY),
                                 style = Stroke(width = 1.dp.toPx())
                             )
-                        } 
+                        }
                     }
-                    
+
                     // If more than 3, draw a small indicator or cap it
                     if (count > 3) {
                          // Simplify: just draw a bigger circle or a plus?
@@ -153,14 +153,14 @@ fun BiasSpectrumRail(
                 style = labelStyle,
                 topLeft = Offset(paddingX - 12.dp.toPx(), railY + 8.dp.toPx())
             )
-            
+
              drawText(
                 textMeasurer = textMeasurer,
                 text = "Center",
                 style = labelStyle,
                 topLeft = Offset(width/2 - 16.dp.toPx(), railY + 8.dp.toPx())
             )
-            
+
              drawText(
                 textMeasurer = textMeasurer,
                 text = "Right",
