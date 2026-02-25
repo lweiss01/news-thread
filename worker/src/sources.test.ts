@@ -1,29 +1,58 @@
 import { describe, it, expect } from 'vitest';
-import { allSources, findByDomain } from './sources';
+import {
+    findByDomain,
+    googleNewsCategoryUrl,
+    googleNewsSearchUrl,
+    CategoryTopics,
+    GNEWS_BASE,
+    GNEWS_PARAMS
+} from './sources';
 
-describe('sources', () => {
-    it('loads sources from JSON', () => {
-        expect(Array.isArray(allSources)).toBe(true);
-        expect(allSources.length).toBeGreaterThan(0);
+describe('sources helpers', () => {
+    describe('findByDomain', () => {
+        it('returns the correct source for an existing domain', () => {
+            const source = findByDomain('msnbc.com');
+            expect(source).toBeDefined();
+            expect(source?.sourceId).toBe('msnbc.com');
+            expect(source?.domain).toBe('msnbc.com');
+        });
+
+        it('returns undefined for a non-existent domain', () => {
+            const source = findByDomain('nonexistent.com');
+            expect(source).toBeUndefined();
+        });
     });
 
-    it('contains valid source objects', () => {
-        const source = allSources[0];
-        expect(source).toHaveProperty('sourceId');
-        expect(source).toHaveProperty('displayName');
-        expect(source).toHaveProperty('domain');
-        expect(source).toHaveProperty('mainFeedUrl');
-        expect(source).toHaveProperty('allsidesRating');
+    describe('googleNewsCategoryUrl', () => {
+        it('formats category URL correctly', () => {
+            const topicId = CategoryTopics.WORLD;
+            const url = googleNewsCategoryUrl(topicId);
+            expect(url).toBe(`${GNEWS_BASE}/topics/${topicId}?${GNEWS_PARAMS}`);
+        });
     });
 
-    it('findByDomain finds existing source', () => {
-        const source = findByDomain('msnbc.com');
-        expect(source).toBeDefined();
-        expect(source?.displayName).toBe('MSNBC');
-    });
+    describe('googleNewsSearchUrl', () => {
+        it('formats search URL correctly with simple query', () => {
+            const query = 'politics';
+            const url = googleNewsSearchUrl(query);
+            expect(url).toBe(`${GNEWS_BASE}/search?q=${query}+when:7d&${GNEWS_PARAMS}`);
+        });
 
-    it('findByDomain returns undefined for unknown domain', () => {
-        const source = findByDomain('unknown-domain.com');
-        expect(source).toBeUndefined();
+        it('replaces spaces with + in query', () => {
+            const query = 'artificial intelligence';
+            const expectedEncoded = 'artificial+intelligence';
+        it('encodes spaces as %20 in query', () => {
+            const query = 'artificial intelligence';
+            const expectedEncoded = 'artificial%20intelligence';
+            const url = googleNewsSearchUrl(query);
+            expect(url).toContain(`q=${expectedEncoded}`);
+            expect(url).toBe(`${GNEWS_BASE}/search?q=${expectedEncoded}+when:7d&${GNEWS_PARAMS}`);
+        });
+
+        it('trims whitespace from query', () => {
+            const query = '  health  ';
+            const url = googleNewsSearchUrl(query);
+            expect(url).toContain('q=health+when:7d');
+        });
     });
 });

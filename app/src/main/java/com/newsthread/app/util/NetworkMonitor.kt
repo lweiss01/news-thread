@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import com.newsthread.app.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,8 @@ import javax.inject.Singleton
 
 @Singleton
 class NetworkMonitor @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val scope: CoroutineScope
 ) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -57,7 +59,7 @@ class NetworkMonitor @Inject constructor(
             connectivityManager.unregisterNetworkCallback(callback)
         }
     }.stateIn(
-        scope = CoroutineScope(Dispatchers.Default),
+        scope = scope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = isCurrentlyOnWifi()
     )

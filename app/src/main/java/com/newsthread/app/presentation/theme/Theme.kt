@@ -38,7 +38,9 @@ data class NewsBiasColors(
     // Use these wherever you render "Left Perspective" / "Right Perspective" labels
     // so that the label color always agrees with the bar.
     val leftLabel: Color,
-    val rightLabel: Color
+    val rightLabel: Color,
+    // Discrete scale colors for heatmaps and charts (-2 to +2)
+    val pointColors: Map<Int, Color>
 )
 
 val LocalBias = staticCompositionLocalOf<NewsBiasColors> { error("No Bias provided") }
@@ -134,7 +136,14 @@ fun NewsThreadTheme(
         gradient   = Brush.horizontalGradient(listOf(BiasLeft, BiasCenter, BiasRight)),
         unrated    = BiasUnrated,
         leftLabel  = PerspectiveLeft,   // #60A5FA
-        rightLabel = PerspectiveRight   // #F87171
+        rightLabel = PerspectiveRight,   // #F87171
+        pointColors = mapOf(
+            -2 to Color(0xFF1D4ED8), // Far Left (Deep Blue)
+            -1 to BiasLeft,          // Left (Soft Blue)
+            0  to BiasCenter,        // Center (Violet)
+            1  to BiasRight,         // Right (Soft Red)
+            2  to Color(0xFFB91C1C)  // Far Right (Deep Red)
+        )
     )
 
     val view = LocalView.current
@@ -148,6 +157,7 @@ fun NewsThreadTheme(
 
     CompositionLocalProvider(
         LocalSpacing provides NewsSpacing(),
+        LocalElevations provides NewsElevations(),
         LocalGlow    provides glow,
         LocalBias    provides bias
     ) {
@@ -171,6 +181,9 @@ fun NewsThreadTheme(
 object ProjectTheme {
     val spacing: NewsSpacing
         @Composable get() = LocalSpacing.current
+
+    val elevation: NewsElevations
+        @Composable get() = LocalElevations.current
 
     val glow: NewsGlow
         @Composable get() = LocalGlow.current
