@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.utils.findRatingForArticle
 import com.newsthread.app.presentation.comparison.ReliabilityBadge
 import com.newsthread.app.presentation.theme.Amber600
 import com.newsthread.app.presentation.theme.NewsLinkDark
@@ -218,22 +219,3 @@ fun ArticleCard(
     }
 }
 
-private fun findRatingForArticle(
-    article: Article,
-    sourceRatings: Map<String, SourceRating>
-): SourceRating? {
-    val domain = extractDomain(article.url)
-    return sourceRatings[domain] 
-        ?: sourceRatings[article.source.name] 
-        ?: article.source.id?.let { sourceRatings[it] }
-}
-
-private fun extractDomain(url: String): String {
-    return try {
-        val uri = java.net.URI(url)
-        val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-        domain.removePrefix("www.").lowercase()
-    } catch (e: Exception) {
-        url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-    }
-}

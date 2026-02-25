@@ -379,6 +379,7 @@ class FakeCachedArticleDao : CachedArticleDao {
     override suspend fun deleteExpired(now: Long) {}
     override suspend fun getCount(): Int = savedArticles.size
     override suspend fun deleteAll() {}
+    override suspend fun deleteUntracked() {}
     override suspend fun getArticlesNeedingExtraction(now: Long, limit: Int): List<CachedArticleEntity> = emptyList()
     override suspend fun markExtractionFailed(url: String, failedAt: Long) {}
     override suspend fun clearExtractionFailure(url: String) {}

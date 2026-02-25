@@ -2,6 +2,7 @@ package com.newsthread.app.domain.usecase
 
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.utils.extractDomain
 import android.util.Log
 import javax.inject.Inject
 
@@ -109,13 +110,4 @@ class FilterArticlesUseCase @Inject constructor() {
         return null
     }
 
-    private fun extractDomain(url: String): String {
-        return try {
-            val uri = java.net.URI(url)
-            val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-            domain.removePrefix("www.").lowercase()
-        } catch (e: Exception) {
-            url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-        }
-    }
 }

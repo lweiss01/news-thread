@@ -11,6 +11,8 @@ import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.utils.findRatingForArticle
+import com.newsthread.app.domain.utils.extractDomain
 import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.similarity.MatchStrength
@@ -462,24 +464,6 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             .filter { it.length > 2 }
             .toSet()
     }
-
-    private fun findRatingForArticle(article: Article, ratingsMap: Map<String, SourceRating>): SourceRating? {
-        val domain = extractDomain(article.url)
-        return ratingsMap[domain] 
-            ?: ratingsMap[article.source.id]
-            ?: ratingsMap[article.source.name]
-    }
-
-    private fun extractDomain(url: String): String {
-        return try {
-            val uri = java.net.URI(url)
-            val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-            domain.removePrefix("www.").lowercase()
-        } catch (e: Exception) {
-            url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-        }
-    }
-
     private fun byteArrayToFloatArray(bytes: ByteArray): FloatArray {
         if (bytes.isEmpty()) return floatArrayOf()
         val buffer = ByteBuffer.wrap(bytes)
