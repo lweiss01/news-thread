@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 
 export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
-    if (!encodedUrl.includes('news.google.com')) return encodedUrl;
+    if (!isValidGoogleNewsHost(encodedUrl)) return encodedUrl;
 
     // Check KV cache
     const cacheKey = `resolve:${encodedUrl}`;
@@ -147,6 +147,18 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
         return null;
     } catch (e) {
         return null;
+    }
+}
+
+function isValidGoogleNewsHost(url: string): boolean {
+    try {
+        const u = new URL(url);
+        if (u.protocol !== 'https:') return false;
+        // Strict hostname check: news.google.com and regional variants
+        // Regex allows: .com, .fr (2 chars), .co.uk, .com.au
+        return /^news\.google\.(com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/.test(u.hostname);
+    } catch {
+        return false;
     }
 }
 

@@ -11,10 +11,13 @@ const mockKV = {
 } as any;
 
 describe('resolver', () => {
+    let originalFetch: any;
     const originalFetch = global.fetch;
 
     beforeEach(() => {
+        originalFetch = global.fetch;
         vi.restoreAllMocks();
+        global.fetch = vi.fn();
         global.fetch = vi.fn() as any;
         mockKVGet.mockResolvedValue(null);
         mockKVPut.mockResolvedValue(undefined);
