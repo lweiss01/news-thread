@@ -76,12 +76,12 @@ fun ComparisonScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(32.dp),
+                            .padding(ProjectTheme.spacing.xl),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
                         CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
                         Text(
                             text = "Finding similar articles across perspectives...",
                             style = MaterialTheme.typography.bodyMedium,
@@ -107,7 +107,7 @@ fun ComparisonScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(32.dp),
+                            .padding(ProjectTheme.spacing.xl),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -116,7 +116,7 @@ fun ComparisonScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
                         Button(onClick = { viewModel.findSimilarArticles(article) }) {
                             Text("Retry")
                         }
@@ -145,7 +145,7 @@ private fun ComparisonContent(
         // Index 1: Hint (if hasHint)
         // Next: Original Article (1 item)
         var currentIndex = 1 + (if (hasHint) 1 else 0) + 1
-        
+
         if (comparison.leftPerspective.isNotEmpty()) {
             indices[-2] = currentIndex
             indices[-1] = currentIndex
@@ -170,9 +170,11 @@ private fun ComparisonContent(
     val primaryColor = MaterialTheme.colorScheme.primary
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val outlineColor = MaterialTheme.colorScheme.outline
-    
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+
     // Extract bias colors directly from the theme
     val bias = ProjectTheme.bias
+    val centerColor = bias.pointColors[0] ?: secondaryColor
 
     LazyColumn(
         state = listState,
@@ -186,16 +188,16 @@ private fun ComparisonContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface) // Solid background prevents scroll bleed
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = ProjectTheme.spacing.s)
             ) {
                 // Collect only rated articles for visualization
                 // Collect only rated articles for visualization
-                val allPerspectives = listOf(comparison.originalArticle) + 
-                                      comparison.leftPerspective + 
-                                      comparison.centerPerspective + 
+                val allPerspectives = listOf(comparison.originalArticle) +
+                                      comparison.leftPerspective +
+                                      comparison.centerPerspective +
                                       comparison.rightPerspective +
                                       comparison.unratedPerspective
-                
+
                 // Filter using robust lookup
                 val ratedArticles = allPerspectives.filter { article ->
                      val rating = article.source.id?.let { sourceRatings[it] }
@@ -209,9 +211,9 @@ private fun ComparisonContent(
                         text = "Bias Spectrum",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                        modifier = Modifier.padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.m, bottom = ProjectTheme.spacing.s)
                     )
-                    
+
                     // Calculate bias counts from rated articles
                     val biasCounts = remember(ratedArticles, sourceRatings) {
                         ratedArticles.mapNotNull { article ->
@@ -223,15 +225,15 @@ private fun ComparisonContent(
                     }
                     val unratedCount = allPerspectives.size - ratedArticles.size
                     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-                    
+
                     val density = androidx.compose.ui.platform.LocalDensity.current
-                    
+
                     BiasHeatmap(
                         biasCounts = biasCounts,
                         unratedCount = unratedCount,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = ProjectTheme.spacing.m),
                         onSegmentClick = { score ->
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                             sectionIndices[score]?.let { targetIndex ->
@@ -251,7 +253,7 @@ private fun ComparisonContent(
                             }
                         }
                     )
-                    
+
                     HorizontalDivider()
                 }
             }
@@ -260,7 +262,7 @@ private fun ComparisonContent(
         // 2. Hint Message
         hintMessage?.let { hint ->
             item {
-                Box(modifier = Modifier.padding(16.dp)) {
+                Box(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
                     ComparisonHint(message = hint)
                 }
             }
@@ -268,16 +270,16 @@ private fun ComparisonContent(
 
         // 3. Original Article
         item {
-             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+             Column(modifier = Modifier.padding(horizontal = ProjectTheme.spacing.m, vertical = ProjectTheme.spacing.s)) {
                 Text(
                     text = comparison.originalArticle.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
+
                 Text(
                     text = "Read original story ▶",
                     style = MaterialTheme.typography.labelLarge,
@@ -289,11 +291,11 @@ private fun ComparisonContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
         }
 
         // 4. Perspectives List
-        
+
         // Helper to render section
         fun renderSection(title: String, articles: List<Article>, color: androidx.compose.ui.graphics.Color) {
             if (articles.isNotEmpty()) {
@@ -304,8 +306,8 @@ private fun ComparisonContent(
                     MatchedArticleCard(
                         article = article,
                         // Robust lookup
-                        rating = sourceRatings[article.source.id] 
-                            ?: sourceRatings[article.source.name] 
+                        rating = sourceRatings[article.source.id]
+                            ?: sourceRatings[article.source.name]
                             ?: comparison.ratings[article.url],
                         similarityScore = 0.0f, // TODO: threaded score if available
                         accentColor = color, // Use the perspective color for the side accent
@@ -317,7 +319,7 @@ private fun ComparisonContent(
 
 
         renderSection("Left Perspective", comparison.leftPerspective, bias.leftLabel)
-        renderSection("Center Perspective", comparison.centerPerspective, com.newsthread.app.presentation.theme.BiasCenter)
+        renderSection("Center Perspective", comparison.centerPerspective, centerColor)
         renderSection("Right Perspective", comparison.rightPerspective, bias.rightLabel)
         renderSection("Related Stories", comparison.unratedPerspective, outlineColor)
     }
@@ -331,16 +333,16 @@ private fun ComparisonHint(message: String) {
             .glassBackground(shape = MaterialTheme.shapes.small, alpha = 0.5f)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(ProjectTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(ProjectTheme.spacing.sm))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodySmall,
@@ -357,11 +359,11 @@ private fun PerspectiveHeader(
     color: androidx.compose.ui.graphics.Color
 ) {
     Column {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = ProjectTheme.spacing.m, vertical = ProjectTheme.spacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -371,10 +373,10 @@ private fun PerspectiveHeader(
                 color = color,
                 letterSpacing = 1.sp
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(ProjectTheme.spacing.s))
             Surface(
                 color = color.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(ProjectTheme.spacing.xs)
             ) {
                 Text(
                     text = count.toString(),
@@ -386,7 +388,7 @@ private fun PerspectiveHeader(
             }
         }
         HorizontalDivider(
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = ProjectTheme.spacing.m, end = ProjectTheme.spacing.m, bottom = ProjectTheme.spacing.s),
             thickness = 1.dp,
             color = color.copy(alpha = 0.3f)
         )

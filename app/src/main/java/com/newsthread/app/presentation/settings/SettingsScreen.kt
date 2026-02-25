@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.SyncStrategy
+import com.newsthread.app.presentation.theme.ProjectTheme
 
 @Composable
 fun SettingsScreen(
@@ -43,14 +44,14 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(ProjectTheme.spacing.m)
         ) {
             Text(
                 text = "Settings",
                 style = MaterialTheme.typography.headlineMedium
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.l))
 
             // Article Text Fetching Section
             ArticleFetchPreferenceSection(
@@ -58,9 +59,9 @@ fun SettingsScreen(
                 onPreferenceChanged = viewModel::setArticleFetchPreference
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.l))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
             // Background Sync Section
             BackgroundSyncSection(
@@ -72,18 +73,18 @@ fun SettingsScreen(
                 onMeteredAllowedChanged = viewModel::setMeteredSyncAllowed
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             HorizontalDivider()
 
             // Ratings & Reliability Section
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             RatingsLegendSection()
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             HorizontalDivider()
 
             // Debug Section
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             DebugSection(
                 onForceSync = viewModel::forceStorySync
             )
@@ -102,7 +103,7 @@ private fun ArticleFetchPreferenceSection(
             style = MaterialTheme.typography.titleMedium
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
 
         Text(
             text = "Control when full article text is downloaded for better matching",
@@ -110,7 +111,7 @@ private fun ArticleFetchPreferenceSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
 
         ArticleFetchPreference.entries.forEach { preference ->
             FetchPreferenceOption(
@@ -132,14 +133,14 @@ private fun FetchPreferenceOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = ProjectTheme.spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = isSelected,
             onClick = onClick
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(ProjectTheme.spacing.sm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = preference.displayName(),
@@ -164,7 +165,7 @@ private fun DebugSection(
             style = MaterialTheme.typography.titleMedium
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
 
         Text(
             text = "Development and troubleshooting options",
@@ -172,7 +173,7 @@ private fun DebugSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
 
         // Force Sync Button
         Button(
@@ -189,7 +190,7 @@ private fun DebugSection(
             text = "Triggers immediate background matching for all stories.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = ProjectTheme.spacing.sm)
         )
     }
 }
@@ -227,7 +228,7 @@ private fun BackgroundSyncSection(
             style = MaterialTheme.typography.titleMedium
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
 
         Text(
             text = "Keep article analysis up to date in the background",
@@ -235,14 +236,14 @@ private fun BackgroundSyncSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
 
         // Main Toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onSyncEnabledChanged(!syncEnabled) }
-                .padding(vertical = 12.dp),
+                .padding(vertical = ProjectTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -258,12 +259,12 @@ private fun BackgroundSyncSection(
         }
 
         if (syncEnabled) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
             Text(
                 text = "Sync Strategy",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = ProjectTheme.spacing.s)
             )
 
             SyncStrategy.entries.forEach { strategy ->
@@ -271,14 +272,14 @@ private fun BackgroundSyncSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSyncStrategyChanged(strategy) }
-                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                        .padding(vertical = ProjectTheme.spacing.s, horizontal = ProjectTheme.spacing.sm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = syncStrategy == strategy,
                         onClick = { onSyncStrategyChanged(strategy) }
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(ProjectTheme.spacing.sm))
                     Column {
                         Text(
                             text = strategy.displayName(),
@@ -293,14 +294,14 @@ private fun BackgroundSyncSection(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
             // Metered Data Toggle
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onMeteredAllowedChanged(!meteredAllowed) }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = ProjectTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {

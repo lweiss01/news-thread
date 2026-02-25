@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.newsthread.app.presentation.theme.ProjectTheme
 
 @Composable
 fun NewsThreadBottomBar(navController: NavController) {
@@ -19,7 +20,7 @@ fun NewsThreadBottomBar(navController: NavController) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface, // Slate900 / White
         contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 8.dp
+        tonalElevation = ProjectTheme.elevation.level4
     ) {
         Screen.items.forEach { screen ->
             NavigationBarItem(
