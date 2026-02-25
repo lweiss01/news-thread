@@ -56,6 +56,10 @@ fun ArticleCard(
             .pulseEffect(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
+        // Refactored to use elevation tokens. Original 2.dp maps close to level2 (3.dp).
+        shadowElevation = if (darkTheme) ProjectTheme.elevation.none else ProjectTheme.elevation.level2,
+        tonalElevation = ProjectTheme.elevation.none
+    ) {
         shadowElevation = if (darkTheme) 0.dp else 2.dp, // Soft shadow in light mode
         tonalElevation = 0.dp
     ) {
@@ -79,6 +83,7 @@ fun ArticleCard(
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.xs)) {
+                        val rating = findRatingForArticle(article, sourceRatings)
                         ReliabilityBadge(rating = rating, size = 18.dp)
 
                         IconButton(
@@ -149,6 +154,7 @@ fun ArticleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = ProjectTheme.spacing.m)) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -165,12 +171,14 @@ fun ArticleCard(
                             letterSpacing = 1.sp
                         )
 
+                        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
                         Spacer(modifier = Modifier.height(4.dp))
 
                         // Spectrum Bar with Dot
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(ProjectTheme.spacing.sm),
                                 .height(12.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -184,6 +192,7 @@ fun ArticleCard(
                             )
 
                             // Dot Indicator
+                            val rating = findRatingForArticle(article, sourceRatings)
                             val biasScore = rating?.finalBiasScore
                             if (biasScore != null) {
                                 val dotColor = when {

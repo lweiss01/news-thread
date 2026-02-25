@@ -35,24 +35,18 @@ import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import java.text.SimpleDateFormat
 import java.util.*
-import android.Manifest // Moved from below
-import android.os.Build // Moved from below
-import android.content.pm.PackageManager // Moved from below
-import androidx.activity.compose.rememberLauncherForActivityResult // Moved from below
-import androidx.activity.result.contract.ActivityResultContracts // Moved from below
-import androidx.compose.ui.platform.LocalContext // Moved from below
-import androidx.core.content.ContextCompat // Moved from below
+import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.DisposableEffect // Moved from below
+import androidx.compose.runtime.DisposableEffect
+import com.newsthread.app.presentation.theme.ProjectTheme
 
-// Phase 7 bias spectrum colors (consistent with rest of app)
-private val biasColors = mapOf(
-    -2 to Color(0xFF1565C0), // Far Left - Deep Blue
-    -1 to Color(0xFF42A5F5), // Left - Light Blue
-    0 to Color(0xFF9E9E9E),  // Center - Gray
-    1 to Color(0xFFEF5350),  // Right - Light Red
-    2 to Color(0xFFB71C1C)   // Far Right - Deep Red
-)
+// Removed biasColors map as it is replaced by ProjectTheme.bias.pointColors in BiasHeatmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +59,7 @@ fun TrackingScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val lastRefreshed by viewModel.lastRefreshed.collectAsState()
     val sourceRatings by viewModel.sourceRatings.collectAsState()
-    
+
     // Phase 10: Notification Permission Request
     // ... (unchanged)
 
@@ -82,8 +76,8 @@ fun TrackingScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(ProjectTheme.spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.m)
                 ) {
                     items(stories, key = { it.story.id }) { storyWithArticles ->
                         EnhancedStoryCard(
@@ -93,7 +87,7 @@ fun TrackingScreen(
                             onArticleClick = onArticleClick,
                             onStoryClick = onStoryClick, // NEW
                             onMarkViewed = { viewModel.markStoryViewed(it) },
-                            onMarkBadgeSeen = { viewModel.markBadgeSeen(it) }, 
+                            onMarkBadgeSeen = { viewModel.markBadgeSeen(it) },
                             onRejectMatch = { url -> viewModel.rejectMatch(url, storyWithArticles.story.id) }
                         )
                     }
@@ -116,7 +110,7 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.secondary
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
         Text(
             text = "No tracked stories yet",
             style = MaterialTheme.typography.titleMedium
@@ -126,7 +120,7 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = ProjectTheme.spacing.xl, vertical = ProjectTheme.spacing.s)
         )
     }
 }
@@ -149,7 +143,7 @@ fun EnhancedStoryCard(
     ) {
         val isUpdated = storyWithArticles.story.hasUnseenUpdates
 
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
             // Header: Title
             Text(
                 text = storyWithArticles.story.title,
@@ -157,9 +151,9 @@ fun EnhancedStoryCard(
                 fontWeight = if (isUpdated) FontWeight.ExtraBold else FontWeight.Bold,
                 color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
+
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
+
             // Calculate Heatmap Data
             val articles = storyWithArticles.articles
             val biasCounts = remember(articles, sourceRatings) {
@@ -169,7 +163,7 @@ fun EnhancedStoryCard(
                     rating?.finalBiasScore
                 }.groupingBy { it }.eachCount()
              }
-             
+
              val unratedCount = articles.count {
                  val rating = it.sourceId?.let { id -> sourceRatings[id] }
                      ?: sourceRatings[it.sourceName]
@@ -183,9 +177,9 @@ fun EnhancedStoryCard(
                 interactive = false, // Disable clicks per user feedback
                 modifier = Modifier.fillMaxWidth()
             )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
+
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -197,7 +191,7 @@ fun EnhancedStoryCard(
                     color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = if (isUpdated) FontWeight.Bold else FontWeight.Normal
                 )
-                
+
                  IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
                     Icon(
                         imageVector = Icons.Default.Bookmark,
@@ -213,7 +207,7 @@ fun EnhancedStoryCard(
 private fun getRelativeTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
-    
+
     return when {
         diff < 60000 -> "Just now"
         diff < 3600000 -> "${diff / 60000}m ago"

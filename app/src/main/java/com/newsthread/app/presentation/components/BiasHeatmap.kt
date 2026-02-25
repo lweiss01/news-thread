@@ -43,15 +43,6 @@ fun BiasHeatmap(
     onSegmentClick: (Int) -> Unit = {},
     onUnratedClick: () -> Unit = {} // NEW: Deep link for unrated text
 ) {
-    // Distinct dot colors — deliberately different from app primary
-    val dotColors = mapOf(
-        -2 to Color(0xFF0D47A1), // Far Left  - Deep Navy
-        -1 to Color(0xFF1E88E5), // Left      - Medium Blue
-        0 to Color(0xFF7B1FA2),  // Center    - Purple
-        1 to Color(0xFFE53935),  // Right     - Medium Red
-        2 to Color(0xFF8B0000)   // Far Right - Dark Crimson
-    )
-
     Column(modifier = modifier.fillMaxWidth()) {
         // Section Label
         Text(
@@ -84,6 +75,9 @@ fun BiasHeatmap(
                 }
             }
 
+            // Capture theme colors before Canvas (non-composable scope)
+            val pointColors = ProjectTheme.bias.pointColors
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
                 val centerY = size.height / 2
@@ -110,7 +104,8 @@ fun BiasHeatmap(
                             else -> 10.dp.toPx()
                         }
 
-                        val dotColor = dotColors[bias] ?: Color.Gray
+                        // Use captured theme token
+                        val dotColor = pointColors[bias] ?: Color.Gray
 
                         // White outline for contrast against gradient
                         drawCircle(
@@ -129,7 +124,7 @@ fun BiasHeatmap(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
 
         // Left / Center / Right labels
         Row(
@@ -157,13 +152,13 @@ fun BiasHeatmap(
         if (unratedCount > 0) {
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
             Text(
-                text = "+$unratedCount unrated sources",
+                text = "+ unrated sources",
                 style = MaterialTheme.typography.labelSmall,
                 color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = ProjectTheme.spacing.xs)
                     .then(if (interactive) Modifier.clickable { onUnratedClick() } else Modifier)
             )
         }
