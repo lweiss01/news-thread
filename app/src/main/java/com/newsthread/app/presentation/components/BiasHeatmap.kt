@@ -43,15 +43,6 @@ fun BiasHeatmap(
     onSegmentClick: (Int) -> Unit = {},
     onUnratedClick: () -> Unit = {} // NEW: Deep link for unrated text
 ) {
-    // Distinct dot colors — deliberately different from app primary
-    val dotColors = mapOf(
-        -2 to Color(0xFF0D47A1), // Far Left  - Deep Navy
-        -1 to Color(0xFF1E88E5), // Left      - Medium Blue
-        0 to Color(0xFF7B1FA2),  // Center    - Purple
-        1 to Color(0xFFE53935),  // Right     - Medium Red
-        2 to Color(0xFF8B0000)   // Far Right - Dark Crimson
-    )
-
     Column(modifier = modifier.fillMaxWidth()) {
         // Section Label
         Text(
@@ -84,6 +75,9 @@ fun BiasHeatmap(
                 }
             }
 
+            // Capture theme colors before Canvas (non-composable scope)
+            val pointColors = ProjectTheme.bias.pointColors
+
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
                 val centerY = size.height / 2
@@ -93,8 +87,14 @@ fun BiasHeatmap(
                     if (count > 0) {
                         // Map bias -2..2 → x position with padding
                         // -2 → 10%, -1 → 30%, 0 → 50%, 1 → 70%, 2 → 90%
-                        // Refactored to use consistent calculation function
-                        val normalizedX = calculateNormalizedBiasX(bias)
+                        val normalizedX = when (bias) {
+                            -2 -> 0.10f
+                            -1 -> 0.30f
+                            0 -> 0.50f
+                            1 -> 0.70f
+                            2 -> 0.90f
+                            else -> 0.50f
+                        }
                         val x = normalizedX * width
 
                         // Size by count: 1-3 small, 4-6 medium, 7+ large
@@ -104,7 +104,8 @@ fun BiasHeatmap(
                             else -> 10.dp.toPx()
                         }
 
-                        val dotColor = dotColors[bias] ?: Color.Gray
+                        // Use captured theme token
+                        val dotColor = pointColors[bias] ?: Color.Gray
 
                         // White outline for contrast against gradient
                         drawCircle(
@@ -123,7 +124,7 @@ fun BiasHeatmap(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
 
         // Left / Center / Right labels
         Row(
@@ -157,24 +158,9 @@ fun BiasHeatmap(
                 textAlign = TextAlign.End,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = ProjectTheme.spacing.xs)
                     .then(if (interactive) Modifier.clickable { onUnratedClick() } else Modifier)
             )
         }
     }
-}
-
-/**
- * Calculates the normalized X position (0.0 to 1.0) for a given bias score.
- * Maps -2..2 to 10%..90%.
- *
- * Formula: 0.5f + (bias * 0.2f)
- * -2 -> 0.1 (10%)
- * -1 -> 0.3 (30%)
- *  0 -> 0.5 (50%)
- *  1 -> 0.7 (70%)
- *  2 -> 0.9 (90%)
- */
-internal fun calculateNormalizedBiasX(bias: Int): Float {
-    return 0.5f + (bias.coerceIn(-2, 2) * 0.2f)
 }

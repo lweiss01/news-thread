@@ -377,8 +377,13 @@ class FakeCachedArticleDao : CachedArticleDao {
 
     override suspend fun updateFullText(url: String, fullText: String) {}
     override suspend fun deleteExpired(now: Long) {}
+    override suspend fun deleteUntracked() {
+        val keysToRemove = savedArticles.filter { !it.value.isTracked }.keys
+        keysToRemove.forEach { savedArticles.remove(it) }
+    }
     override suspend fun getCount(): Int = savedArticles.size
     override suspend fun deleteAll() {}
+    override suspend fun deleteUntracked() {}
     override suspend fun getArticlesNeedingExtraction(now: Long, limit: Int): List<CachedArticleEntity> = emptyList()
     override suspend fun markExtractionFailed(url: String, failedAt: Long) {}
     override suspend fun clearExtractionFailure(url: String) {}
@@ -415,6 +420,7 @@ class FakeCachedArticleDao : CachedArticleDao {
         }
     }
 
+    override suspend fun deleteUntracked() {}
     override suspend fun getStoryIdForArticle(articleUrl: String): String? {
         return savedArticles[articleUrl]?.storyId
     }
