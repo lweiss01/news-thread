@@ -4,6 +4,7 @@ import com.newsthread.app.data.local.dao.SourceRatingDao
 import com.newsthread.app.data.local.entity.SourceRatingEntity
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.SourceRatingRepository
+import com.newsthread.app.domain.utils.extractDomain
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -93,17 +94,6 @@ class SourceRatingRepositoryImpl @Inject constructor(
         }
         
         return null
-    }
-    
-    private fun extractDomain(url: String): String {
-        return try {
-            val uri = java.net.URI(url)
-            val domain = uri.host ?: return url
-            domain.removePrefix("www.").lowercase()
-        } catch (e: Exception) {
-            // Fallback for malformed URLs
-            url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-        }
     }
     
     override suspend fun getAllSources(): List<SourceRating> {

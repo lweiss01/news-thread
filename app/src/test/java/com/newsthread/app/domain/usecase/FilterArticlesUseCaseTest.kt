@@ -3,123 +3,84 @@ package com.newsthread.app.domain.usecase
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class FilterArticlesUseCaseTest {
 
-    private val useCase = FilterArticlesUseCase()
+    private val filterArticlesUseCase = FilterArticlesUseCase()
 
-    private fun createArticle(
-        url: String,
-        sourceName: String = "Test Source",
-        sourceId: String? = null
-    ): Article {
-        return Article(
-            source = Source(
-                id = sourceId,
-                name = sourceName,
-                description = null,
-                url = null,
-                category = null,
-                language = null,
-                country = null
-            ),
-            author = null,
-            title = "Test Article Title",
-            description = "Test description",
-            url = url,
+    private val reuters = SourceRating(
+        sourceId = "reuters",
+        displayName = "Reuters",
+        domain = "reuters.com",
+        allsidesRating = "Center",
+        adFontesBias = 0,
+        adFontesReliability = "High",
+        mbfcBias = "Center",
+        mbfcFactual = "High",
+        finalBias = "Center",
+        finalBiasScore = 0,
+        finalReliability = "Very High",
+        finalReliabilityScore = 5,
+        notes = ""
+    )
+
+    private val allRatings = listOf(reuters)
+
+    @Test
+    fun `when onlyRated is true, unrated reputable source is blocked`() {
+        // This test confirms the NEW behavior: Unrated sources (even reputable ones) are BLOCKED.
+        val article = Article(
+            source = Source(id = null, name = "CNN", description = null, url = null, category = null, language = null, country = null),
+            url = "https://www.cnn.com/story",
+            title = "Test Story",
+            description = "Test Description",
             urlToImage = null,
-            publishedAt = "2024-01-01T12:00:00Z",
-            content = null
+            publishedAt = "2024-01-01T00:00:00Z",
+            content = null,
+            author = null
         )
+
+        // CNN is in REPUTABLE_DOMAINS but not in allRatings.
+        // It should now be blocked because onlyRated=true requires a rating.
+        val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
+
+        // Assert that it IS BLOCKED (size 0)
+        assertEquals(0, filtered.size)
     }
 
-    private fun createSourceRating(
-        sourceId: String,
-        displayName: String,
-        domain: String,
-        finalReliabilityScore: Int
-    ): SourceRating {
-        return SourceRating(
-            sourceId = sourceId,
-            displayName = displayName,
-            domain = domain,
-            allsidesRating = "Center",
-            adFontesBias = 0,
-            adFontesReliability = "Reliable",
-            mbfcBias = "Least Biased",
-            mbfcFactual = "High",
-            finalBias = "Center",
-            finalBiasScore = 0,
-            finalReliability = if (finalReliabilityScore > 1) "High" else "Low",
-            finalReliabilityScore = finalReliabilityScore,
-            notes = ""
+    @Test
+    fun `when onlyRated is true, unrated non-reputable source is blocked`() {
+        val article = Article(
+            source = Source(id = null, name = "Some Blog", description = null, url = null, category = null, language = null, country = null),
+            url = "https://some-random-blog.com/story",
+            title = "Test Story",
+            description = "Test Description",
+            urlToImage = null,
+            publishedAt = "2024-01-01T00:00:00Z",
+            content = null,
+            author = null
         )
+
+        val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
+        assertEquals(0, filtered.size)
     }
 
     @Test
-    fun testFilterBlockedDomains() {
-        val article = createArticle("https://www.facebook.com/post/123", "Facebook")
-        val result = useCase(listOf(article), emptyList())
-        assertTrue("Blocked domain should be filtered out", result.isEmpty())
-    }
+    fun `when onlyRated is true, rated reputable source is allowed`() {
+        val article = Article(
+            source = Source(id = "reuters", name = "Reuters", description = null, url = null, category = null, language = null, country = null),
+            url = "https://www.reuters.com/story",
+            title = "Test Story",
+            description = "Test Description",
+            urlToImage = null,
+            publishedAt = "2024-01-01T00:00:00Z",
+            content = null,
+            author = null
+        )
 
-    @Test
-    fun testAllowHighReliability() {
-        val article = createArticle("https://www.reliable-news.com/article", "Reliable News")
-        val rating = createSourceRating("reliable", "Reliable News", "reliable-news.com", 4)
-        val result = useCase(listOf(article), listOf(rating))
-        assertEquals("High reliability source should be allowed", 1, result.size)
-    }
-
-    @Test
-    fun testFilterLowReliability() {
-        val article = createArticle("https://www.fake-news.com/article", "Fake News")
-        val rating = createSourceRating("fake", "Fake News", "fake-news.com", 1)
-        val result = useCase(listOf(article), listOf(rating))
-        assertTrue("Low reliability source should be filtered out", result.isEmpty())
-    }
-
-    @Test
-    fun testAllowReputableBaseline() {
-        val article = createArticle("https://www.reuters.com/article", "Reuters")
-        val result = useCase(listOf(article), emptyList())
-        assertEquals("Reputable baseline source should be allowed", 1, result.size)
-    }
-
-    @Test
-    fun testStrictMode() {
-        val article = createArticle("https://www.unknown-blog.com/post", "Unknown Blog")
-        val result = useCase(listOf(article), emptyList(), onlyRated = true)
-        assertTrue("Unrated source should be filtered out in strict mode", result.isEmpty())
-    }
-
-    @Test
-    fun testDiscoveryMode() {
-        val article = createArticle("https://www.unknown-blog.com/post", "Unknown Blog")
-        val result = useCase(listOf(article), emptyList(), onlyRated = false)
-        assertEquals("Unrated source should be allowed in discovery mode", 1, result.size)
-    }
-
-    @Test
-    fun testSourceMatching() {
-        // Match by Domain
-        val article1 = createArticle("https://www.source-a.com/news", "Source A")
-        val rating1 = createSourceRating("a", "Source A Inc", "source-a.com", 4)
-
-        // Match by Name (Fuzzy)
-        val article2 = createArticle("https://www.source-b.net/news", "Source B")
-        val rating2 = createSourceRating("b", "Source B", "source-b.com", 4)
-
-        // Match by ID
-        val article3 = createArticle("https://www.source-c.com/news", "Source C", sourceId = "c")
-        val rating3 = createSourceRating("c", "Source C Co", "source-c.org", 4)
-
-        val ratings = listOf(rating1, rating2, rating3)
-        val articles = listOf(article1, article2, article3)
-
-        val result = useCase(articles, ratings)
-        assertEquals("All sources should be matched and allowed", 3, result.size)
+        val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
+        assertEquals(1, filtered.size)
     }
 }

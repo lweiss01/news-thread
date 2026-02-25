@@ -49,7 +49,7 @@ fun StoryDetailScreen(
 ) {
     val trackedStories by viewModel.trackedStories.collectAsStateWithLifecycle()
     val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle()
-    
+
     val storyWithArticles = trackedStories.find { it.story.id == storyId }
 
     LaunchedEffect(storyId) {
@@ -91,9 +91,12 @@ fun StoryDetailScreen(
                  }
             } else {
                 val articles = storyWithArticles.articles.sortedByDescending { it.publishedAt }
-                
+
                 // Capture colors outside LazyListScope (which is not @Composable)
                 val outlineColor = MaterialTheme.colorScheme.outline
+                val leftColor = ProjectTheme.bias.leftLabel
+                val centerColor = ProjectTheme.bias.pointColors[0] ?: MaterialTheme.colorScheme.secondary
+                val rightColor = ProjectTheme.bias.rightLabel
 
                 LazyColumn(
                     contentPadding = PaddingValues(bottom = ProjectTheme.spacing.xl)
@@ -112,29 +115,29 @@ fun StoryDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
-                            
+
                             // "Original Story" Link/Button
-                             // Assuming the first article or a specific URL is the "original"? 
+                             // Assuming the first article or a specific URL is the "original"?
                              // The ViewModel has `getOriginalStoryUrl(storyId)`.
-                             // But here we have `storyWithArticles`. 
+                             // But here we have `storyWithArticles`.
                              // Let's use the first article found or just a generic "Read Original" if we don't have a specific field.
                              // User said: "Original story headline with a link to that story"
                              // I'll add a clickable "Read full story" text or button.
-                             
+
                              Text(
                                 text = "Read original story ➤",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable { 
+                                modifier = Modifier.clickable {
                                     // Use the first article's URL as proxy for "original" if not explicitly stored
                                     // Or use viewModel.getOriginalStoryUrl(storyId)
                                     val originalUrl = articles.minByOrNull { it.fetchedAt }?.url
                                     if (originalUrl != null) onArticleClick(originalUrl)
                                 }
                              )
-                            
+
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
-                            
+
                             // Calculate Heatmap Data with robust lookup
                             val biasCounts = remember(articles, sourceRatings) {
                                 articles.mapNotNull { article ->
@@ -143,7 +146,7 @@ fun StoryDetailScreen(
                                     rating?.finalBiasScore
                                 }.groupingBy { it }.eachCount()
                             }
-                            
+
                             val unratedCount = articles.count {
                                 val rating = it.sourceId?.let { id -> sourceRatings[id] }
                                     ?: sourceRatings[it.sourceName]
@@ -154,7 +157,7 @@ fun StoryDetailScreen(
                                 biasCounts = biasCounts,
                                 unratedCount = unratedCount
                             )
-                            
+
                              Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
                              Text(
                                 text = "Coverage Updates",
@@ -219,9 +222,9 @@ fun StoryDetailScreen(
                         }
                     }
 
-                    renderBiasSection("Left Perspective", leftArticles, Color(0xFF1E88E5))
-                    renderBiasSection("Center", centerArticles, Color(0xFF7B1FA2))
-                    renderBiasSection("Right Perspective", rightArticles, Color(0xFFE53935))
+                    renderBiasSection("Left Perspective", leftArticles, leftColor)
+                    renderBiasSection("Center", centerArticles, centerColor)
+                    renderBiasSection("Right Perspective", rightArticles, rightColor)
                     renderBiasSection("Unrated Sources", unratedArticles, outlineColor)
                 }
             }
