@@ -302,7 +302,7 @@ class FakeNewsRepository : NewsRepository {
         return flowOf(Result.success(responseToReturn))
     }
 
-    override fun searchArticles(query: String, forceRefresh: Boolean): Flow<Result<List<Article>>> {
+    override fun searchArticles(query: String, forceRefresh: Boolean, onlyRated: Boolean): Flow<Result<List<Article>>> {
         searchCallCount++
         val response = queryResponses[query] ?: responseToReturn
         return flowOf(Result.success(response))
@@ -377,13 +377,10 @@ class FakeCachedArticleDao : CachedArticleDao {
 
     override suspend fun updateFullText(url: String, fullText: String) {}
     override suspend fun deleteExpired(now: Long) {}
-    override suspend fun deleteUntracked() {
-        val keysToRemove = savedArticles.filter { !it.value.isTracked }.keys
-        keysToRemove.forEach { savedArticles.remove(it) }
-    }
+
     override suspend fun getCount(): Int = savedArticles.size
     override suspend fun deleteAll() {}
-    override suspend fun deleteUntracked() {}
+
     override suspend fun getArticlesNeedingExtraction(now: Long, limit: Int): List<CachedArticleEntity> = emptyList()
     override suspend fun markExtractionFailed(url: String, failedAt: Long) {}
     override suspend fun clearExtractionFailure(url: String) {}
@@ -405,8 +402,6 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles[url]?.isTracked == true
     }
 
-    override suspend fun deleteUntracked() {}
-
     // Phase 9: Story grouping support
     override suspend fun getRecentUnassignedArticlesWithEmbeddings(since: Long): List<CachedArticleEntity> {
         return savedArticles.values.filter { it.storyId == null && it.fetchedAt > since }.toList()
@@ -422,14 +417,26 @@ class FakeCachedArticleDao : CachedArticleDao {
         }
     }
 
-    override suspend fun deleteUntracked() {}
     override suspend fun getStoryIdForArticle(articleUrl: String): String? {
         return savedArticles[articleUrl]?.storyId
     }
+
+    // Fixed: implemented and deduplicated
     override suspend fun deleteUntracked() {
         savedArticles.values.removeAll { !it.isTracked }
     }
 
+    override suspend fun deleteByFeed(feedKey: String) {
+        // Mock impl
+    }
+
+    override suspend fun getByFeed(feedKey: String): List<CachedArticleEntity> {
+        return emptyList()
+    }
+
+    override fun getByFeedFlow(feedKey: String): Flow<List<CachedArticleEntity>> {
+        return flowOf(emptyList())
+    }
 }
 
 

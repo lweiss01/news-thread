@@ -84,8 +84,7 @@ fun ArticleCard(
                             onClick = {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                 onBookmarkClick()
-                            },
-                            modifier = Modifier.size(24.dp)
+                            }
                         ) {
                             Icon(
                                 imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
@@ -211,16 +210,22 @@ fun ArticleCard(
                         }
                     }
 
-                    Text(
-                        text = if (isTracked) "TRACKING" else "+ Track",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable {
+                    TextButton(
+                        onClick = {
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                             onBookmarkClick()
-                        }
-                    )
+                        },
+                        contentPadding = PaddingValues(
+                            horizontal = ProjectTheme.spacing.s,
+                            vertical = ProjectTheme.spacing.xs
+                        )
+                    ) {
+                        Text(
+                            text = if (isTracked) "TRACKING" else "+ Track",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
