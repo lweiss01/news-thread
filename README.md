@@ -15,7 +15,7 @@ A native Android news reader that shows how different media sources cover the sa
 - **Integrated bias ratings** on every article from three respected organizations
 - Visual indicators showing Left (◄◄), Center-Left (◄), Center (●), Center-Right (►), Right (►►)
 - Reliability ratings (1-5 stars) from trusted fact-checking organizations
-- 50+ major news sources rated and categorized
+- **150+ major news sources** rated and categorized
 
 ### Perspective Comparison 🔍
 Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer: articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
@@ -33,7 +33,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 1.1.0 (Beta) → 1.2.0 in development
+**Version**: 1.2.0 (Release Candidate)
 **Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨
 
 ### What's Built
@@ -46,7 +46,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 📌 | **Story Tracking** | Follow developing stories — new articles auto-cluster into tracked threads |
 | 🔔 | **Notifications** | Background alerts when tracked stories get new coverage, with deep linking |
 | 🎨 | **Amber Design System** | New visual language, consistent design tokens, and polished UI across all screens |
-| 🔄 | **Background Sync** | WorkManager pre-computes matches during idle with configurable sync strategies |
+| 🔄 | **Discovery Engine** | Background "Continuous Discovery" loop fetches reputable news from major categories (World, Tech, Business, etc.) |
+| 🛡️ | **Authenticated Quality** | Strict filtering ensures 100% of feed content comes from known, rated sources — no "Gray Shields" |
 | 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
 
 <details>
@@ -74,6 +75,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 13.1.2 | Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
 | 14 | RSS Migration | 2026-02-21 | Replaced NewsAPI with free, unlimited two-layer on-device RSS system |
 | 15 | Cloudflare Backend | 2026-02-22 | Serverless edge backend for feed fetching & Google News proxy rendering |
+| 15.1 | Feed Enhancement | 2026-02-26 | Continuous Discovery engine, 70+ story feed volume, chronologically sorted |
 
 Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
@@ -89,13 +91,13 @@ Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 Until now, NewsThread relied on [NewsAPI](https://newsapi.org) — a fantastic service, but one that comes with rate limits, cost at scale, and a single point of dependency. That changed entirely in Phases 14 & 15.
 
-**We replaced NewsAPI with a free, unlimited, two-layer RSS system covering 46 curated news outlets across the full political spectrum, powered by a Cloudflare Edge Worker.**
+**We replaced NewsAPI with a free, unlimited system covering 150+ curated news outlets across the full political spectrum, powered by a Cloudflare Edge Worker.**
 
-**Layer 1 — Google News RSS (Discovery)**
-Google News aggregates thousands of sources in real time. NewsThread taps their public RSS feeds to discover what's actually trending — no API key, no quota, no cost. Nine category feeds (Top Stories, World, US, Business, Tech, Health, Science, Sports, Entertainment) plus keyword search.
+**Layer 1 — Google News RSS (Discovery & Volume)**
+Google News aggregates thousands of sources in real time. NewsThread taps their public RSS feeds to discover what's actually trending. In Phase 15.1, we introduced a **Continuous Discovery** loop that background-polls categories like World, Technology, Science, Health, and Business to build a rich, 70+ story feed on every refresh.
 
 **Layer 2 — Direct Outlet Feeds (Depth)**
-46 handpicked outlets, rated and mapped by political bias, polled directly via RSS. From The Nation and Daily Kos on the left, to AP and Reuters in the center, to The Daily Wire and Newsmax on the right — the full spectrum, not just whatever NewsAPI happens to return.
+150+ handpicked outlets, rated and mapped by political bias, polled directly via RSS. From The Nation and Daily Kos on the left, to AP and Reuters in the center, to The Daily Wire and Newsmax on the right — the full spectrum, not just whatever NewsAPI happens to return.
 
 | Bias | Outlets |
 |------|---------|
@@ -125,7 +127,9 @@ Critically, this is **fully consistent with NewsThread's privacy-first design**.
 | Decision | Rationale |
 |----------|-----------|
 | 🔒 **On-device NLP only** | Privacy-first — all data stays on your device |
-| 🌐 **Two-layer RSS (Phase 14)** | Google News for discovery + 46 direct outlet feeds for depth — free, unlimited, no API keys |
+| 🌐 **Layered RSS Engine** | Google News for discovery + 150+ direct outlet feeds for depth — free, unlimited, no API keys |
+| 🛡️ **Authenticated Quality** | Strict filtering ensures only rated sources reach the main feed (No 'Gray Shields') |
+| 🚀 **Discovery Engine** | Background loop builds a 70+ story feed automatically across major news categories |
 | 🤖 **TF Lite with all-MiniLM-L6-v2** | 2.17.0+ quantized model for 16KB alignment |
 | ⚡ **Pre-compute matches** | Results ready before user taps Compare |
 | 🎨 **Bias spectrum UI** | Continuous axis is more nuanced than buckets |
@@ -231,7 +235,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 - **★★☆☆☆**: Mixed — Opinion sites, partisan sources
 - **★☆☆☆☆**: Low — Conspiracy sites, misinformation
 
-50+ sources rated including CNN, Fox News, MSNBC, Reuters, AP, BBC, NPR, New York Times, Washington Post, Wall Street Journal, The Guardian, Politico, The Hill, Bloomberg, and more.
+150+ sources rated including CNN, Fox News, MSNBC, Reuters, AP, BBC, NPR, New York Times, Washington Post, Wall Street Journal, The Guardian, Politico, The Hill, Bloomberg, and more.
 
 ---
 
