@@ -83,21 +83,22 @@ class FeedViewModel @Inject constructor(
             Log.d("FeedViewModel", "Starting Continuous Discovery for categories: $discoveryCategories")
             discoveryCategories.forEach { category ->
                 newsRepository.searchArticles(category, forceRefresh = forceRefresh, onlyRated = true).collect { result ->
-                   result.onSuccess { newArticles ->
-                       if (newArticles.isNotEmpty()) {
-                           Log.d("FeedViewModel", "Discovery found ${newArticles.size} reputable articles for $category")
-                           
-                           val currentState = _uiState.value
-                               val combined = (currentState.articles + newArticles)
-                                   .distinctBy { it.url }
-                                   .sortedByDescending { it.publishedAt }
-                               
-                               // Final re-clustering to handle cross-category duplicates (e.g. Science + Tech)
-                               val clustered = clusterArticlesUseCase(combined)
-                               _uiState.value = FeedUiState.Success(clustered)
-                           }
-                       }
-                   }
+                    result.onSuccess { newArticles ->
+                        if (newArticles.isNotEmpty()) {
+                            Log.d("FeedViewModel", "Discovery found ${newArticles.size} reputable articles for $category")
+
+                            val currentState = _uiState.value
+                            val currentArticles = (currentState as? FeedUiState.Success)?.articles ?: emptyList()
+
+                            val combined = (currentArticles + newArticles)
+                                .distinctBy { it.url }
+                                .sortedByDescending { it.publishedAt }
+
+                            // Final re-clustering to handle cross-category duplicates (e.g. Science + Tech)
+                            val clustered = clusterArticlesUseCase(combined)
+                            _uiState.value = FeedUiState.Success(clustered)
+                        }
+                    }
                 }
             }
         }
