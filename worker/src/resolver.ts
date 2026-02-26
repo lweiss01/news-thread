@@ -1,5 +1,13 @@
 import { Buffer } from 'node:buffer';
 
+// Optimization: Hoist regex literals to module scope to prevent re-compilation on every function call.
+// This is critical for high-throughput resolver logic in Cloudflare Workers.
+const GOOGLE_NEWS_HOST_REGEX = /^news\.google\.(com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/;
+const BASE64_URL_REGEX = /https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/;
+const HREF_REGEX = /href="([^">]+)"/gi;
+const URL_LIKE_REGEX = /https?:\/\/[^\s"'<>]+/g;
+const BACKSLASH_REGEX = /\\/g;
+
 export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
     if (!isValidGoogleNewsHost(encodedUrl)) return encodedUrl;
 
@@ -72,7 +80,7 @@ function tryBase64Decode(url: string): string | null {
         }
 
         // Simple pattern match for URL inside decoded string
-        const match = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/);
+        const match = decodedStr.match(BASE64_URL_REGEX);
         if (match) {
             const result = match[0];
             if (!result.includes('news.google.com')) return result;
@@ -118,7 +126,7 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
             const html = await response.text();
 
             // Find all links and pick the first one that isn't Google
-            const allLinks = Array.from(html.matchAll(/href="([^">]+)"/gi))
+            const allLinks = Array.from(html.matchAll(HREF_REGEX))
                 .map(m => m[1]);
 
             for (const link of allLinks) {
@@ -133,7 +141,7 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
             }
 
             // Fallback: Search for any URL-like string in the HTML that isn't Google
-            const urlMatch = html.match(/https?:\/\/[^\s"'<>]+/g);
+            const urlMatch = html.match(URL_LIKE_REGEX);
             if (urlMatch) {
                 const finalUrl = urlMatch.find(u =>
                     !u.includes('google.com') &&
@@ -156,7 +164,7 @@ function isValidGoogleNewsHost(url: string): boolean {
         if (u.protocol !== 'https:') return false;
         // Strict hostname check: news.google.com and regional variants
         // Regex allows: .com, .fr (2 chars), .co.uk, .com.au
-        return /^news\.google\.(com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/.test(u.hostname);
+        return GOOGLE_NEWS_HOST_REGEX.test(u.hostname);
     } catch {
         return false;
     }
@@ -200,13 +208,8 @@ async function tryBatchExecute(url: string): Promise<string | null> {
             const end = text.indexOf(footer, urlStart);
             if (end !== -1) {
                 let result = text.substring(urlStart, end);
-                // Handle JSON unescaping properly
-                try {
-                    result = JSON.parse(`"${result}"`);
-                } catch (e) {
-                    console.warn(`[Resolve] JSON unescape failed for BatchExecute: ${result.substring(0, 50)}...`, e);
-                    return null;
-                }
+                // Handle double escaping
+                result = result.replace(BACKSLASH_REGEX, '');
                 if (!result.includes('news.google.com')) return result;
             }
         }
