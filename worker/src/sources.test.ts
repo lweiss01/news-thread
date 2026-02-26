@@ -38,9 +38,6 @@ describe('sources helpers', () => {
             expect(url).toBe(`${GNEWS_BASE}/search?q=${query}+when:7d&${GNEWS_PARAMS}`);
         });
 
-        it('replaces spaces with + in query', () => {
-            const query = 'artificial intelligence';
-            const expectedEncoded = 'artificial+intelligence';
         it('encodes spaces as %20 in query', () => {
             const query = 'artificial intelligence';
             const expectedEncoded = 'artificial%20intelligence';

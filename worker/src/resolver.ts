@@ -200,8 +200,13 @@ async function tryBatchExecute(url: string): Promise<string | null> {
             const end = text.indexOf(footer, urlStart);
             if (end !== -1) {
                 let result = text.substring(urlStart, end);
-                // Handle double escaping
-                result = result.replace(/\\/g, '');
+                // Handle JSON unescaping properly
+                try {
+                    result = JSON.parse(`"${result}"`);
+                } catch (e) {
+                    console.warn(`[Resolve] JSON unescape failed for BatchExecute: ${result.substring(0, 50)}...`, e);
+                    return null;
+                }
                 if (!result.includes('news.google.com')) return result;
             }
         }
