@@ -5,10 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.newsthread.app.data.local.dao.StoryWithArticles
-import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.model.TrackedStory
 import com.newsthread.app.domain.repository.TrackingRepository
-import com.newsthread.app.domain.usecase.GetSourceRatingsMapUseCase
 import com.newsthread.app.domain.usecase.GetTrackedStoriesUseCase
 import com.newsthread.app.domain.usecase.UnfollowStoryUseCase
 import com.newsthread.app.worker.StoryUpdateWorker
@@ -19,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,14 +27,10 @@ class TrackingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     getTrackedStoriesUseCase: GetTrackedStoriesUseCase,
     private val unfollowStoryUseCase: UnfollowStoryUseCase,
-    private val trackingRepository: TrackingRepository,
-    private val getSourceRatingsMapUseCase: GetSourceRatingsMapUseCase
+    private val trackingRepository: TrackingRepository
 ) : ViewModel() {
 
-    private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
-    val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
-
-    val trackedStories: StateFlow<List<StoryWithArticles>> = getTrackedStoriesUseCase()
+    val trackedStories: StateFlow<List<TrackedStory>> = getTrackedStoriesUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -47,26 +42,16 @@ class TrackingViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {
-        loadSourceRatings()
+        // Ratings are now pre-attached to articles in the UseCase
     }
     
-    private fun loadSourceRatings() {
-        viewModelScope.launch {
-            try {
-                _sourceRatings.value = getSourceRatingsMapUseCase()
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
-
     // Phase 9: Last refresh time
     private val _lastRefreshed = MutableStateFlow(System.currentTimeMillis())
     val lastRefreshed: StateFlow<Long> = _lastRefreshed.asStateFlow()
 
     fun getOriginalStoryUrl(storyId: String): String? {
-        val storyWithArticles = trackedStories.value.find { it.story.id == storyId } ?: return null
-        return storyWithArticles.articles.minByOrNull { it.fetchedAt }?.url
+        val trackedStory = trackedStories.value.find { it.story.id == storyId } ?: return null
+        return trackedStory.articles.minByOrNull { it.publishedAt }?.url
     }
     
     fun getLastUpdated(storyId: String): Long? {

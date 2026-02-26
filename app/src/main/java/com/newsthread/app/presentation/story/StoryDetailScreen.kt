@@ -30,7 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.domain.model.TrackedStory
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
 
@@ -48,9 +48,7 @@ fun StoryDetailScreen(
     onArticleClick: (String) -> Unit
 ) {
     val trackedStories by viewModel.trackedStories.collectAsStateWithLifecycle()
-    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle()
-
-    val storyWithArticles = trackedStories.find { it.story.id == storyId }
+    val trackedStory = trackedStories.find { it.story.id == storyId }
 
     LaunchedEffect(storyId) {
         viewModel.markStoryViewed(storyId)
@@ -78,7 +76,7 @@ fun StoryDetailScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            if (storyWithArticles == null) {
+            if (trackedStory == null) {
                  // Loading or Not Found (if trackedStories is empty initially, it might show this briefly)
                  if (trackedStories.isEmpty()) {
                       Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -90,7 +88,7 @@ fun StoryDetailScreen(
                     }
                  }
             } else {
-                val articles = storyWithArticles.articles.sortedByDescending { it.publishedAt }
+                val articles = trackedStory.articles.sortedByDescending { it.publishedAt }
 
                 // Capture colors outside LazyListScope (which is not @Composable)
                 val outlineColor = MaterialTheme.colorScheme.outline
@@ -110,7 +108,7 @@ fun StoryDetailScreen(
                                 .padding(ProjectTheme.spacing.m)
                         ) {
                             Text(
-                                text = storyWithArticles.story.title,
+                                text = trackedStory.story.title,
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -129,29 +127,21 @@ fun StoryDetailScreen(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.clickable {
-                                    // Use the first article's URL as proxy for "original" if not explicitly stored
-                                    // Or use viewModel.getOriginalStoryUrl(storyId)
-                                    val originalUrl = articles.minByOrNull { it.fetchedAt }?.url
+                                    // Use the first article's URL as proxy for "original"
+                                    val originalUrl = articles.minByOrNull { it.publishedAt }?.url
                                     if (originalUrl != null) onArticleClick(originalUrl)
                                 }
                              )
 
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
-                            // Calculate Heatmap Data with robust lookup
-                            val biasCounts = remember(articles, sourceRatings) {
-                                articles.mapNotNull { article ->
-                                    val rating = article.sourceId?.let { sourceRatings[it] }
-                                        ?: sourceRatings[article.sourceName]
-                                    rating?.finalBiasScore
-                                }.groupingBy { it }.eachCount()
+                            // Calculate Heatmap Data using pre-attached ratings
+                            val biasCounts = remember(articles) {
+                                articles.mapNotNull { it.sourceRating?.finalBiasScore }
+                                    .groupingBy { it }.eachCount()
                             }
 
-                            val unratedCount = articles.count {
-                                val rating = it.sourceId?.let { id -> sourceRatings[id] }
-                                    ?: sourceRatings[it.sourceName]
-                                rating == null
-                            }
+                            val unratedCount = articles.count { it.sourceRating == null }
 
                             BiasHeatmap(
                                 biasCounts = biasCounts,
@@ -168,32 +158,16 @@ fun StoryDetailScreen(
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
                     }
 
-                    // Group articles by bias category
-                    val leftArticles = articles.filter { entity ->
-                        val rating = entity.sourceId?.let { sourceRatings[it] }
-                            ?: sourceRatings[entity.sourceName]
-                        rating != null && rating.finalBiasScore < 0
-                    }
-                    val centerArticles = articles.filter { entity ->
-                        val rating = entity.sourceId?.let { sourceRatings[it] }
-                            ?: sourceRatings[entity.sourceName]
-                        rating != null && rating.finalBiasScore == 0
-                    }
-                    val rightArticles = articles.filter { entity ->
-                        val rating = entity.sourceId?.let { sourceRatings[it] }
-                            ?: sourceRatings[entity.sourceName]
-                        rating != null && rating.finalBiasScore > 0
-                    }
-                    val unratedArticles = articles.filter { entity ->
-                        val rating = entity.sourceId?.let { sourceRatings[it] }
-                            ?: sourceRatings[entity.sourceName]
-                        rating == null
-                    }
+                    // Group articles by bias category (using pre-attached ratings)
+                    val leftArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) < 0 }
+                    val centerArticles = articles.filter { it.sourceRating?.finalBiasScore == 0 }
+                    val rightArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) > 0 }
+                    val unratedArticles = articles.filter { it.sourceRating == null }
 
                     // Render each bias group
                     fun renderBiasSection(
                         title: String,
-                        sectionArticles: List<CachedArticleEntity>,
+                        sectionArticles: List<Article>,
                         color: Color
                     ) {
                         if (sectionArticles.isNotEmpty()) {
@@ -209,11 +183,10 @@ fun StoryDetailScreen(
                                     )
                                 )
                             }
-                            items(sectionArticles) { entity ->
-                                val article = entity.toArticle()
+                            items(sectionArticles) { article ->
                                 ArticleCard(
                                     article = article,
-                                    sourceRatings = sourceRatings,
+                                    sourceRatings = emptyMap(),
                                     isTracked = true,
                                     onBookmarkClick = { viewModel.unfollowStory(storyId) },
                                     onClick = { onArticleClick(article.url) }
@@ -232,23 +205,3 @@ fun StoryDetailScreen(
     }
 }
 
-private fun CachedArticleEntity.toArticle(): Article {
-    return Article(
-        source = Source(
-            id = sourceId,
-            name = sourceName,
-            description = null,
-            url = null,
-            category = null,
-            language = null,
-            country = null
-        ),
-        author = author,
-        title = title,
-        description = description,
-        url = url,
-        urlToImage = urlToImage,
-        publishedAt = publishedAt,
-        content = content
-    )
-}

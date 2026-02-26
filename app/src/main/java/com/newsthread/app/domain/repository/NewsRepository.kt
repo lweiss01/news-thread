@@ -34,7 +34,8 @@ interface NewsRepository {
      */
     fun searchArticles(
         query: String,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
+        onlyRated: Boolean = false
     ): Flow<Result<List<Article>>>
 
     /**

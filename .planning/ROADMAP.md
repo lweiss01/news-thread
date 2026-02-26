@@ -30,6 +30,7 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 - [x] **Phase 13: UI Design and Visual Language Updates** - Completed 2026-02-20 (Planned UI refinements and aesthetic refresh)
 - [x] **Phase 14: RSS Feed Migration (On-Device)** - Replace NewsAPI with two-layer RSS system (completed 2026-02-21)
 - [x] **Phase 15: Cloudflare Workers RSS Backend** - Edge backend for feed fetching and URL resolution (completed 2026-02-22)
+- [x] **Phase 15.1: Feed Volume & Discovery** - Continuous discovery engine & category-based expansion (completed 2026-02-26)
 
 </details>
 

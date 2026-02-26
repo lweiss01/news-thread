@@ -9,7 +9,8 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["fetchedAt"]),
         Index(value = ["sourceId"]),
-        Index(value = ["publishedAt"])
+        Index(value = ["publishedAt"]),
+        Index(value = ["sourceFeed"])
     ]
 )
 data class CachedArticleEntity(
@@ -26,6 +27,10 @@ data class CachedArticleEntity(
     val fullText: String?,          // Full article text (populated by Phase 2 text extraction)
     val fetchedAt: Long,            // System.currentTimeMillis() when fetched
     val expiresAt: Long,            // fetchedAt + TTL_MS
+    
+    // Cache Partitioning (Phase 16 Fix)
+    val sourceFeed: String? = null, // "top_headlines", "search_${query}", etc.
+
     // Extraction retry tracking (per 02-CONTEXT.md: "Retry once on next view")
     val extractionFailedAt: Long? = null,  // Timestamp of last extraction failure, null if never failed
     val extractionRetryCount: Int = 0,     // 0=never tried/succeeded, 1=failed once (eligible for retry), 2+=permanently failed

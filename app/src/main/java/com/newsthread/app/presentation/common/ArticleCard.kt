@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -15,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -60,12 +58,6 @@ fun ArticleCard(
         shadowElevation = if (darkTheme) ProjectTheme.elevation.none else ProjectTheme.elevation.level2,
         tonalElevation = ProjectTheme.elevation.none
     ) {
-        shadowElevation = if (darkTheme) 0.dp else 2.dp, // Soft shadow in light mode
-        tonalElevation = 0.dp
-    ) {
-        // Calculate rating once to ensure consistency across badges and indicators
-        val rating = remember(article, sourceRatings) { findRatingForArticle(article, sourceRatings) }
-
         Column {
             Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
                 // Header: Source Name & Rating
@@ -82,9 +74,11 @@ fun ArticleCard(
                         letterSpacing = 1.sp
                     )
 
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.xs)) {
-                        val rating = findRatingForArticle(article, sourceRatings)
-                        ReliabilityBadge(rating = rating, size = 18.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.xs)
+                    ) {
+                        ReliabilityBadge(rating = article.sourceRating, size = 18.dp)
 
                         IconButton(
                             onClick = {
@@ -154,13 +148,12 @@ fun ArticleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = ProjectTheme.spacing.m)) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = 16.dp)
                             .semantics(mergeDescendants = true) {
-                                contentDescription = "Bias rating: ${rating?.getBiasDescription() ?: "Unknown"}"
+                                contentDescription = "Bias rating: ${article.sourceRating?.getBiasDescription() ?: "Unknown"}"
                             }
                     ) {
                         Text(
@@ -172,13 +165,11 @@ fun ArticleCard(
                         )
 
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
-                        Spacer(modifier = Modifier.height(4.dp))
 
                         // Spectrum Bar with Dot
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(ProjectTheme.spacing.sm),
                                 .height(12.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -192,8 +183,7 @@ fun ArticleCard(
                             )
 
                             // Dot Indicator
-                            val rating = findRatingForArticle(article, sourceRatings)
-                            val biasScore = rating?.finalBiasScore
+                            val biasScore = article.sourceRating?.finalBiasScore
                             if (biasScore != null) {
                                 val dotColor = when {
                                     biasScore < -0.5f -> ProjectTheme.bias.leftLabel
@@ -234,25 +224,5 @@ fun ArticleCard(
                 }
             }
         }
-    }
-}
-
-private fun findRatingForArticle(
-    article: Article,
-    sourceRatings: Map<String, SourceRating>
-): SourceRating? {
-    val domain = extractDomain(article.url)
-    return sourceRatings[domain]
-        ?: sourceRatings[article.source.name]
-        ?: article.source.id?.let { sourceRatings[it] }
-}
-
-private fun extractDomain(url: String): String {
-    return try {
-        val uri = java.net.URI(url)
-        val domain = uri.host ?: return url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
-        domain.removePrefix("www.").lowercase()
-    } catch (e: Exception) {
-        url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
     }
 }

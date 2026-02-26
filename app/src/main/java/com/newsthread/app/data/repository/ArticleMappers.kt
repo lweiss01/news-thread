@@ -16,7 +16,7 @@ import com.newsthread.app.util.CacheConstants
 /**
  * Convert CachedArticleEntity to domain Article.
  */
-internal fun CachedArticleEntity.toDomain(): Article {
+fun CachedArticleEntity.toDomain(): Article {
     return Article(
         source = Source(
             id = sourceId,
@@ -40,7 +40,7 @@ internal fun CachedArticleEntity.toDomain(): Article {
 /**
  * Convert domain Article to CachedArticleEntity for Room storage.
  */
-internal fun Article.toEntity(now: Long): CachedArticleEntity {
+internal fun Article.toEntity(now: Long, sourceFeed: String? = null): CachedArticleEntity {
     return CachedArticleEntity(
         url = url,
         sourceId = source.id,
@@ -53,14 +53,15 @@ internal fun Article.toEntity(now: Long): CachedArticleEntity {
         content = content,
         fullText = null,
         fetchedAt = now,
-        expiresAt = now + CacheConstants.ARTICLE_RETENTION_MS
+        expiresAt = now + CacheConstants.ARTICLE_RETENTION_MS,
+        sourceFeed = sourceFeed
     )
 }
 
 /**
  * Convert SourceRatingEntity to domain SourceRating.
  */
-internal fun SourceRatingEntity.toDomain(): SourceRating {
+fun SourceRatingEntity.toDomain(): SourceRating {
     return SourceRating(
         sourceId = sourceId,
         displayName = displayName,

@@ -38,7 +38,7 @@ import com.newsthread.app.data.local.entity.StoryEntity
         StoryEntity::class,
         com.newsthread.app.data.local.entity.StoryArticleCrossRef::class // NEW
     ],
-    version = 12, // Bumped for Phase 10 Overlapping Stories (Part 2: UI Metadata)
+    version = 13, // Bumped for Phase 16 Fix (Cache Partitioning)
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -288,6 +288,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 12 to 13.
+         * Phase 16 Fix: Cache Partitioning.
+         * Adds sourceFeed column to cached_articles.
+         */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cached_articles ADD COLUMN sourceFeed TEXT DEFAULT NULL")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_articles_sourceFeed` ON `cached_articles` (`sourceFeed`)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -306,7 +318,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_8_9, 
                         MIGRATION_9_10, 
                         MIGRATION_10_11, 
-                        MIGRATION_11_12
+                        MIGRATION_11_12,
+                        MIGRATION_12_13
                     )
                     .build()
 

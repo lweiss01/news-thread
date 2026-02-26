@@ -1,9 +1,13 @@
 package com.newsthread.app.domain.model
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
 /**
  * Domain model for a news source with bias and reliability ratings.
  * This is what the rest of the app uses (not the database entity).
  */
+@Parcelize
 data class SourceRating(
     val sourceId: String,
     val displayName: String,
@@ -21,7 +25,7 @@ data class SourceRating(
     val finalReliabilityScore: Int,    // 1-5 stars
     
     val notes: String
-) {
+) : Parcelable {
     /**
      * Get bias symbol for UI display.
      * Returns: ◄◄ (Left), ◄ (Center-Left), ● (Center), ► (Center-Right), ►► (Right)

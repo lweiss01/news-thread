@@ -34,6 +34,17 @@ import java.net.URLEncoder
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,15 +54,43 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle()
     val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val showJumpToTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 5
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             NewsTopAppBar(title = "NewsThread")
+        },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = showJumpToTop,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Jump to top"
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         // M3 Pull-to-Refresh
@@ -93,6 +132,7 @@ fun FeedScreen(
                     if (articles.isEmpty()) {
                          // Empty State (Scrollable for Pull-to-Refresh)
                          LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -105,12 +145,13 @@ fun FeedScreen(
                         }
                     } else {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(articles) { article ->
                                 ArticleCard(
                                     article = article,
-                                    sourceRatings = sourceRatings,
+                                    sourceRatings = emptyMap(), // Redundant, logic moved to Domain
                                     isTracked = trackedStoriesMap.containsKey(article.url),
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {

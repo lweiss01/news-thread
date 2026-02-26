@@ -7,8 +7,8 @@ import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.TrackingRepository
-import com.newsthread.app.domain.usecase.GetSourceRatingsMapUseCase
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
+import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,9 +25,9 @@ sealed interface FeedUiState {
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
-    private val getSourceRatingsMapUseCase: GetSourceRatingsMapUseCase,
     private val toggleFollowUseCase: ToggleFollowUseCase,
-    private val trackingRepository: TrackingRepository
+    private val trackingRepository: TrackingRepository,
+    private val clusterArticlesUseCase: ClusterArticlesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -37,16 +37,15 @@ class FeedViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     private var isFetching = false // Concurrency guard
+    private var discoveryJob: kotlinx.coroutines.Job? = null
 
-    private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
-    val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
+    private val discoveryCategories = listOf("World", "Technology", "Science", "Business", "Health", "Politics")
 
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
 
     init {
         loadHeadlines()
-        loadSourceRatings()
         loadTrackedStories()
     }
 
@@ -57,19 +56,10 @@ class FeedViewModel @Inject constructor(
                 isFetching = true
                 _isRefreshing.value = true
                 fetchHeadlinesInternal(forceRefresh = true)
+                triggerContinuousDiscovery(forceRefresh = true)
             } finally {
                 _isRefreshing.value = false
                 isFetching = false
-            }
-        }
-    }
-
-    private fun loadSourceRatings() {
-        viewModelScope.launch {
-            try {
-                _sourceRatings.value = getSourceRatingsMapUseCase()
-            } catch (e: Exception) {
-                Log.e("NewsThread", "Error loading source ratings: ${e.message}", e)
             }
         }
     }
@@ -80,8 +70,36 @@ class FeedViewModel @Inject constructor(
             try {
                 if (forceRefresh) isFetching = true
                 fetchHeadlinesInternal(forceRefresh)
+                if (forceRefresh) triggerContinuousDiscovery(forceRefresh = true)
             } finally {
                 if (forceRefresh) isFetching = false
+            }
+        }
+    }
+
+    private fun triggerContinuousDiscovery(forceRefresh: Boolean) {
+        discoveryJob?.cancel()
+        discoveryJob = viewModelScope.launch {
+            Log.d("FeedViewModel", "Starting Continuous Discovery for categories: $discoveryCategories")
+            discoveryCategories.forEach { category ->
+                newsRepository.searchArticles(category, forceRefresh = forceRefresh, onlyRated = true).collect { result ->
+                   result.onSuccess { newArticles ->
+                       if (newArticles.isNotEmpty()) {
+                           Log.d("FeedViewModel", "Discovery found ${newArticles.size} reputable articles for $category")
+                           
+                           val currentState = _uiState.value
+                           if (currentState is FeedUiState.Success) {
+                               val combined = (currentState.articles + newArticles)
+                                   .distinctBy { it.url }
+                                   .sortedByDescending { it.publishedAt }
+                               
+                               // Final re-clustering to handle cross-category duplicates (e.g. Science + Tech)
+                               val clustered = clusterArticlesUseCase(combined)
+                               _uiState.value = FeedUiState.Success(clustered)
+                           }
+                       }
+                   }
+                }
             }
         }
     }
@@ -90,7 +108,8 @@ class FeedViewModel @Inject constructor(
         newsRepository.getTopHeadlines(forceRefresh = forceRefresh).collect { result ->
             result.fold(
                 onSuccess = { articles ->
-                    _uiState.value = FeedUiState.Success(articles)
+                    val sorted = articles.sortedByDescending { it.publishedAt }
+                    _uiState.value = FeedUiState.Success(sorted)
                 },
                 onFailure = { error ->
                     _uiState.value = FeedUiState.Error(

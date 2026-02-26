@@ -44,7 +44,6 @@ fun ComparisonScreen(
     viewModel: ComparisonViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sourceRatings by viewModel.sourceRatings.collectAsStateWithLifecycle() // NEW
 
     // Load similar articles on first composition
     LaunchedEffect(article.url) {
@@ -95,7 +94,6 @@ fun ComparisonScreen(
                     ComparisonContent(
                         comparison = state.comparison,
                         hintMessage = state.hintMessage,
-                        sourceRatings = sourceRatings, // NEW
                         onArticleClick = { clickedArticle ->
                             val encodedUrl = URLEncoder.encode(clickedArticle.url, "UTF-8")
                             navController.navigate(ArticleDetailRoute.createRoute(encodedUrl))
@@ -132,7 +130,6 @@ fun ComparisonScreen(
 private fun ComparisonContent(
     comparison: ArticleComparison,
     hintMessage: String?,
-    sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>, // NEW
     onArticleClick: (Article) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -199,12 +196,8 @@ private fun ComparisonContent(
                                       comparison.unratedPerspective
 
                 // Filter using robust lookup
-                val ratedArticles = allPerspectives.filter { article ->
-                     val rating = article.source.id?.let { sourceRatings[it] }
-                        ?: sourceRatings[article.source.name]
-                        ?: comparison.ratings[article.url]
-                     rating != null
-                }
+                // Filter using the pre-attached rating
+                val ratedArticles = allPerspectives.filter { it.sourceRating != null }
 
                 if (ratedArticles.isNotEmpty()) {
                     Text(
@@ -215,13 +208,9 @@ private fun ComparisonContent(
                     )
 
                     // Calculate bias counts from rated articles
-                    val biasCounts = remember(ratedArticles, sourceRatings) {
-                        ratedArticles.mapNotNull { article ->
-                            val rating = article.source.id?.let { sourceRatings[it] }
-                                ?: sourceRatings[article.source.name]
-                                ?: comparison.ratings[article.url]
-                            rating?.finalBiasScore
-                        }.groupingBy { it }.eachCount()
+                    val biasCounts = remember(ratedArticles) {
+                        ratedArticles.mapNotNull { it.sourceRating?.finalBiasScore }
+                            .groupingBy { it }.eachCount()
                     }
                     val unratedCount = allPerspectives.size - ratedArticles.size
                     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -305,10 +294,7 @@ private fun ComparisonContent(
                 items(articles) { article ->
                     MatchedArticleCard(
                         article = article,
-                        // Robust lookup
-                        rating = sourceRatings[article.source.id]
-                            ?: sourceRatings[article.source.name]
-                            ?: comparison.ratings[article.url],
+                        rating = article.sourceRating,
                         similarityScore = 0.0f, // TODO: threaded score if available
                         accentColor = color, // Use the perspective color for the side accent
                         modifier = Modifier

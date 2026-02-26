@@ -77,7 +77,8 @@ class MainActivity : ComponentActivity() {
         // Database seeding (now using Hilt-injected DatabaseSeeder)
         lifecycleScope.launch {
             try {
-                val count = databaseSeeder.seedSourceRatings()
+                // Phase 16 Fix: Force refresh to import expanded source ratings
+                val count = databaseSeeder.seedSourceRatings(forceRefresh = true)
 
                 if (count > 0) {
                     Log.d("NewsThread", "✅ Seeded $count source ratings!")

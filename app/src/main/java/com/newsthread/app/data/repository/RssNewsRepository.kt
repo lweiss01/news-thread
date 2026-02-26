@@ -53,7 +53,7 @@ class RssNewsRepository @Inject constructor(
         // 1. Emit cached data immediately
         val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
         
-        var cached = safeDbCall { cachedArticleDao.getAll().map { it.toDomain() } }
+        var cached = safeDbCall { cachedArticleDao.getByFeed(FEED_KEY_TOP).map { it.toDomain() } }
         
         if (cached.isNotEmpty()) {
             // Initial emit of cached data — use Strict Mode to keep initial UI high quality
@@ -82,9 +82,9 @@ class RssNewsRepository @Inject constructor(
         }
 
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
-        Log.d(TAG, "Fetching from Worker: $WORKER_URL/v1/feeds/top-stories")
+        Log.d(TAG, "Fetching from Worker: $WORKER_URL/v1/feeds/top-stories?num=100")
         val result = runCatching {
-            val json = fetchWorker("/v1/feeds/top-stories")
+            val json = fetchWorker("/v1/feeds/top-stories?num=100")
                 ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
 
             Log.d(TAG, "Worker returned JSON (length: ${json.length}). Parsing...")
@@ -95,12 +95,12 @@ class RssNewsRepository @Inject constructor(
             val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true).take(MAX_ARTICLES)
             val clustered = clusterArticlesUseCase(filtered)
 
-            // Persist — delete old untracked articles only now that we have fresh data
+            // Persist — delete old untracked articles for THIS FEED only now that we have fresh data
             val now = System.currentTimeMillis()
             if (forceRefresh && articles.isNotEmpty()) {
-                cachedArticleDao.deleteUntracked()
+                cachedArticleDao.deleteByFeed(FEED_KEY_TOP)
             }
-            cachedArticleDao.insertAll(clustered.map { it.toEntity(now) })
+            cachedArticleDao.insertAll(articles.map { it.toEntity(now, FEED_KEY_TOP) })
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = FEED_KEY_TOP,
                 fetchedAt = now,
@@ -129,9 +129,13 @@ class RssNewsRepository @Inject constructor(
         )
     }.flowOn(Dispatchers.IO)
 
-    override fun searchArticles(query: String, forceRefresh: Boolean): Flow<Result<List<Article>>> = flow {
-        val feedKey = "search_${query.lowercase().trim()}"
-        val cached = safeDbCall { cachedArticleDao.getAll().map { it.toDomain() } }
+    override fun searchArticles(
+        query: String,
+        forceRefresh: Boolean,
+        onlyRated: Boolean
+    ): Flow<Result<List<Article>>> = flow {
+        val feedKey = "discovery_${query.lowercase().trim()}"
+        val cached = safeDbCall { cachedArticleDao.getByFeed(feedKey).map { it.toDomain() } }
         if (cached.isNotEmpty()) emit(Result.success(cached))
 
         val cacheMetadata = feedCacheDao.get(feedKey)
@@ -145,11 +149,14 @@ class RssNewsRepository @Inject constructor(
             val articles = parseWorkerJson(json)
             val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
             
-            val filtered = filterArticlesUseCase(articles, allRatings)
+            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = onlyRated)
             val clustered = clusterArticlesUseCase(filtered)
 
             val now = System.currentTimeMillis()
-            cachedArticleDao.insertAll(clustered.map { it.toEntity(now) })
+            if (forceRefresh && articles.isNotEmpty()) {
+                cachedArticleDao.deleteByFeed(feedKey)
+            }
+            cachedArticleDao.insertAll(articles.map { it.toEntity(now, feedKey) })
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = feedKey,
                 fetchedAt = now,
@@ -214,8 +221,16 @@ class RssNewsRepository @Inject constructor(
 
     private fun parseWorkerJson(json: String): List<Article> {
         return try {
-            val array = JSONArray(json)
             val articles = mutableListOf<Article>()
+            
+            // Handle both top-level array and object-wrapped array (Microsoft/Cloudflare standard)
+            val array = if (json.trim().startsWith("{")) {
+                val obj = JSONObject(json)
+                obj.optJSONArray("value") ?: obj.optJSONArray("articles") ?: JSONArray()
+            } else {
+                JSONArray(json)
+            }
+
             for (i in 0 until array.length()) {
                 try {
                     val obj = array.getJSONObject(i)
@@ -226,7 +241,7 @@ class RssNewsRepository @Inject constructor(
             }
             articles
         } catch (e: Exception) {
-            Log.e(TAG, "JSON parse error (entire array): ${e.message}")
+            Log.e(TAG, "JSON parse error (content type mismatch or invalid): ${e.message}")
             emptyList()
         }
     }

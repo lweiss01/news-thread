@@ -80,7 +80,7 @@ Recent decisions affecting current work:
 - [x] TF Lite model availability verified (Bundled v1 in assets)
 - [x] Quantization quality verified (HuggingFace quantized model used)
 - [x] Readability4J Android compatibility verified (App launches)
-- ⚠ 16 KB alignment warning: `libtensorflowlite_jni.so` is not aligned. Filed `newsthread-1k6`.
+- [x] 16 KB alignment warning: RESOLVED — Upgraded to TF Lite 2.17.0 and verified alignment.
 - [x] NewsAPI quota hit: RESOLVED — Phase 14 migrates off NewsAPI entirely to RSS feeds.
 
 **Phase 4 & 5 (Matching Engine):**
@@ -134,13 +134,14 @@ Recent decisions affecting current work:
  Stopped at: Consolidated ROADMAP.md, aligned README.md, and reconciled progress percentage (77%).
  Resume with: Determine next steps for Phase 16 (waiting for screenshots).
  
-### Session Notes (2026-02-22, Phase 15 Cloudflare Backend)
-- **Phase 15 Validated & Complete**:
-    - **Cloudflare Edge Worker**: Deployed a stateless Hono/TypeScript worker to fetch and process dual-layer RSS feeds, caching results in Cloudflare KV.
-    - **Google News Redirect Fix**: Resolved the "invalid web address" bug by normalizing URLs at the edge and spoofing a modern Android 14 Chrome User-Agent in the Android `WebView`.
-    - **Android Client Swap**: Swapped the `RssNewsRepository` direct XML fetching with a clean, fast JSON API call to the Worker, saving on-device processing power.
-    - **Codebase Cleanup**: Removed obsoleted XML parser logic, URL decoders, Python test scripts, and redundant network interceptors.
-    - **Feed Health UI**: Introduced a Feed Status settings screen relying on the Worker's health endpoint.
+### Session Notes (2026-02-26, Continuous Discovery & Feed Volume)
+- **Problem**: Feed volume was too low (~20 stories) and "gray shields" were polluting the experience when filters were relaxed.
+- **Solution**: Implemented **"Authenticated Quality"** strategy.
+    - **Continuous Discovery**: Background category searches (Science, Tech, World, etc.) now fetch reputable content automatically.
+    - **Known Only Filter**: Main feed strictly allows only sources with a rating (Score >= 1), eliminating gray shields.
+    - **Reputable Domain safety net**: Expanded to ~100 domains to provide high-quality fallback.
+    - **UX Improvements**: Enforced chronologically-sorted feed and added a floating "Jump to Top" navigation button.
+- **Result**: Feed volume increased from 22 to **70+ reputable stories** per refresh with smooth, time-sorted navigation.
 
  ### Session Notes (2026-02-21, Phase 14 Validation & Optimization)
 - **Phase 14 Validated & Complete**:

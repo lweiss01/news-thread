@@ -7,7 +7,8 @@ import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.usecase.GetSimilarArticlesUseCase
-import com.newsthread.app.domain.usecase.GetSourceRatingsMapUseCase
+import com.newsthread.app.domain.usecase.FindSourceRatingUseCase
+import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.data.repository.UserPreferencesRepository
 import com.newsthread.app.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,30 +31,16 @@ sealed interface ComparisonUiState {
 @HiltViewModel
 class ComparisonViewModel @Inject constructor(
     private val getSimilarArticlesUseCase: GetSimilarArticlesUseCase,
+    private val findSourceRatingUseCase: FindSourceRatingUseCase,
+    private val sourceRatingRepository: SourceRatingRepository,
     private val networkMonitor: NetworkMonitor,
-    private val userPreferencesRepository: UserPreferencesRepository,
-    private val getSourceRatingsMapUseCase: GetSourceRatingsMapUseCase
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ComparisonUiState>(ComparisonUiState.Loading)
     val uiState: StateFlow<ComparisonUiState> = _uiState.asStateFlow()
 
-    private val _sourceRatings = MutableStateFlow<Map<String, SourceRating>>(emptyMap())
-    val sourceRatings: StateFlow<Map<String, SourceRating>> = _sourceRatings.asStateFlow()
-
-    init {
-        loadSourceRatings()
-    }
-
-    private fun loadSourceRatings() {
-        viewModelScope.launch {
-            try {
-                _sourceRatings.value = getSourceRatingsMapUseCase()
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
+    // No longer needed, ratings are attached to articles
 
     fun findSimilarArticles(article: Article) {
         viewModelScope.launch {
@@ -78,8 +65,21 @@ class ComparisonViewModel @Inject constructor(
                                 }
                             } else null
 
+                            val allRatings = sourceRatingRepository.getAllSources()
+                            
+                            // Enrich all articles in the comparison
+                            val enrichedComparison = comparison.copy(
+                                originalArticle = comparison.originalArticle.copy(
+                                    sourceRating = findSourceRatingUseCase(comparison.originalArticle, allRatings)
+                                ),
+                                leftPerspective = comparison.leftPerspective.map { it.copy(sourceRating = findSourceRatingUseCase(it, allRatings)) },
+                                centerPerspective = comparison.centerPerspective.map { it.copy(sourceRating = findSourceRatingUseCase(it, allRatings)) },
+                                rightPerspective = comparison.rightPerspective.map { it.copy(sourceRating = findSourceRatingUseCase(it, allRatings)) },
+                                unratedPerspective = comparison.unratedPerspective.map { it.copy(sourceRating = findSourceRatingUseCase(it, allRatings)) }
+                            )
+
                             _uiState.value = ComparisonUiState.Success(
-                                comparison = comparison,
+                                comparison = enrichedComparison,
                                 hintMessage = hint
                             )
                         }

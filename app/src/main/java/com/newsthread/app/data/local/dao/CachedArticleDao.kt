@@ -22,10 +22,16 @@ interface CachedArticleDao {
     suspend fun getByUrls(urls: List<String>): List<CachedArticleEntity>
 
     @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 100")
-    fun getAllFlow(): Flow<List<CachedArticleEntity>>
+    suspend fun getAll(): List<CachedArticleEntity>
 
     @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 100")
-    suspend fun getAll(): List<CachedArticleEntity>
+    fun getAllFlow(): Flow<List<CachedArticleEntity>>
+
+    @Query("SELECT * FROM cached_articles WHERE sourceFeed = :feedKey ORDER BY publishedAt DESC LIMIT 100")
+    suspend fun getByFeed(feedKey: String): List<CachedArticleEntity>
+
+    @Query("SELECT * FROM cached_articles WHERE sourceFeed = :feedKey ORDER BY publishedAt DESC LIMIT 100")
+    fun getByFeedFlow(feedKey: String): Flow<List<CachedArticleEntity>>
 
     @Query("SELECT * FROM cached_articles WHERE sourceId = :sourceId ORDER BY publishedAt DESC")
     suspend fun getBySourceId(sourceId: String): List<CachedArticleEntity>
@@ -157,4 +163,7 @@ interface CachedArticleDao {
 
     @Query("DELETE FROM cached_articles WHERE isTracked = 0")
     suspend fun deleteUntracked()
+
+    @Query("DELETE FROM cached_articles WHERE sourceFeed = :feedKey AND isTracked = 0")
+    suspend fun deleteByFeed(feedKey: String)
 }

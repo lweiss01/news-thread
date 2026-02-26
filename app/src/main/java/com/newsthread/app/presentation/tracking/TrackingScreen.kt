@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
-import com.newsthread.app.data.local.dao.StoryWithArticles
-import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.domain.model.TrackedStory
+import com.newsthread.app.domain.model.Article
 import java.text.SimpleDateFormat
 import java.util.*
 import android.Manifest
@@ -58,7 +58,6 @@ fun TrackingScreen(
     val stories by viewModel.trackedStories.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val lastRefreshed by viewModel.lastRefreshed.collectAsState()
-    val sourceRatings by viewModel.sourceRatings.collectAsState()
 
     // Phase 10: Notification Permission Request
     // ... (unchanged)
@@ -79,16 +78,11 @@ fun TrackingScreen(
                     contentPadding = PaddingValues(ProjectTheme.spacing.m),
                     verticalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.m)
                 ) {
-                    items(stories, key = { it.story.id }) { storyWithArticles ->
+                    items(stories, key = { it.story.id }) { trackedStory ->
                         EnhancedStoryCard(
-                            storyWithArticles = storyWithArticles,
-                            sourceRatings = sourceRatings,
+                            trackedStory = trackedStory,
                             onUnfollow = { viewModel.unfollowStory(it) },
-                            onArticleClick = onArticleClick,
-                            onStoryClick = onStoryClick, // NEW
-                            onMarkViewed = { viewModel.markStoryViewed(it) },
-                            onMarkBadgeSeen = { viewModel.markBadgeSeen(it) },
-                            onRejectMatch = { url -> viewModel.rejectMatch(url, storyWithArticles.story.id) }
+                            onStoryClick = onStoryClick
                         )
                     }
                 }
@@ -127,26 +121,21 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
 
 @Composable
 fun EnhancedStoryCard(
-    storyWithArticles: StoryWithArticles,
-    sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>,
+    trackedStory: TrackedStory,
     onUnfollow: (String) -> Unit,
-    onArticleClick: (String) -> Unit,
     onStoryClick: (String) -> Unit,
-    onMarkViewed: (String) -> Unit,
-    onMarkBadgeSeen: (String) -> Unit,
-    onRejectMatch: (String) -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onStoryClick(storyWithArticles.story.id) }
+            .clickable { onStoryClick(trackedStory.story.id) }
     ) {
-        val isUpdated = storyWithArticles.story.hasUnseenUpdates
+        val isUpdated = trackedStory.story.hasUnseenUpdates
 
         Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
             // Header: Title
             Text(
-                text = storyWithArticles.story.title,
+                text = trackedStory.story.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = if (isUpdated) FontWeight.ExtraBold else FontWeight.Bold,
                 color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
@@ -155,20 +144,13 @@ fun EnhancedStoryCard(
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
 
             // Calculate Heatmap Data
-            val articles = storyWithArticles.articles
-            val biasCounts = remember(articles, sourceRatings) {
-                 articles.mapNotNull { article ->
-                    val rating = article.sourceId?.let { sourceRatings[it] }
-                        ?: sourceRatings[article.sourceName]
-                    rating?.finalBiasScore
-                }.groupingBy { it }.eachCount()
+            val articles = trackedStory.articles
+            val biasCounts = remember(articles) {
+                 articles.mapNotNull { it.sourceRating?.finalBiasScore }
+                     .groupingBy { it }.eachCount()
              }
 
-             val unratedCount = articles.count {
-                 val rating = it.sourceId?.let { id -> sourceRatings[id] }
-                     ?: sourceRatings[it.sourceName]
-                 rating == null
-             }
+             val unratedCount = articles.count { it.sourceRating == null }
 
             // Heatmap Preview (Uninteractive)
             com.newsthread.app.presentation.components.BiasHeatmap(
@@ -180,7 +162,7 @@ fun EnhancedStoryCard(
 
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
 
-            Row(
+             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -192,7 +174,7 @@ fun EnhancedStoryCard(
                     fontWeight = if (isUpdated) FontWeight.Bold else FontWeight.Normal
                 )
 
-                 IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
+                 IconButton(onClick = { onUnfollow(trackedStory.story.id) }) {
                     Icon(
                         imageVector = Icons.Default.Bookmark,
                         contentDescription = "Unfollow",

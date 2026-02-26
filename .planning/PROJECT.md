@@ -62,7 +62,7 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Replaced NewsAPI with on-device dual-layer RSS feed parsing and Google News URL decoding — Phase 14
 
 - ✓ Move RSS feed fetching and XML parsing to edge worker — Phase 15
-- ✓ Final end-to-end testing — Phase 15
+- ✓ Increase feed volume to 70+ stories via background category discovery loop — Phase 15.1
 - [ ] Prepare app store assets
 
 
@@ -106,6 +106,8 @@ When a user reads an article, they can instantly see how the same story is cover
 | Pre-compute matches in background | User shouldn't wait when tapping compare — matches ready ahead of time | — Validated |
 | Bias spectrum UI over L/C/R buckets | More nuanced than three categories, shows where each source actually falls | — Validated |
 | User-controlled article text fetching | Respects data usage preferences, WiFi-only option for bandwidth savings | — Validated |
+| Authenticated Quality strategy | Strictly filter Unknown (Gray) quality sources while allowing rated (Green/Amber/Orange) content | — Validated |
+| Continuous Discovery loop | Background category-based expansion to boost feed volume with reputable news | — Validated |
 
 ## Beads Issues
 
@@ -122,5 +124,5 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
-*Last updated: 2026-02-22 after v1.1 milestone (Phases 1-15)*
+*Last updated: 2026-02-26 after Phase 15.1 (Feed Enhancement)*
 
