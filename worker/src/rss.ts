@@ -8,6 +8,10 @@ const parser = new XMLParser({
     parseAttributeValue: true,
 });
 
+// Optimization: Hoist regex literals to prevent re-compilation during high-volume feed parsing.
+const HTML_TAG_REGEX = /<[^>]*>?/gm;
+const WWW_PREFIX_REGEX = /^www\./;
+
 function getText(obj: any): string {
     if (obj === null || obj === undefined) return '';
     if (typeof obj === 'string') return obj;
@@ -117,7 +121,7 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
 
 function stripHtml(html: string): string {
     if (!html) return '';
-    return html.replace(/<[^>]*>?/gm, '').trim();
+    return html.replace(HTML_TAG_REGEX, '').trim();
 }
 
 export function normalizeDate(raw: string): string | null {
@@ -149,7 +153,7 @@ export function mapToArticle(item: ParsedFeedItem, source?: RssFeedSource): Arti
 function extractDomain(url: string): string {
     try {
         const host = new URL(url).hostname;
-        return host.replace(/^www\./, '');
+        return host.replace(WWW_PREFIX_REGEX, '');
     } catch (e) {
         return 'Unknown';
     }
