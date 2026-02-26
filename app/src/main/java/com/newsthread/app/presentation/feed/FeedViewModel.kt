@@ -88,7 +88,6 @@ class FeedViewModel @Inject constructor(
                            Log.d("FeedViewModel", "Discovery found ${newArticles.size} reputable articles for $category")
                            
                            val currentState = _uiState.value
-                           if (currentState is FeedUiState.Success) {
                                val combined = (currentState.articles + newArticles)
                                    .distinctBy { it.url }
                                    .sortedByDescending { it.publishedAt }

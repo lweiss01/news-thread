@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.SyncStrategy
 import com.newsthread.app.presentation.theme.ProjectTheme
+import com.newsthread.app.BuildConfig
 
 @Composable
 fun SettingsScreen(
@@ -88,6 +89,17 @@ fun SettingsScreen(
             DebugSection(
                 onForceSync = viewModel::forceStorySync
             )
+
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.xl))
+
+            // Version Footer
+            Text(
+                text = "Version ${BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.l))
         }
     }
 }

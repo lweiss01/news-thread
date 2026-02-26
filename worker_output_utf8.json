@@ -1,0 +1,499 @@
+﻿{
+    "value":  [
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "F.B.I. Raids Home and Office of L.A.U.S.D. Chief Alberto Carvalho - The New York Times - The New York Times",
+                      "description":  "F.B.I. Raids Home and Office of L.A.U.S.D. Chief Alberto Carvalho - The New York Times\u0026nbsp;\u0026nbsp;The New York TimesFBI raids LAUSD superintendent\u0027s home and office\u0026nbsp;\u0026nbsp;LAistFBI searches Los Angeles school district headquarters and the superintendentâs home\u0026nbsp;\u0026nbsp;CNNFBI raids of LAUSD Supt. Alberto Carvalhoâs home and office appear tied to AI chatbot probe\u0026nbsp;\u0026nbsp;Los Angeles TimesOffice and San Pedro home of LAUSD Superintendent Carvalho searched by FBI\u0026nbsp;\u0026nbsp;NBC Los Angeles",
+                      "url":  "https://news.google.com/articles/CBMif0FVX3lxTE9kSnlIT0ZJaGJ4TXFDWjZsR0daYTl6d2E4TTJNVXFqNS1yRG00UU5OR0ZhNHZtSVB1ZExpS2o0WkxuejExcjVkcDJQT0NRZHBoeno5VW9IdlM2bS00eGlqN1VrbnFiZFByWHk1TTBxRjU3aDhZMklSbjRIQ3F5QXc?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T02:27:13.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "Patel Ousts F.B.I. Personnel Tied to Inquiry Into Trumpâs Retained Classified Records - The New York Times",
+                      "description":  "Patel Ousts F.B.I. Personnel Tied to Inquiry Into Trumpâs Retained Classified Records\u0026nbsp;\u0026nbsp;The New York TimesExclusive: FBI obtained Kash Patel and Susie Wiles phone records during Biden administration\u0026nbsp;\u0026nbsp;ReutersFBI Director Kash Patel ousts personnel tied to Trump classified documents probe\u0026nbsp;\u0026nbsp;CNNAt least 10 FBI staffers who worked on Mar-a-Lago documents case are fired, sources say\u0026nbsp;\u0026nbsp;CBS NewsKash Patel fires at least six FBI agents tied to 2022 Mar-a-Lago search\u0026nbsp;\u0026nbsp;NBC News",
+                      "url":  "https://news.google.com/articles/CBMimgFBVV95cUxNY2xHdnh1bW9felRTazNpMEoxQVlDYVJZNV9FVmpFZUIxeTF5eWVYM0w3TWlMdHpPSEFzTTZ5dEhxazFjNUlJOGNDU0Rla3lkd0NhUlVhWHk1VVVaYjhyRUJZOXNoMmVONGN5OVZBQ0tEaDJRdHNEVFc3TktkZWVOeFhVWmhKRGNrLTNIcXlvTVF4RjBBTG1yX3lR?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T03:03:27.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The Guardian"
+                                 },
+                      "author":  null,
+                      "title":  "Vance says Minnesotaâs Medicaid funds halted as part of Trumpâs âwar on fraudâ - The Guardian",
+                      "description":  "Vance says Minnesotaâs Medicaid funds halted as part of Trumpâs âwar on fraudâ\u0026nbsp;\u0026nbsp;The GuardianVance launches into Trump\u0027s \u0027war on fraud\u0027 by suspending Medicaid payments to Minnesota\u0026nbsp;\u0026nbsp;NBC NewsTrump admin halts Medicaid payments to Minnesota over fraud claims\u0026nbsp;\u0026nbsp;CNNVance Announces Pause of Nearly $260 Million in Minnesota Medicaid Funding\u0026nbsp;\u0026nbsp;WSJTim Walz accuses Trump of withholding $259m in Medicaid funds âto punish blue statesâ â live\u0026nbsp;\u0026nbsp;The Guardian",
+                      "url":  "https://news.google.com/articles/CBMigAFBVV95cUxNT3d2R2poMl9VMGlDcjAtTFN0NlFIZEFQYkt2Wkt3SC1STVloZVJjU2lVSDJ4NktRcDNoeGlsYTNELUJqdG1VZm4yMUV5dk1kZE9zUlp6VkYwN1lYcVlOUVotOFFuU2FablVVR0R5WUpzWVEzcmF2aGpRaERRT3Rlbg?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T01:23:36.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "CNN"
+                                 },
+                      "author":  null,
+                      "title":  "Anthropic ditches its core safety promise in the middle of an AI red line fight with the Pentagon - CNN",
+                      "description":  "Anthropic ditches its core safety promise in the middle of an AI red line fight with the Pentagon\u0026nbsp;\u0026nbsp;CNNExclusive: Anthropic Drops Flagship Safety Pledge\u0026nbsp;\u0026nbsp;Time MagazineTech Companies Shouldnât Be Bullied Into Doing Surveillance\u0026nbsp;\u0026nbsp;Electronic Frontier FoundationResponsible Scaling Policy Version 3.0\u0026nbsp;\u0026nbsp;AnthropicScoop: Pentagon takes first step toward blacklisting Anthropic\u0026nbsp;\u0026nbsp;Axios",
+                      "url":  "https://news.google.com/articles/CBMidEFVX3lxTE5VaWNmbnRFR1pZZFV3QUhNamdxMWU3U19CYXJIWHY5WUlLQ1NoQW9mVnlWNldjWTZESHBGclctb0tVSlR4anhzN2JPZVhNNGd1d29NcWJ4R3hSQ18yT0FqWnMyeTA3X3BoMldraTBWejJXM2ZE?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T14:02:49.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The Washington Post"
+                                 },
+                      "author":  null,
+                      "title":  "Trump administrationâs third-country deportation policy unlawful, judge finds - The Washington Post",
+                      "description":  "Trump administrationâs third-country deportation policy unlawful, judge finds\u0026nbsp;\u0026nbsp;The Washington PostTrump Live Updates: Immigration, State of the Union Speech and More News - The New York Times\u0026nbsp;\u0026nbsp;The New York TimesTrump administrationâs âthird countryâ deportation policy is unlawful, judge rules\u0026nbsp;\u0026nbsp;CNNJudge rules Trump administration\u0027s policy for \"third-country\" deportations is unlawful\u0026nbsp;\u0026nbsp;CBS NewsFederal judge rules Trump admin may not remove people to third countries without due process\u0026nbsp;\u0026nbsp;NBC News",
+                      "url":  "https://news.google.com/articles/CBMipgFBVV95cUxPWk9UQkpqZEVtaHBiNlZFSlpXX2R4ZGF3NDBac3ZvWGhmOVpyWjYzbm1tVXBrS0ZITmhWTDNfbmxlTDVQY2dmN1NpWi1YUFJPeGhzX2hwZ2s3WjJNdXJiOFdPZElVeFluanJHVE1vdHBEa1hPR000VFcyWWZrb0RScC1sTW91UXRkcVVJb3AxQWJ0Q1FyNkM4VU9ONlFJNWtobnlLQzZ3?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T01:48:16.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The Washington Post"
+                                 },
+                      "author":  null,
+                      "title":  "Trump Treasury official to exit after objecting to Minneapolis crackdown - The Washington Post",
+                      "description":  "Trump Treasury official to exit after objecting to Minneapolis crackdown\u0026nbsp;\u0026nbsp;The Washington PostTrump official quits over Minneapolis\u0026nbsp;\u0026nbsp;Alternet",
+                      "url":  "https://news.google.com/articles/CBMiggFBVV95cUxPSDRMN1ktR1VMZ3B5VVpER1p1RWhjMjVvSVlwZHU2VnoxSHlaR1lxdk9qSFhIRWJvZXF5S3RrZHZ0WEdkOV9PdU4tc2ZibGtJeHBuWEhUNXZwTUdpOUpNMGFfMHA2dnNoQk9xNTg2MzZ0NlhORUF4anpveGU5eUxhWDNB?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T01:59:54.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "Larry Summers Will Resign From Harvard After Jeffrey Epstein Revelations - The New York Times",
+                      "description":  "Larry Summers Will Resign From Harvard After Jeffrey Epstein Revelations\u0026nbsp;\u0026nbsp;The New York TimesSummers To Resign From Teaching Appointments, Relinquish University Professorship Over Epstein Ties\u0026nbsp;\u0026nbsp;The Harvard CrimsonLarry Summers to resign from Harvard after Epstein files revelations\u0026nbsp;\u0026nbsp;The GuardianEpstein files: Larry Summers to resign as Harvard professor as fallout continues\u0026nbsp;\u0026nbsp;CNBCLarry Summers to retire from Harvard amid Epstein scandal\u0026nbsp;\u0026nbsp;CNN",
+                      "url":  "https://news.google.com/articles/CBMijAFBVV95cUxPQzZnTjZxd0pQTGJycTVRN3ZHbnExMmZOTHExbU1tT3ZXYlhiakpXMnJObFVEZVliX183Sk0yTEh1bkxxeDRGaklnb2dwNV92ZlhpaklmakVWclB3eHlvQnlPbTNoSy1jVV9MZm91WV9neHlfaWctTkhIVXl6dndHMEJnOVFhUURHVXdVYw?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T20:16:35.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "NPR"
+                                 },
+                      "author":  null,
+                      "title":  "ICE won\u0027t be at polling places this year, a Trump DHS official promises - NPR",
+                      "description":  "ICE won\u0027t be at polling places this year, a Trump DHS official promises\u0026nbsp;\u0026nbsp;NPRDHS official promises election officials that ICE will not be at polling places\u0026nbsp;\u0026nbsp;PoliticoStates Are Told ICE Wonât Target Polling Stations in November\u0026nbsp;\u0026nbsp;Bloomberg.comHomeland Security official rejects suggestion ICE agents will be at polling stations\u0026nbsp;\u0026nbsp;ReutersDHS official tells state election chiefs there won\u0027t be ICE agents at polling places\u0026nbsp;\u0026nbsp;NBC News",
+                      "url":  "https://news.google.com/articles/CBMifkFVX3lxTE9uT3MtU0ZYdUxRVTB3a1hrcUY3X2xaaF9TUU00UUNrUGdWNy1saVZ2VUNicTJsSTFkRXdUM19meXVjVU53T1pfSWw0RGZwbUVYYmhmTTE0R0JYRHJwYU1xUFA5c3pQbmRjcDEyRWsya0R5cXNrekRPTmR6MFZCQQ?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T21:38:46.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Politico"
+                                 },
+                      "author":  null,
+                      "title":  "White House officials believe âthe politics are a lot betterâ if Israel strikes Iran first - Politico",
+                      "description":  "White House officials believe âthe politics are a lot betterâ if Israel strikes Iran first\u0026nbsp;\u0026nbsp;PoliticoIsraelis brace for another war as Trump mulls strikes on Iran\u0026nbsp;\u0026nbsp;The Washington PostNetanyahu: An attack on Israel would be âmost serious mistakeâ in Iranian history\u0026nbsp;\u0026nbsp;The Times of IsraelIsrael pushing for Iran conflict while relying on US power: Experts\u0026nbsp;\u0026nbsp;Anadolu AjansÄ±Israel Is Ready for Any Iran Scenario, as Long as It\u0027s Not an Agreement\u0026nbsp;\u0026nbsp;Haaretz",
+                      "url":  "https://news.google.com/articles/CBMilAFBVV95cUxQQ3Vub2Q4d0lPMWNrTk5sSWxYai1aNkRMU09CTWpKNzhMOGRreE0zNUlweFVMb3JFR1NPUy01WUNHWGJXdU43UTZvT2hTVVQ2N2x2ejFMQ1hGem5qb09lNkR4ZklkdG1mTDQ5NU1DOVFKQ1FsblFQa2V0eXI5cnUyd3BTa2FiMnVsMVFzandhY0haSEh5?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T23:49:00.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "CNN"
+                                 },
+                      "author":  null,
+                      "title":  "Meet the man Trump picked to pursue his war on fraud at the Justice Department - CNN",
+                      "description":  "Meet the man Trump picked to pursue his war on fraud at the Justice Department\u0026nbsp;\u0026nbsp;CNNVice President Vance and CMS Admin. Dr. Mehmet Oz Hold Event on Medicare Fraud\u0026nbsp;\u0026nbsp;C-SPANTrump\u0027s \u0027war on fraud\u0027 draws range of reactions during SOTU speech\u0026nbsp;\u0026nbsp;Fox NewsTrump\u0027s pick to lead new Justice Department unit scrutinized as president declares \u0027war on fraud\u0027\u0026nbsp;\u0026nbsp;PBSTrump repeats claim of $19 billion in Minnesota fraud. Hereâs what the numbers show.\u0026nbsp;\u0026nbsp;Star Tribune",
+                      "url":  "https://news.google.com/articles/CBMifkFVX3lxTE9SQzNMb1I5WU9vWjBpc2RHZXhjNGl2clJDNEY1UHgwQ3FydTdEYTVMRHdVd0M3SEpSeHBicEQtM3c5bTRpMTVFSVprVjcxa0Y2Mk1nWEJUbS1mSGJDZHdESkVtS3otVDMzY0JfTmlJUnpfWlNNWWtPdHl0aWZ6QQ?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T21:32:37.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "CBS News"
+                                 },
+                      "author":  null,
+                      "title":  "32 years after American woman found murdered in Germany, DNA leads to an arrest: \"Such cases are never forgotten\" - CBS News",
+                      "description":  "32 years after American woman found murdered in Germany, DNA leads to an arrest: \"Such cases are never forgotten\"\u0026nbsp;\u0026nbsp;CBS NewsGermany: Murder almost 32 years ago: Trace on waistband decisive | blue News\u0026nbsp;\u0026nbsp;blue NewsDNA leads to Germany arrest over US woman\u0027s 1994 murder\u0026nbsp;\u0026nbsp;24NewsHD",
+                      "url":  "https://news.google.com/articles/CBMilgFBVV95cUxQbkhyUW43bG9Nd0Z6MVVlajRET3NNRnIyRHpvNzY0MHZKWklHeWxHTTd1dHFwSDRfVTRrS0p1djE0d3VKQjZ6NFBLZ0k2LXhWcU1iZmJHVVdsTEx6Z2hGZU9VQU1ET0tIeWFzQWJTaFIwZFRKT0VNT2lULTBpT1RETU44eHV4Sllfd09zbDNfeC1wNGxZU2fSAZsBQVVfeXFMT19JOVdNLW5mVkY4UmQxY25ablU5VldKVElDeF9DcDFKWFBBQmRnNkFpaW41OUZMUXVGdm9aZm5lQzlfZlEzRU9fSVc3UjA2TVJyRXdoWThUODhQcGx0QVBsYTRDMFY4LXliSkMzNWQteklGbnNLcmpRWmwtRmU4X2tZS3hlMG1JX0d0SHYtb19KZ05mNE1OcHg2MGM?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T19:53:00.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "AP News"
+                                 },
+                      "author":  null,
+                      "title":  "Rubio defends US ouster of Venezuela\u0027s Maduro to Caribbean leaders unsettled by Trump policies - AP News",
+                      "description":  "Rubio defends US ouster of Venezuela\u0027s Maduro to Caribbean leaders unsettled by Trump policies\u0026nbsp;\u0026nbsp;AP NewsSecretary of State Marco Rubio at the 50th Regular Meeting of the Conference of CARICOM Heads of Government\u0026nbsp;\u0026nbsp;U.S. Department of State (.gov)Rubio urges Caribbean leaders to cooperate on gangs as Cuba worries grow\u0026nbsp;\u0026nbsp;ReutersRubio visits the Caribbean as Trumpâs Iran gambit nears tipping point\u0026nbsp;\u0026nbsp;The Washington PostCaribbean leaders gather for annual meet amid U.S. pressure, regional strains\u0026nbsp;\u0026nbsp;Miami Herald",
+                      "url":  "https://news.google.com/articles/CBMiqwFBVV95cUxOVzJsSllUcUN4Y01rSEZqRXotSW9ab1BiWTJEVjdBVGtjWVFPNTBWcWpGandOWjBraXpQTmpYOWItN2JaTENFWFJUd3dpaV9Lb1dFWDZFaHZPS1czek1ZbmlyM1p3UEFaeE5zTVBrSE12WXhPMXVNclhjNHlaLUpQT1FoM1NiT0hlQ2Y0elBpVF9YdzFjTDlRTE4yT3E4bHNPYkxaRkxCUW1ZM2c?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T00:53:00.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "How the UK Could Remove Former Prince Andrew From the Royal Line of Succession - The New York Times - The New York Times",
+                      "description":  "How the UK Could Remove Former Prince Andrew From the Royal Line of Succession - The New York Times\u0026nbsp;\u0026nbsp;The New York TimesUK police conclude search at former home of King Charles\u0027 brother Andrew\u0026nbsp;\u0026nbsp;ReutersOpinion | The Windsor of Britainâs Discontent\u0026nbsp;\u0026nbsp;WSJAustralian PM backs removal of ex-Prince Andrew from succession line\u0026nbsp;\u0026nbsp;Al JazeeraAs Andrew fell, Queen Elizabeth II held out hope, and Charles and William fumed\u0026nbsp;\u0026nbsp;The Washington Post",
+                      "url":  "https://news.google.com/articles/CBMioAFBVV95cUxOc2tJRGZPVjhmQWI4NjVuYVJCaFdsbFZqeERONk9jQ3NzeFViTUllT2YxQnBsWkxCZ2VuaEtNZzVlT0VRcU85dVlIZ3JWVVBXQmFvSDVKUF9QUWxYTWJ3SUhfdWlIakRpNldYamxnLVpkMUh4blFuMGNrOE5INmhhZzl5Q1l2WW9HbDIxWEFYX1V3T0t4ZzA4U1VqRVdpZ1R1?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T16:55:30.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Payday Report"
+                                 },
+                      "author":  null,
+                      "title":  "Rio Police Chief \u0026 Congressman Convicted in Assassination of Socialist Rio Councilwoman Marielle Franco - Payday Report",
+                      "description":  "Rio Police Chief \u0026 Congressman Convicted in Assassination of Socialist Rio Councilwoman Marielle Franco\u0026nbsp;\u0026nbsp;Payday ReportBrazilian court convicts ex-lawmaker in murder of politician Marielle Franco\u0026nbsp;\u0026nbsp;The Washington PostPolitician brothers convicted in Brazil for ordering murder of prominent councillor\u0026nbsp;\u0026nbsp;BBCBrazilâs Supreme Court Convicts Four Men in Murder of Marielle Franco\u0026nbsp;\u0026nbsp;The New York TimesBrazilian politicians found guilty over assassination of Rio councilwoman\u0026nbsp;\u0026nbsp;Financial Times",
+                      "url":  "https://news.google.com/articles/CBMixgFBVV95cUxNRko4VWJXSzNDT3FDWXlmLXctdjU1QThsdkxGNWpkdjZmNm5lX184NDlkc28zdWgweW1lblhnZEpEenFiOU5HeEJQVlNPSVZLQl85TUJjR0E3ekhwS1ZvTUpzNXVpejlJR1laR29KMnBRaDVzSjVYYjJmUWpWQXowSjVXSExOM2JEUEdfY29wMExvamk5T2Nya00zX205ZHVxUUhhTnBPak4xYmxIMExLSlpNRzYxTmlYdTlTQjh0S25GeE5ucXc?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T17:12:59.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "Bleak Research Report Stokes A.I. Debate on Wall St. - The New York Times - The New York Times",
+                      "description":  "Bleak Research Report Stokes A.I. Debate on Wall St. - The New York Times\u0026nbsp;\u0026nbsp;The New York TimesAI Panic Is Opportunity for Stock Pickers, Morgan Stanley Says\u0026nbsp;\u0026nbsp;Yahoo FinanceBreaking Down the Doomsday AI Memo That Spooked Markets\u0026nbsp;\u0026nbsp;WSJAI Will Lead to Economic Collapse? Weâve Heard This Story Before.\u0026nbsp;\u0026nbsp;Barron\u0027sWall Street Doesnât Know What to Think About AI Anymore\u0026nbsp;\u0026nbsp;Bloomberg.com",
+                      "url":  "https://news.google.com/articles/CBMifEFVX3lxTFBwT3gyUzlieEpQbWhLNG9aNlB1djYzSElZYVZqdno2Rk42WF9aZ2dCSlcweGRrY0tWRXBfY255REVVbXZzN1dObTVtU3BYNHJKUUdxSV84d25kOE1zU1FLZkpHcEJfbHJDLU1Hb01EWHJtWWV5NldnMW1nQ0Y?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T22:44:34.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Investing.com"
+                                 },
+                      "author":  null,
+                      "title":  "CME Group halts metals and natural gas trading on technical issues By Reuters - Investing.com",
+                      "description":  "CME Group halts metals and natural gas trading on technical issues By Reuters\u0026nbsp;\u0026nbsp;Investing.comCME Restarts Gas and Metals Futures Trading After Glitch\u0026nbsp;\u0026nbsp;Bloomberg.comCME Group reopens Globex metals, natural gas trading after brief technical halt\u0026nbsp;\u0026nbsp;ReutersCME Group - Due to technical issues, the CME Globex metals and natural gas futures and options markets have been halted\u0026nbsp;\u0026nbsp;marketscreener.comCME halts trading on flagship metals market for more than an hour\u0026nbsp;\u0026nbsp;Financial Times",
+                      "url":  "https://news.google.com/articles/CBMiwAFBVV95cUxQeFYydERYTkxjOUJfcmtfcFZkVmVWX25HZkNlT1JHVmdDQURPejF4bV9qd0c4TUhna04teDQ1R3R1TVMwOENBdllNSV9mRHFNeTJkVGVSUlhFdHZwU3g1aXNzUk1GVWZ6Zld2Q2JXRUJlU09QbjczcXBOWjNXZ244UjBScXViM1N3ZG1jMmVkMW1qeERXRkdTWW8yWnNURm53VWVZV0hQVldPejhhLXJtckV0bTFpZWlxdmExVmxxSDc?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T22:35:52.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Financial Times"
+                                 },
+                      "author":  null,
+                      "title":  "IMF urges US to change course on economic policy - Financial Times",
+                      "description":  "IMF urges US to change course on economic policy\u0026nbsp;\u0026nbsp;Financial TimesIMF calls for US fiscal consolidation to bring down \u0027too big\u0027 current account deficit\u0026nbsp;\u0026nbsp;ReutersIMF Says Tariff Upheaval Risks Harm to âBuoyantâ US Economy\u0026nbsp;\u0026nbsp;Bloomberg.comIMF sees âbuoyantâ US economy accelerating this year but warns of risks from tariffs, rising debt\u0026nbsp;\u0026nbsp;WAVY.comIMF to Release New US Economic Policy Prescriptions\u0026nbsp;\u0026nbsp;National Today",
+                      "url":  "https://news.google.com/articles/CBMicEFVX3lxTE91eHhCckc3alhPdTAzOUVFbXV2VXp0b3FVS2l6WFphOVltSE8yTXJkY0Z1dE96TTBXeWpjUFBmLUhqNW92UGFYZ1pBdV9FT19kWGNBZDZjbHBTc3VySF84QnFxajVvOWRVaGM2S3BKM0I?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T23:50:41.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "TechCrunch"
+                                 },
+                      "author":  null,
+                      "title":  "The White House wants AI companies to cover rate hikes. Most have already said they would. - TechCrunch",
+                      "description":  "The White House wants AI companies to cover rate hikes. Most have already said they would.\u0026nbsp;\u0026nbsp;TechCrunchAs Electric Bills Rise, Trump Says Tech Companies Should Pay More\u0026nbsp;\u0026nbsp;The New York TimesTrump lays out a new ground rule for Big Tech\u0027s AI build-out: Bring your own power\u0026nbsp;\u0026nbsp;Yahoo FinanceBig Tech companies to meet Trump at White House to sign pledge on data center power costs\u0026nbsp;\u0026nbsp;CNBCWhite House to host Big Tech after pledge to rein in power costs\u0026nbsp;\u0026nbsp;Reuters",
+                      "url":  "https://news.google.com/articles/CBMiwAFBVV95cUxPWFdEaXhBdll1YlkxQkZSRXQtSUVQS0FKTy12Z3p2OTQ2QnluREhuVmdhRER5RVlLdndEOFdSNzRubVN0S0NIS2k3aDFrMUdub1BqTXBBVDBtaWQwNVVWb3F2ejVjMDlOWnpzcnNpTjJXRHRNRlFSY2pvM2hzdWNUQ2Z0SmRxaVBHdWo1TXFtQXFPckVWWFRXV3U2ck5OVFh2Y3RUM0F1bUJILTR6TW8tdHFCc1U4dXh1SnVvSW5XLXU?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T20:42:14.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Droid Life"
+                                 },
+                      "author":  null,
+                      "title":  "Galaxy S26 Ultra Doesnât Have Built-in Qi2 Magnets - Droid Life",
+                      "description":  "Galaxy S26 Ultra Doesnât Have Built-in Qi2 Magnets\u0026nbsp;\u0026nbsp;Droid LifeSamsung Galaxy S26 phone cases: Where to get fun ones right now\u0026nbsp;\u0026nbsp;MashableUnlock the full potential of your Galaxy S26 with Spigenâs MagFit ecosystem\u0026nbsp;\u0026nbsp;9to5GoogleGet top protection and performance with ESR Techâs Samsung Galaxy 26 accessories\u0026nbsp;\u0026nbsp;Android PoliceYour new Galaxy S26 Ultra will charge faster than ever before\u0026nbsp;\u0026nbsp;SamMobile",
+                      "url":  "https://news.google.com/articles/CBMikgFBVV95cUxNZjB2VFB5VE1vOVpRbFZXNGJVeFk0WVNRTFJzYjNCcEM1Vkw4VGlMcUU3OVFGTDdkLUVjYkZTZ2JkNVg0UzM0cENYUWtKRmhpRUJRbFU1WE1WYmh5aGVTNWQ5Ym51bEhBTmloMzhjSFpTLWpOWXRNdWVGV0Z2NUhJU20yaXdjVFAzUm84LUdJUkVmZw?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T18:29:42.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "theregister.com"
+                                 },
+                      "author":  null,
+                      "title":  "Hide from Meta\u0027s spyglasses with this new Android app - theregister.com",
+                      "description":  "Hide from Meta\u0027s spyglasses with this new Android app\u0026nbsp;\u0026nbsp;theregister.comThis App Warns You if Someone Is Wearing Smart Glasses Nearby\u0026nbsp;\u0026nbsp;404 MediaApp alerts users when smart glasses may be recording nearby: report\u0026nbsp;\u0026nbsp;KTLAWant to Know If Glassholes Are Using Smart Glasses Near You? Thereâs an App for That\u0026nbsp;\u0026nbsp;GizmodoNew App Detects the Radio Fingerprint of Smart Glasses and Warns You When Someone Is Using Them Nearby\u0026nbsp;\u0026nbsp;Futurism",
+                      "url":  "https://news.google.com/articles/CBMiekFVX3lxTE1sLVAtdlFhd3FMTlpwN2xkd2NkTzN5WFNjYUVyVGxPYXVWRW9zMmFlbGszekdFTm1XSjg3MW1kTEE1TEppNDE4NEZHbktlbjRScFZsbXg0M1dMWDhBdldYVVZRS2NMc19FeVRPM2hLRmVqUGVSM1c0VWxB?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T20:13:00.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "Highland Refusal - The New York Times",
+                      "description":  "Highland Refusal\u0026nbsp;\u0026nbsp;The New York Times",
+                      "url":  "https://news.google.com/articles/CBMif0FVX3lxTE9zVnF2dGtxbDk1WjFsOGN6RXkwb2tIaUlJeFZTMUtWb21idVgwWmlPdUF4VHM2S0NVbHphNVlid2RkeFN2blFfSHB1NGJ2RVRVeDBwV3lPVVFZWEZGSzNyWGZpUHZJbTQ3SU9JaV9wc3BwWEVDczFXNzJMbWc1NEU?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T03:00:04.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Forbes"
+                                 },
+                      "author":  null,
+                      "title":  "âARC Raidersâ Leans Even Harder Into PvE With New Shrouded Sky Change - Forbes",
+                      "description":  "âARC Raidersâ Leans Even Harder Into PvE With New Shrouded Sky Change\u0026nbsp;\u0026nbsp;ForbesShrouded Sky - Patch Notes 1.17.0\u0026nbsp;\u0026nbsp;ARC RaidersEmbark Shows Off Arc Raiders Shrouded Sky Update With First Look at Two New Threats...and Beards\u0026nbsp;\u0026nbsp;IGNDid Arc Raiders just secretly add UFOs? Fans sure think so\u0026nbsp;\u0026nbsp;PolygonArc Raiders\u0027 Shrouded Sky added lots of cool new toys, but my favourite part is the new quality-of-life features that have flown under the radar\u0026nbsp;\u0026nbsp;PC Gamer",
+                      "url":  "https://news.google.com/articles/CBMiugFBVV95cUxOQW40a041cXZRRklXVkdjdndRcWtVYjR0cXJXRFpjS1NjX1d6ZVQxckhSUU5HSktLQUZsRG4zc2ZBeDZYWE1VU1FMX2tjXzh0MEo2ODJubnJXVzFZaHNBWHU5UWwtZ2UwUGM4aGZzRnU3OWVUOW14bXFhUzdzV3gwVkZvT0NicG9ITVBqbGJmRnFndVVnUDhFV1NOalNSQmY1RngxZnV2WjF5VTBrVThCZzYwek1KclZpY0E?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T14:08:26.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "TMZ"
+                                 },
+                      "author":  null,
+                      "title":  "\u0027Back To The Future\u0027 Actor Crispin Glover Sued for Battery - TMZ",
+                      "description":  "\u0027Back To The Future\u0027 Actor Crispin Glover Sued for Battery\u0026nbsp;\u0026nbsp;TMZ",
+                      "url":  "https://news.google.com/articles/CBMiekFVX3lxTE11Zm8yZXZLYlRCZzlNQkZNXzgzaG8yaDFrYzZaODRsYUxJZDlPOEM2YlJZS1pNeTIycTJoaldPNHYwZ2I5LXp1VFNNVm0zSW5qOENkNV9VRUY4cUVWbXhRQ1plVEFJLXBPb1RhbzZYWEZMY3lJSHpJa2ZB?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T23:01:05.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "TVLine"
+                                 },
+                      "author":  null,
+                      "title":  "Sterling K. Brown\u0027s Paradise To End With Season 3 On Hulu, EP Hints - TVLine",
+                      "description":  "Sterling K. Brown\u0027s Paradise To End With Season 3 On Hulu, EP Hints\u0026nbsp;\u0026nbsp;TVLineâParadiseâ Is Already Raising Big Questions With Season 2 â and Will End With a Season 3\u0026nbsp;\u0026nbsp;The Hollywood ReporterMeet The Cast \u0026 Characters Of Paradise Season 2\u0026nbsp;\u0026nbsp;Disney Plus\u0027Paradise\u0027 returns for Season 2: Here\u0027s where the Sterling K. Brown apocalyptic drama left off\u0026nbsp;\u0026nbsp;YahooWait, is \u0027Paradise\u0027 Season 2 doing time travel?\u0026nbsp;\u0026nbsp;Mashable",
+                      "url":  "https://news.google.com/articles/CBMigAFBVV95cUxOdmlxTXoxYmpLV181NGticTVsOV9sdl93M3NFM0NjSWczQmVCSkMwRWphdDRUU1lYT1VsX192U3Vsb0dDanRtZnplUmUwd3dzOVJUb2wwYy03U3o4Z1A2QUR2SzRTcVdKcXFUdGFnNXU2ZF9SZk5CU1ZUck9HWXNYeQ?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T21:17:15.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "BuzzFeed"
+                                 },
+                      "author":  null,
+                      "title":  "Eric Dane\u0027s Wife Reveals Health Insurance Initially Denied Treatment - BuzzFeed",
+                      "description":  "Eric Dane\u0027s Wife Reveals Health Insurance Initially Denied Treatment\u0026nbsp;\u0026nbsp;BuzzFeedGoFundMe campaign for Eric Daneâs daughters under routine review, money held\u0026nbsp;\u0026nbsp;San Francisco ChroniclePatrick Dempsey Says Late Costar Eric Dane Would Have Been âReally Happy to Know That He Was So Beloved\u0027\u0026nbsp;\u0026nbsp;People.comWhat is ALS, the disease that killed actor Eric Dane?\u0026nbsp;\u0026nbsp;PBSKate Walsh defends fundraiser for Eric Dane\u0027s daughters\u0026nbsp;\u0026nbsp;Yahoo",
+                      "url":  "https://news.google.com/articles/CBMingFBVV95cUxNU3pSRkRNUXlHUVBRb1BqYlhEREotZXBtOS1aSzNHSlR1Ri1qeHhqUUhjWjBVNmphUzVkN2lIMmFCRFVVWFpDY1JFaExES25KTjUwLXZrMmhNWFA5dzdldk9WaDNlTW5qUk95YjI1YUt0V0U5dHV5UzdwSVhaaVRUTlNTcmFjUE00MnRqRGF6XzdDaG9CUTQ2cC1nVjU2UQ?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T15:10:44.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "BBC and BAFTA Say They Are Investigating After Broadcast of Racist Slur - The New York Times",
+                      "description":  "BBC and BAFTA Say They Are Investigating After Broadcast of Racist Slur\u0026nbsp;\u0026nbsp;The New York TimesBAFTAs 2026 Outburst: What Touretteâs Tics Feel Like\u0026nbsp;\u0026nbsp;The New York TimesCommentary: Racist rhetoric from on high has hit a fever pitch. The BAFTA slur only adds to the hurt\u0026nbsp;\u0026nbsp;Los Angeles TimesJohn Davidson Explains Tourettes Tics in Interview After BAFTA N-Word\u0026nbsp;\u0026nbsp;VarietyGoogle Apologizes After News Alert About BAFTA Film Awards Debacle Included The N-Word\u0026nbsp;\u0026nbsp;Deadline",
+                      "url":  "https://news.google.com/articles/CBMijgFBVV95cUxQYWZMRWR6T0VSeDRXakNvdTdzN21zd0tydVpzc3U3QWtSVmxZcWxkZVUtZ1ZiRjJVVnRKSEZVbkd2aU13WUdEeHNMQ0REcnM1am55M1pUTmJOc3I2RGRpSlJhTW5saERqNUFtQlFQanhybC1rNzhQZFdXS2lEZHEtYzNZNU50dmExRnpROHF3?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T02:40:44.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Sports Illustrated"
+                                 },
+                      "author":  null,
+                      "title":  "NFL Combine Sights and Sounds Day 2: âOffice Space,â Defensive Prospects and Vrabelâs Interview Tips - Sports Illustrated",
+                      "description":  "NFL Combine Sights and Sounds Day 2: âOffice Space,â Defensive Prospects and Vrabelâs Interview Tips\u0026nbsp;\u0026nbsp;Sports Illustrated4 edge rushers for Rams to watch at NFL combine\u0026nbsp;\u0026nbsp;Rams WireFour takeaways from Wednesday at the NFL combine, including Kuechly praise and more\u0026nbsp;\u0026nbsp;Panthers.comCombine Notebook: Top edge rushers take the stage in Indy\u0026nbsp;\u0026nbsp;Raiders.comDefensive Line Prospects Take Center Stage on Day 2 of NFL Combine\u0026nbsp;\u0026nbsp;Chargers.com",
+                      "url":  "https://news.google.com/articles/CBMirgFBVV95cUxNWVpEb3JXbkI1eGNybUdPajlkZlhaWnUyZFh1MnZfYmxNajFyeE9naWIzTWlfcURQWmctNmM5NkI4Y3FwUUVSd3JQVzJuQnJUS2stSW9JeXRYamJNYm1Cd0x4NXR2NTJBMFlMTS1fZzJBalkyWmExU2pNMGx5X1lTeVRkRHVxZHI4N3FONFpfeHR0ZC11Mi0xQkhoQ3Etc0duNUJGVUdDNjNpcDV2NVE?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T22:06:14.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "OutKick"
+                                 },
+                      "author":  null,
+                      "title":  "Devils Fans Welcome Jack Hughes Back To New Jersey With Pregame Celebration - OutKick",
+                      "description":  "Devils Fans Welcome Jack Hughes Back To New Jersey With Pregame Celebration\u0026nbsp;\u0026nbsp;OutKickDevils honor Jack Hughes for golden Olympic goal\u0026nbsp;\u0026nbsp;ESPNOlympic hero Jack Hughes receives rousing ovation in first game back with Devils\u0026nbsp;\u0026nbsp;USA TodayWho is Jack Hughes? Team USA golden goal scorer has won the hearts of Americans after Olympics\u0026nbsp;\u0026nbsp;Fox NewsFans roar with pride for Olympic hero Jack Hughes as Devils fall to Sabres\u0026nbsp;\u0026nbsp;CBS News",
+                      "url":  "https://news.google.com/articles/CBMinwFBVV95cUxNQUdTVll5cEN4SjZXNjFFNk0zR1NlRXJIX09LbTBrLTdhcF9VYktOMWZIVVJWV29sOU9IX2VzMmpZYUNkRXlGMXc5M0tqOU1EQjNXellFblBhTUxhOFBUYmtGWmxyZzRzbGs3OFJJNGZYN3Zhcjl0cjN0S1QxenhBaXlTa0x3YzlrSnh5eFZObkJrZ2pnUXoxOWxNdVhBSGs?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-26T00:34:17.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "Tony Dungy likely out as regular on NBCâs âFootball Night in Americaâ - The New York Times",
+                      "description":  "Tony Dungy likely out as regular on NBCâs âFootball Night in Americaâ\u0026nbsp;\u0026nbsp;The New York TimesNBC likely moving on from Tony Dungy in NFL broadcast shakeup, per report\u0026nbsp;\u0026nbsp;Yahoo SportsIndianapolis Colts Super Bowl-winning coach Tony Dungy reportedly losing NBC job\u0026nbsp;\u0026nbsp;IndyStarInsider Suggests Three Current Or Former Steelers For âSNFâ Analyst Role\u0026nbsp;\u0026nbsp;Steelers DepotNBC Likely Moving on From Tony Dungy As Network Mulls Changes to SNF Pregame Show\u0026nbsp;\u0026nbsp;Sports Illustrated",
+                      "url":  "https://news.google.com/articles/CBMiiwFBVV95cUxQdDJnQkJDNkZnUHZiX3B1cFlybnRVUWs5cjVjRXlwS1FLRnhZWnVSTTRFVjFzdmxfV0EzNDNqZzRCZExmSm56MlE4T2hfUlZ0ZERIYzYyS1ZvSmlDY3ZDdWZaS1ZQWjlBWG9VZkhfMmJlUkNrZnB0WXIyV1RhYnBtb1FCQmlnanotLURF?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T23:46:10.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "NBC Sports"
+                                 },
+                      "author":  null,
+                      "title":  "Brandon Beane: We need Keon Coleman to have the excellent offseason he had a year ago - NBC Sports",
+                      "description":  "Brandon Beane: We need Keon Coleman to have the excellent offseason he had a year ago\u0026nbsp;\u0026nbsp;NBC SportsBills GM says embattled WR Coleman will have \u0027every chance\u0027\u0026nbsp;\u0026nbsp;ESPNBills could swoop on star WR from AFC rivals for Josh Allen\u0026nbsp;\u0026nbsp;Yahoo SportsBills GM Issues Sharp Warning to WR Keon Coleman\u0026nbsp;\u0026nbsp;heavy.comBills GM Brandon Beane makes expectations crystal clear for Keon Coleman\u0026nbsp;\u0026nbsp;BuffaLowDown",
+                      "url":  "https://news.google.com/articles/CBMi3wFBVV95cUxOekZ0c1ZVVnBOdGpoczM1eTJDb1ExbHFLcnI1Ym82YUtaeGNKUlZRdXNxWk9faHZsWEFVUER5ZFlENXVmWTVfTVpvOEoxZTRfdDdqLXJtU3gtZThjLU9RZWZuM1lVQUZYaW4xakMtYzZheFhvWHlFbExsZC1IWEpfbVpHbVg5djZCY1Z3bU04RWZUZ3FWN0FSQXVVS3pSZHJsTFhXZnZhcnl0cWRJb2lZV2tnWFlJNTIzOEJLcHkxdndnd3h1emJNemRsUEZFTFFYdW1CcFl4M3BJVk13cmpZ?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T22:23:46.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "The New York Times"
+                                 },
+                      "author":  null,
+                      "title":  "The Password That Lets Caterpillars Hide in an Antâs Lair - The New York Times",
+                      "description":  "The Password That Lets Caterpillars Hide in an Antâs Lair\u0026nbsp;\u0026nbsp;The New York TimesBaby butterflies use rhythm to fool ants into taking care of them\u0026nbsp;\u0026nbsp;Scientific AmericanBug beats: Caterpillars use complex rhythms to communicate with ants\u0026nbsp;\u0026nbsp;Phys.orgKeeping a beat wins caterpillars friends in low places\u0026nbsp;\u0026nbsp;Science NewsNew research finds caterpillars âdrumâ to communicate with ants\u0026nbsp;\u0026nbsp;The Elkhart Truth",
+                      "url":  "https://news.google.com/articles/CBMifEFVX3lxTE9uTmQzZGI2TW4wYmNDd09vWlZrcjJtcUtqR0VIT2JhejlnVExuTjdzVWc3dWhSd2Q4Vk1KU3VPNlZKVFNlMkdBSTRpdjdRMnFpQzZ0cjhfV0FkTURGZG5IdEE0XzVhcUZqWENwM2ZaVEtzWmd0dzA3OVk2cXY?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T14:01:35.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Star Tribune"
+                                 },
+                      "author":  null,
+                      "title":  "How Minnesotans can watch the âBlood Moonâ before it disappears until 2028 - Star Tribune",
+                      "description":  "How Minnesotans can watch the âBlood Moonâ before it disappears until 2028\u0026nbsp;\u0026nbsp;Star TribuneHow to View the âBlood Moonâ Total Lunar Eclipse on March 3\u0026nbsp;\u0026nbsp;WIREDTotal lunar eclipse will turn the moon red over Oregon. When can you see it?\u0026nbsp;\u0026nbsp;KGWThe Goodâand BadâNews About Next Weekâs Total Lunar Eclipse\u0026nbsp;\u0026nbsp;GizmodoTotal Lunar Eclipse to be visible early Tuesday morning, weather permitting\u0026nbsp;\u0026nbsp;WPTZ",
+                      "url":  "https://news.google.com/articles/CBMirwFBVV95cUxNS3JneUhlbTNqLVNmeEJnWDQxeVU0SHM4UEJkV3k3OU1aTUhocVg2ZVBzTWN3MEMxS2Jfbk44RHp2dFZxaXd4eWdnN2x2UW05RHZMaGlCVjJPaDBLOGpHUjNmeE14MlpiSUR3ZjlIRFl3ODR0QndvMDJWU0hxVXc1UkE2aUhxRmhFdXIwX1NyRWJJTGp4TVdlVVEtRTdIck9rdUtPY1Jtbm9Xb1NXT19J?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T22:14:19.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "NASA Science (.gov)"
+                                 },
+                      "author":  null,
+                      "title":  "NASAâs Webb Examines Cranium Nebula - NASA Science (.gov)",
+                      "description":  "NASAâs Webb Examines Cranium Nebula\u0026nbsp;\u0026nbsp;NASA Science (.gov)Webbâs Latest Photos Are Among its Most Incredible Yet\u0026nbsp;\u0026nbsp;PetaPixelJames Webb Telescope captures dramatic images of dying star\u0026nbsp;\u0026nbsp;New York PostObservations of the Exposed Cranium Nebula\u0026nbsp;\u0026nbsp;NASA Science (.gov)Webb examines \u0027Exposed Cranium\u0027 nebula\u0026nbsp;\u0026nbsp;Phys.org",
+                      "url":  "https://news.google.com/articles/CBMif0FVX3lxTE1hTGZTb09xdFVSSDM0d2tqZGhTdW5mVXBQTGw0cGViaTlORVdmS0xYSFNwTzF3RHhfM21VclRmbGE2cmFBdU1VRFNzMUNWMmc5Rkl6ZlBJRTdnNEw0VmRzMmdmV0NLRVNJRzhGcEhmZlRleU1TTnRvel9YUFlWUk0?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T15:00:00.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Nature"
+                                 },
+                      "author":  null,
+                      "title":  "Argentine fossil rewrites evolutionary history of a baffling dinosaur clade - Nature",
+                      "description":  "Argentine fossil rewrites evolutionary history of a baffling dinosaur clade\u0026nbsp;\u0026nbsp;Nature\u0027Exquisite\u0027 fossil of one of the smallest dinosaurs found in Argentina\u0026nbsp;\u0026nbsp;ReutersTiny predatory dinosaur weighed less than a chicken\u0026nbsp;\u0026nbsp;New Scientist\u0027Tiny\u0027 dinosaur, big impact: A 90-million-year-old fossil rewrites history\u0026nbsp;\u0026nbsp;Phys.orgONLINE EMBARGO 16.00 GMT, 25/02/26\u0026nbsp;\u0026nbsp;themercury.com",
+                      "url":  "https://news.google.com/articles/CBMiX0FVX3lxTE9aU1ViSUIyenEwd0dYNHppaXZvdDBWSmZYX254cm1md29uU0ZFaldoZXZVYWVBU185WmxlbjBMWG5OQmtzVVQwaXBtdnQyallvZDM2aVVZN3gwNWFOZi13?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T16:04:19.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "CNN"
+                                 },
+                      "author":  null,
+                      "title":  "âSuperAgersâ: Scientists discover a key to staying mentally sharp in old age - CNN",
+                      "description":  "âSuperAgersâ: Scientists discover a key to staying mentally sharp in old age\u0026nbsp;\u0026nbsp;CNNHuman hippocampal neurogenesis in adulthood, ageing and Alzheimerâs disease\u0026nbsp;\u0026nbsp;NatureSuper-Agersâ Brains Have a Special Ability, New Study Suggests - The New York Times\u0026nbsp;\u0026nbsp;The New York TimesNot genetics: The common trait of clear-minded 80-year-olds\u0026nbsp;\u0026nbsp;The Jerusalem PostHave scientists uncovered the secret of âsuper-agerâ brains?\u0026nbsp;\u0026nbsp;The Times",
+                      "url":  "https://news.google.com/articles/CBMikAFBVV95cUxPdG90MHhjTXMwZE1EVFRDdE9qbEZaRUljVVo2a0VJOGVjaFFkNnVPOFgzbWtyYjd6b09GclZHc2RRNXJrVzU0aFZYaUYxYzlvRktHWEMtNGtRR3BpTnpJNm0tdWVmVm51UF84dkxkMEZOTE5hMmVtaklZOC1OcDBEM0ZBNFJrbENwV3dGbU0zZWU?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T16:00:34.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "Tampa Bay Times"
+                                 },
+                      "author":  null,
+                      "title":  "Florida uses emergency rule to cut patients off AIDS medication - Tampa Bay Times",
+                      "description":  "Florida uses emergency rule to cut patients off AIDS medication\u0026nbsp;\u0026nbsp;Tampa Bay TimesHIV medications could be cut off for thousands of Floridians\u0026nbsp;\u0026nbsp;WGCUPress Telecon @ 12:15 pm ET: FL Health Dept. Signs Death Warrant for 16,000 AIDS Drug Recipients\u0026nbsp;\u0026nbsp;AIDS Healthcare FoundationNew emergency rules finish an administrative challenge to AIDS drug program cuts\u0026nbsp;\u0026nbsp;Florida PhoenixFDOH cannot remain silent on HIV medicine crisis | Opinion\u0026nbsp;\u0026nbsp;Tallahassee Democrat",
+                      "url":  "https://news.google.com/articles/CBMiwgFBVV95cUxNS1poTUZEZW1uYV9FTGpJZHA1SDNoWi04emw2TFNNb184UV9vMXNwSkxqS3FNZE5qbjY0UTBNY09rX1MxOVdtbElLWGF2X1NSUllRczhsY0lCWU1mNHR1aW1JUi1Db1h6TGNBMGxUU2xraHg4WFAwa3JzbTNqZzJFaElVYUNGNGhyc3RnaWZZSHJKV3Q5MUVfaEIwOFI3eW1jZ0gwNEc2Zy00Vy1FdXlyVXRxWHpxdTRodWZZT0FycWRTQQ?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T22:08:26.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "KOMO"
+                                 },
+                      "author":  null,
+                      "title":  "Rainier Beach High School confirms active tuberculosis case, 130 people possibly exposed - KOMO",
+                      "description":  "Rainier Beach High School confirms active tuberculosis case, 130 people possibly exposed\u0026nbsp;\u0026nbsp;KOMOAbout 130 people at Rainier Beach High School advised to get TB testing\u0026nbsp;\u0026nbsp;KING5.comCase of âactiveâ tuberculosis diagnosed at Rainier Beach High School\u0026nbsp;\u0026nbsp;KIRO 7 News SeattleTuberculosis case linked to Seattle\u0027s Rainier Beach High School\u0026nbsp;\u0026nbsp;FOX 13 SeattleActive tuberculosis case linked to Rainier Beach High School; 130 to be tested\u0026nbsp;\u0026nbsp;MyNorthwest.com",
+                      "url":  "https://news.google.com/articles/CBMiygJBVV95cUxONTR1NHJBdjFFTC1MaEhWSjBMei1MYnZCSjBDNkJnZHBydUwtdVVrTDR5VGc0bDVKbUR0U3RITzdqM05tamt3cmpKT0ZDVk03eklmaGV5NWdNRmhkM0ZoMWVFczJhdng1QnFfV0RjenZ5RlJKeHk1VEFudWRpOVI0MlI3bDYyc2RESFhYYi1yRDNJNndKR0lvOG1pZXZwWHVyTUtBazZTX3Z1WFhRRGJnRlVTY2d4RndFVlhRV3RjQUo5dkFOeHc2MmV5RFdEM0hzQ1VBNl96d2UtdUNqRlNBelF4RnNJd1pTTG5LZ21ETzQzamJLUVoyYmJ2QmV1TXNvNnp3X3ZBMlpBaHFhVzgzQnd4alhYWF9uMmY5OE16Tm9XVHZnNmVxY0JPdkFCWW5WUGhKNG5lbzUyNW5oaWVfd0pXV3daSEduSFE?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T23:24:06.000Z",
+                      "content":  null
+                  },
+                  {
+                      "source":  {
+                                     "id":  null,
+                                     "name":  "NBC News"
+                                 },
+                      "author":  null,
+                      "title":  "Why heart disease and stroke are projected to rise significantly in women, even younger ones - NBC News",
+                      "description":  "Why heart disease and stroke are projected to rise significantly in women, even younger ones\u0026nbsp;\u0026nbsp;NBC NewsMost US Women Could Have Cardiovascular Disease by 2050, AHA Warns\u0026nbsp;\u0026nbsp;SciTechDaily6 in 10 U.S. women projected to have at least one type of cardiovascular disease by 2050\u0026nbsp;\u0026nbsp;www.heart.orgWomen suffer heart attacks too. Understanding risks, symptoms and how to save yourself\u0026nbsp;\u0026nbsp;AP NewsHeart disease in young women projected to rise sharply by 2050\u0026nbsp;\u0026nbsp;Scientific American",
+                      "url":  "https://news.google.com/articles/CBMivgFBVV95cUxOV1ZZQWdVdlhINXZCRjZCeDQzYVhyT0dSZk1OOXNmSHRzWlBDNXdIMmlYSGJuZ0RxMFVwN0YtVGhHM29FVXYwdS1Ed0RvcThoMkxPd3BuUWtmdnJ3eWRlTWkyN3NZN08zQ1hGT1JrMkl1bEJRWWwyeGhPcHVkbkRSYzhWZE43QkR6WnJLTUtBM1VJakdlMEJxeVVKVFBCSWcwMG9RX2ZMU1ZXUFltRkUwZkdsWTB2MFp3NF8tTUN3?oc=5",
+                      "urlToImage":  null,
+                      "publishedAt":  "2026-02-25T10:49:38.000Z",
+                      "content":  null
+                  }
+              ],
+    "Count":  38
+}
