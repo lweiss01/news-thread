@@ -12,7 +12,6 @@ const mockKV = {
 
 describe('resolver', () => {
     let originalFetch: any;
-    const originalFetch = global.fetch;
 
     beforeEach(() => {
         originalFetch = global.fetch;
