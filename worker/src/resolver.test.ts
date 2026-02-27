@@ -135,4 +135,63 @@ describe('resolver', () => {
         const result = await resolveUrl(encodedUrl, mockKV);
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/')); // Should fallback to normalized URL on CAPTCHA
     });
+
+    it('correctly escapes special characters in BatchExecute request', async () => {
+        const maliciousId = '123" OR 1=1';
+        const encodedUrl = `https://news.google.com/rss/articles/${maliciousId}`;
+
+        // Mock fetch to fail first two strategies and capture the third (BatchExecute)
+        const fetchMock = vi.fn();
+        global.fetch = fetchMock;
+
+        // 1. Initial fetch fails (404) -> Strategies 1 & 2 fail
+        fetchMock.mockImplementation(async (url: string, init: any) => {
+            if (url === encodedUrl) {
+                return {
+                    status: 404,
+                    headers: { get: () => null },
+                    text: async () => 'Not Found',
+                    ok: false
+                };
+            }
+
+            // 2. BatchExecute request
+            if (url.includes('batchexecute')) {
+                // Return a valid response so the function doesn't crash,
+                // but we are interested in the request body
+                 return {
+                    status: 200,
+                    headers: { get: () => null },
+                    text: async () => '["garturlres","https://resolved.com",]',
+                    ok: true,
+                    url: 'https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je'
+                };
+            }
+
+            return { ok: false };
+        });
+
+        await resolveUrl(encodedUrl, mockKV);
+
+        // Verify the fetch call to BatchExecute
+        const calls = fetchMock.mock.calls;
+        const batchExecuteCall = calls.find((call: any[]) => call[0].includes('batchexecute'));
+
+        expect(batchExecuteCall).toBeDefined();
+
+        const body = new URLSearchParams(batchExecuteCall[1].body).get('f.req');
+        expect(body).toBeDefined();
+
+        // The body contains a nested JSON structure.
+        // We need to parse it to verify the ID was escaped correctly.
+        // Structure is [[[ "Fbv4je", "[...]", null, "generic" ]]]
+        const parsedBody = JSON.parse(body!);
+        const innerJsonString = parsedBody[0][0][1];
+        const innerJson = JSON.parse(innerJsonString);
+
+        // The ID is the last element in the inner array: [..., "ID"]
+        const actualId = innerJson[innerJson.length - 1];
+
+        expect(actualId).toBe(maliciousId);
+    });
 });
