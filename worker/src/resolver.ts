@@ -178,8 +178,30 @@ async function tryBatchExecute(url: string): Promise<string | null> {
         // Fetch the main page to get ts and sg (though the RPC might work without it if we use the right format)
         // Based on decoderv3.py and RssNewsRepository.kt
 
-        const innerArrayStr = `["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0],"${id}"]`;
-        const reqData = `[[["Fbv4je","${innerArrayStr.replace(/"/g, '\\"')}",null,"generic"]]]`;
+        // Use strict JSON.stringify for safety to prevent injection in the nested JSON
+        const innerArray = [
+            "garturlreq",
+            [
+                ["en-US", "US", ["FINANCE_TOP_INDICES", "WEB_TEST_1_0_0"], null, null, 1, 1, "US:en", null, 180, null, null, null, null, null, 0, null, null, [1608992183, 723341000]],
+                "en-US",
+                "US",
+                1,
+                [2, 3, 4, 8],
+                1,
+                0,
+                "655000234",
+                0,
+                0,
+                null,
+                0
+            ],
+            id
+        ];
+
+        const innerArrayStr = JSON.stringify(innerArray);
+        const reqData = JSON.stringify([
+            [["Fbv4je", innerArrayStr, null, "generic"]]
+        ]);
 
         const response = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je', {
             method: 'POST',
