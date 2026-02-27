@@ -22,6 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.newsthread.app.presentation.theme.ProjectTheme
@@ -65,11 +69,28 @@ fun BiasHeatmap(
                 Row(modifier = Modifier.fillMaxSize()) {
                     val biasScores = listOf(-2, -1, 0, 1, 2)
                     biasScores.forEach { score ->
+                        val count = biasCounts[score] ?: 0
+                        val label = when (score) {
+                            -2 -> "Left"
+                            -1 -> "Left Leaning"
+                            0 -> "Center"
+                            1 -> "Right Leaning"
+                            2 -> "Right"
+                            else -> "Unknown"
+                        }
+
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .clickable { onSegmentClick(score) }
+                                .clickable(
+                                    enabled = count > 0,
+                                    role = Role.Button,
+                                    onClickLabel = "Jump to $label perspectives"
+                                ) { onSegmentClick(score) }
+                                .semantics {
+                                    contentDescription = "$label: $count sources"
+                                }
                         )
                     }
                 }
@@ -159,7 +180,17 @@ fun BiasHeatmap(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = ProjectTheme.spacing.xs)
-                    .then(if (interactive) Modifier.clickable { onUnratedClick() } else Modifier)
+                    .then(
+                        if (interactive) {
+                            Modifier.clickable(
+                                role = Role.Button,
+                                onClickLabel = "Jump to unrated sources"
+                            ) { onUnratedClick() }
+                        } else Modifier
+                    )
+                    .semantics {
+                        contentDescription = "$unratedCount unrated sources available"
+                    }
             )
         }
     }
