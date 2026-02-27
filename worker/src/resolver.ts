@@ -8,6 +8,10 @@ const HREF_REGEX = /href="([^">]+)"/gi;
 const URL_LIKE_REGEX = /https?:\/\/[^\s"'<>]+/g;
 const BACKSLASH_REGEX = /\\/g;
 
+// Optimization: Hoist buffer creations to module scope to avoid allocation on every call.
+const DECODER_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
+const DECODER_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
+
 export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
     if (!isValidGoogleNewsHost(encodedUrl)) return encodedUrl;
 
@@ -57,20 +61,19 @@ function tryBase64Decode(url: string): string | null {
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
-        const prefix = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
-        if (decodedStr.startsWith(prefix)) {
-            decodedStr = decodedStr.substring(prefix.length);
+        if (decodedStr.startsWith(DECODER_PREFIX)) {
+            decodedStr = decodedStr.substring(DECODER_PREFIX.length);
         }
 
         // Suffix stripping (\xd2\x01\x00)
-        const suffix = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
-        if (decodedStr.endsWith(suffix)) {
-            decodedStr = decodedStr.substring(0, decodedStr.length - suffix.length);
+        if (decodedStr.endsWith(DECODER_SUFFIX)) {
+            decodedStr = decodedStr.substring(0, decodedStr.length - DECODER_SUFFIX.length);
         }
 
         // Length byte logic
-        const bytesArray = Buffer.from(decodedStr, 'latin1');
-        const length = bytesArray[0];
+        // Optimization: Use charCodeAt(0) to get the byte value directly from the latin1 string
+        // instead of allocating a new Buffer just to read the first byte.
+        const length = decodedStr.charCodeAt(0);
 
         if (length >= 0x80) {
             // Varint-like offset for longer payloads
