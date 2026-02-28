@@ -28,8 +28,8 @@ app.use('/v1/*', async (c, next) => {
     const apiKey = c.req.header('X-API-Key');
     const userAgent = c.req.header('User-Agent');
 
-    // Check API Key if set in environment
-    if (c.env.SHARED_KEY && apiKey !== c.env.SHARED_KEY) {
+    // Check API Key strictly (Fail Closed)
+    if (!c.env.SHARED_KEY || apiKey !== c.env.SHARED_KEY) {
         return c.json({ error: 'Unauthorized' }, 401);
     }
 
