@@ -104,7 +104,11 @@ class NotificationHelper @Inject constructor(
         } else {
             // App is background, show system notification
             with(NotificationManagerCompat.from(context)) {
-                notify(storyId.hashCode(), builder.build())
+                try {
+                    notify(storyId.hashCode(), builder.build())
+                } catch (e: SecurityException) {
+                    android.util.Log.e("NotificationHelper", "Missing permission to show notification", e)
+                }
             }
         }
     }
