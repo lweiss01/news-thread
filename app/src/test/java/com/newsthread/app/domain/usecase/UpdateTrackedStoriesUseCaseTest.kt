@@ -80,7 +80,7 @@ class UpdateTrackedStoriesUseCaseTest {
         // Given
         val story = createStoryWithArticles("story1", "Test Story")
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
-        whenever(cachedArticleDao.getRecentUnassignedArticlesWithEmbeddings(any())).thenReturn(emptyList())
+        whenever(cachedArticleDao.getRecentCandidateArticles(any())).thenReturn(emptyList())
 
         // When
         val matchResults = useCase()
@@ -98,11 +98,12 @@ class UpdateTrackedStoriesUseCaseTest {
         val story = createStoryWithArticles("story1", "Test Story", listOf("article1"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(listOf(storyEmbedding))
+        whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
 
         val candidate = createCachedArticle("candidate1", "Similar Article")
-        whenever(cachedArticleDao.getRecentUnassignedArticlesWithEmbeddings(any())).thenReturn(listOf(candidate))
-        whenever(embeddingDao.getByArticleUrls(listOf("candidate1"))).thenReturn(
-            listOf(createEmbeddingEntity("candidate1", candidateEmbedding))
+        whenever(cachedArticleDao.getRecentCandidateArticles(any())).thenReturn(listOf(candidate))
+        whenever(embeddingDao.getByArticleUrls(any())).thenReturn(
+            listOf(createEmbeddingEntity("candidate1", candidateEmbedding), createEmbeddingEntity("article1", storyEmbedding))
         )
 
         // When
@@ -123,17 +124,18 @@ class UpdateTrackedStoriesUseCaseTest {
         val story = createStoryWithArticles("story1", "Test Story", listOf("article1"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(listOf(storyEmbedding))
+        whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
 
         val candidate = createCachedArticle("candidate1", "Related Article")
-        whenever(cachedArticleDao.getRecentUnassignedArticlesWithEmbeddings(any())).thenReturn(listOf(candidate))
-        whenever(embeddingDao.getByArticleUrls(listOf("candidate1"))).thenReturn(
-            listOf(createEmbeddingEntity("candidate1", candidateEmbedding))
+        whenever(cachedArticleDao.getRecentCandidateArticles(any())).thenReturn(listOf(candidate))
+        whenever(embeddingDao.getByArticleUrls(any())).thenReturn(
+            listOf(createEmbeddingEntity("candidate1", candidateEmbedding), createEmbeddingEntity("article1", storyEmbedding))
         )
 
         // When
         val matchResults = useCase()
 
-        // Then  
+        // Then
         assertTrue(matchResults.isNotEmpty())
         // Cosine of [1,0,0] and [0.7,0.7,0] ≈ 0.7/√(0.49+0.49) ≈ 0.707
         // This should be a STRONG match based on our thresholds
@@ -148,11 +150,12 @@ class UpdateTrackedStoriesUseCaseTest {
         val story = createStoryWithArticles("story1", "Test Story", listOf("article1"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(listOf(storyEmbedding))
+        whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
 
         val candidate = createCachedArticle("candidate1", "Unrelated Article")
-        whenever(cachedArticleDao.getRecentUnassignedArticlesWithEmbeddings(any())).thenReturn(listOf(candidate))
-        whenever(embeddingDao.getByArticleUrls(listOf("candidate1"))).thenReturn(
-            listOf(createEmbeddingEntity("candidate1", candidateEmbedding))
+        whenever(cachedArticleDao.getRecentCandidateArticles(any())).thenReturn(listOf(candidate))
+        whenever(embeddingDao.getByArticleUrls(any())).thenReturn(
+            listOf(createEmbeddingEntity("candidate1", candidateEmbedding), createEmbeddingEntity("article1", storyEmbedding))
         )
 
         // When
@@ -170,7 +173,7 @@ class UpdateTrackedStoriesUseCaseTest {
         val storyEmbedding1 = floatArrayOf(1f, 0f, 0f)
         val storyEmbedding2 = floatArrayOf(0.9f, 0.1f, 0f)
         // Centroid ≈ [0.95, 0.05, 0]
-        
+
         // Candidate: similar enough to match but adds new perspective
         val candidateEmbedding = floatArrayOf(0.7f, 0.5f, 0f, 0f) // Different direction but similar magnitude
 
@@ -179,14 +182,15 @@ class UpdateTrackedStoriesUseCaseTest {
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(
             listOf(storyEmbedding1, storyEmbedding2)
         )
+        whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
 
         val candidate = createCachedArticle("candidate1", "New Angle Article")
-        whenever(cachedArticleDao.getRecentUnassignedArticlesWithEmbeddings(any())).thenReturn(listOf(candidate))
-        
+        whenever(cachedArticleDao.getRecentCandidateArticles(any())).thenReturn(listOf(candidate))
+
         // Match dimensions for test
         val candidateEmbedding3d = floatArrayOf(0.85f, 0.4f, 0f)
-        whenever(embeddingDao.getByArticleUrls(listOf("candidate1"))).thenReturn(
-            listOf(createEmbeddingEntity("candidate1", candidateEmbedding3d))
+        whenever(embeddingDao.getByArticleUrls(any())).thenReturn(
+            listOf(createEmbeddingEntity("candidate1", candidateEmbedding3d), createEmbeddingEntity("article1", storyEmbedding1), createEmbeddingEntity("article2", storyEmbedding2))
         )
 
         // When
