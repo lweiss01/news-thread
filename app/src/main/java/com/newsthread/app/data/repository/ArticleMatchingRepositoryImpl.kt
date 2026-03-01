@@ -79,7 +79,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
                 if (urls.isNotEmpty()) {
                     val cachedArticles = cachedArticleDao.getByUrls(urls).map { it.toDomain() }
-                    
+
                     // If we found all the articles referenced in the cache
                     if (cachedArticles.isNotEmpty()) {
                         safeLogD("Cache Hit: Found ${cachedArticles.size} matches for ${article.title.take(30)}...")
@@ -92,7 +92,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
             // 2. Try to get source embedding for semantic matching
             val sourceEmbedding = embeddingRepository.getOrGenerateEmbedding(article.url)
-            
+
             // Calculate dynamic time window
             val articleDate = try { Instant.parse(article.publishedAt) } catch (e: Exception) { Instant.now() }
             val (fromDate, toDate) = timeWindowCalculator.calculateWindowStrings(articleDate)
@@ -104,7 +104,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             if (sourceEmbedding != null) {
                 // 3. Semantic matching path (Phase 4)
                 safeLogD("Using semantic matching for: ${article.title.take(40)}...")
-                
+
                 // --- STAGE 1: Feed-Internal Matching (Free, no API calls) ---
                 val feedMatches = findFeedMatches(sourceEmbedding, article.url, visitedUrls, article.title)
                 allMatches.addAll(feedMatches)
@@ -114,7 +114,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 if (allMatches.size < 3) {
                     val titleEntities = entityExtractor.extractEntities(article.title, article.source.name)
                     val query = titleEntities.take(3).joinToString(" ").ifEmpty { article.title.take(50) }
-                    
+
                     safeLogD("Searching backend for more matches: $query")
                     val apiMatches = searchSemanticMatches(
                         sourceEmbedding, query, article, fromDate, toDate, visitedUrls
@@ -134,7 +134,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 .distinctBy { it.article.url }
                 .sortedByDescending { it.score }
                 .map { it.article }
-            
+
             safeLogD("Total matches found: ${matchedArticles.size}")
 
             // 5. Save to Cache
@@ -145,10 +145,10 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 .sortedByDescending { it.score }
                 .map { it.score }
                 .joinToString(prefix = "[", postfix = "]", separator = ",")
-            
+
             // Save articles first
             cachedArticleDao.insertAll(matchedArticles.map { it.toEntity(now) })
-            
+
             // Save match metadata
             matchResultDao.insert(
                 MatchResultEntity(
@@ -170,7 +170,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             // CRITICAL: Do not catch CancellationException (including AbortFlowException from .first())
             if (e is kotlinx.coroutines.CancellationException) throw e
-            
+
             safeLogE("Error finding similar articles: ${e.message}", e)
             emit(Result.failure(e))
         }
@@ -186,7 +186,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         val candidateUrls = cachedArticles
             .filter { it.url != sourceUrl && it.url !in visitedUrls }
             .map { it.url }
-        
+
         if (candidateUrls.isEmpty()) return emptyList()
 
         // Get embeddings for all candidates
@@ -199,15 +199,15 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 val candidateEmbedding = byteArrayToFloatArray(entity.embedding)
                 val similarity = similarityMatcher.cosineSimilarity(sourceEmbedding, candidateEmbedding)
                 val candidateArticle = urlToArticle[entity.articleUrl]?.toDomain() ?: return@mapNotNull null
-                
+
                 // HYBRID MATCHING: Use thresholds from SimilarityMatcher
                 val entityOverlap = if (sourceTitle.isNotBlank()) {
                     entityExtractor.titleEntityOverlap(sourceTitle, candidateArticle.title)
                 } else 0
-                
-                val isMatch = similarity >= SimilarityMatcher.STRONG_THRESHOLD || 
+
+                val isMatch = similarity >= SimilarityMatcher.STRONG_THRESHOLD ||
                             (similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1)
-                
+
                 if (isMatch) {
                     visitedUrls.add(entity.articleUrl)
                     ScoredArticle(candidateArticle, similarity)
@@ -236,21 +236,24 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 .distinctBy { it.url }
 
             val matches = mutableListOf<ScoredArticle>()
-            
+
+            // Bulk insert candidates first so embeddings can be generated
+            val now = System.currentTimeMillis()
+            if (candidates.isNotEmpty()) {
+                cachedArticleDao.insertAll(candidates.map { it.toEntity(now) })
+            }
+
             for (candidate in candidates) {
-                // Save candidate first so embedding can be generated
-                cachedArticleDao.insert(candidate.toEntity(System.currentTimeMillis()))
-                
                 // Generate embedding for candidate
                 val candidateEmbedding = embeddingRepository.getOrGenerateEmbedding(candidate.url)
-                
+
                 if (candidateEmbedding != null) {
                     val similarity = similarityMatcher.cosineSimilarity(sourceEmbedding, candidateEmbedding)
                     val entityOverlap = entityExtractor.titleEntityOverlap(originalArticle.title, candidate.title)
-                    
-                    val isMatch = similarity >= SimilarityMatcher.STRONG_THRESHOLD || 
+
+                    val isMatch = similarity >= SimilarityMatcher.STRONG_THRESHOLD ||
                                 (similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1)
-                    
+
                     if (isMatch) {
                         visitedUrls.add(candidate.url)
                         matches.add(ScoredArticle(candidate, similarity))
@@ -261,14 +264,14 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                     val allEntities = entityExtractor.extractEntities(originalArticle.title, originalArticle.source.name) + entityExtractor.extractEntities(originalArticle.description ?: "", originalArticle.source.name)
                     val candidateEntities = entityExtractor.extractEntities(candidate.title, candidate.source.name) + entityExtractor.extractEntities(candidate.description ?: "", candidate.source.name)
                     val overlap = allEntities.intersect(candidateEntities.toSet()).size.toFloat() / maxOf(allEntities.size, 1).toFloat()
-                    
+
                     if (overlap >= 0.3f) { // 30% entity overlap as fallback
                         visitedUrls.add(candidate.url)
                         matches.add(ScoredArticle(candidate, overlap * 0.6f)) // Scale to approximate similarity score
                     }
                 }
             }
-            
+
             return matches.sortedByDescending { it.score }
         } catch (e: Exception) {
             safeLogE("Search failed for query: $query", e)
@@ -346,7 +349,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     }
 
     private suspend fun categorizeAndSort(
-        original: Article, 
+        original: Article,
         matches: List<Article>,
         matchMethod: String
     ): ArticleComparison {
@@ -375,7 +378,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         }
 
         val articleDate = try { Instant.parse(original.publishedAt) } catch (e: Exception) { Instant.now() }
-        
+
         fun sortByDateProximity(list: List<Article>): List<Article> {
             return list.sortedBy {
                 try {
@@ -432,7 +435,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 val passes = (entityOverlap >= 10.0 || sharedEntities.isNotEmpty()) &&
                         titleSimilarity >= 10.0 &&
                         titleSimilarity <= 100.0
-                
+
                 if (passes) {
                     visitedUrls.add(candidate.url)
                 }

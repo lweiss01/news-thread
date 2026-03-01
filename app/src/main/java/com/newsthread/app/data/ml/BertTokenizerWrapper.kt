@@ -37,6 +37,9 @@ open class BertTokenizerWrapper @Inject constructor(
         private const val UNK_TOKEN = "[UNK]"
         private val WHITESPACE_REGEX = Regex("\\s+")
         const val MAX_LENGTH = 128
+
+        private val WHITESPACE_REGEX = Regex("\\s+")
+        private val PUNCTUATION_REGEX = Regex("([.,!?;:])")
     }
 
     /**
@@ -140,7 +143,7 @@ open class BertTokenizerWrapper @Inject constructor(
             .filter { it.isNotBlank() }
             .flatMap { word ->
                 // Split punctuation
-                word.replace(Regex("([.,!?;:])"), " $1 ").split(Regex("\\s+"))
+                word.replace(PUNCTUATION_REGEX, " $1 ").split(WHITESPACE_REGEX)
             }
             .filter { it.isNotBlank() }
     }

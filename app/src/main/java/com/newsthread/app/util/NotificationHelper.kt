@@ -103,8 +103,16 @@ class NotificationHelper @Inject constructor(
             }
         } else {
             // App is background, show system notification
-            with(NotificationManagerCompat.from(context)) {
-                notify(storyId.hashCode(), builder.build())
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    with(NotificationManagerCompat.from(context)) {
+                        notify(storyId.hashCode(), builder.build())
+                    }
+                }
+            } else {
+                with(NotificationManagerCompat.from(context)) {
+                    notify(storyId.hashCode(), builder.build())
+                }
             }
         }
     }
