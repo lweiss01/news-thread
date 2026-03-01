@@ -37,8 +37,6 @@ open class BertTokenizerWrapper @Inject constructor(
         private const val UNK_TOKEN = "[UNK]"
         private val WHITESPACE_REGEX = Regex("\\s+")
         const val MAX_LENGTH = 128
-
-        private val WHITESPACE_REGEX = Regex("\\s+")
         private val PUNCTUATION_REGEX = Regex("([.,!?;:])")
     }
 
