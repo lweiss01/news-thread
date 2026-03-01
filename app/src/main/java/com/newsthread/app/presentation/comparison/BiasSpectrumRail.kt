@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
@@ -66,12 +68,35 @@ fun BiasSpectrumRail(
     val centerColor = ProjectTheme.bias.pointColors[0] ?: Color.Gray
     val rightColor = ProjectTheme.bias.pointColors[1] ?: Color.Red
 
+    val summary = remember(distribution) {
+        val descriptions = distribution.entries
+            .filter { it.value > 0 }
+            .sortedBy { it.key }
+            .map { (score, count) ->
+                val label = when (score) {
+                    -2 -> "Left"
+                    -1 -> "Left Leaning"
+                    0 -> "Center"
+                    1 -> "Right Leaning"
+                    2 -> "Right"
+                    else -> "Unknown"
+                }
+                "$count $label"
+            }
+
+        if (descriptions.isEmpty()) "No rated sources available"
+        else "Bias Spectrum Rail: " + descriptions.joinToString(", ")
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp) // Fixed height for rail
             .background(MaterialTheme.colorScheme.surfaceVariant) // updated from surfaceContainer (M3 token mismatch possible, using surfaceVariant)
             .padding(vertical = ProjectTheme.spacing.s)
+            .semantics(mergeDescendants = true) {
+                contentDescription = summary
+            }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
