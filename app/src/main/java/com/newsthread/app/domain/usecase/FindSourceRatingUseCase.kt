@@ -50,7 +50,7 @@ class FindSourceRatingUseCase @Inject constructor() {
             .removeSuffix(".com")
             .removeSuffix(" news")
             .removeSuffix(" (.gov)")
-            .replace(Regex("[^a-z0-9]"), "") // Remove all non-alphanumeric
+            .replace(NON_ALPHANUMERIC_REGEX, "") // Remove all non-alphanumeric
             .trim()
     }
 
@@ -62,5 +62,10 @@ class FindSourceRatingUseCase @Inject constructor() {
         } catch (e: Exception) {
             url.substringAfter("://").substringBefore("/").removePrefix("www.").lowercase()
         }
+    }
+
+    companion object {
+        // Optimization: Pre-compile Regex objects to avoid allocation in hot paths
+        private val NON_ALPHANUMERIC_REGEX = Regex("[^a-z0-9]")
     }
 }

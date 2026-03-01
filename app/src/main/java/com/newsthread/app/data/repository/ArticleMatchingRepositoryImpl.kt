@@ -462,8 +462,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
     private fun tokenize(text: String): Set<String> {
         return text.lowercase()
-            .replace(Regex("[^a-z0-9\\s]"), " ")
-            .split("\\s+".toRegex())
+            .replace(NON_ALPHANUM_WHITESPACE_REGEX, " ")
+            .split(WHITESPACE_REGEX)
             .filter { it.length > 2 }
             .toSet()
     }
@@ -478,6 +478,9 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "NewsThread"
+        // Optimization: Pre-compile Regex objects to avoid allocation in hot paths like `tokenize`
+        private val NON_ALPHANUM_WHITESPACE_REGEX = Regex("[^a-z0-9\\s]")
+        private val WHITESPACE_REGEX = Regex("\\s+")
     }
 }
 
