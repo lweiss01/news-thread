@@ -29,3 +29,41 @@ describe('Security Headers', () => {
         expect(res.headers.get('X-Frame-Options')).toBe('DENY');
     });
 });
+
+describe('API Key Authentication', () => {
+    const mockEnv = {
+        SHARED_KEY: 'test-secret-key'
+    };
+
+    it('returns 401 when API key is missing', async () => {
+        const res = await app.request('/v1/feeds/top-stories', {}, mockEnv as any);
+        expect(res.status).toBe(401);
+    });
+
+    it('returns 401 when API key is incorrect', async () => {
+        const req = new Request('http://localhost/v1/feeds/top-stories', {
+            headers: { 'X-API-Key': 'wrong-key' }
+        });
+        const res = await app.request(req, {}, mockEnv as any);
+        expect(res.status).toBe(401);
+    });
+
+    it('proceeds when API key is correct', async () => {
+        // We just verify it doesn't return 401 for API key failure.
+        // It might return 500 or another error because we don't mock fetch/caches fully here,
+        // but 401 should not happen.
+        const req = new Request('http://localhost/v1/feeds/top-stories', {
+            headers: { 'X-API-Key': 'test-secret-key' }
+        });
+
+        // Mock ENV enough to bypass the initial 401
+        const env = {
+            ...mockEnv,
+            FEED_CACHE: { get: async () => null, put: async () => null },
+            URL_CACHE: { get: async () => null, put: async () => null }
+        };
+
+        const res = await app.request(req, {}, env as any);
+        expect(res.status).not.toBe(401);
+    });
+});

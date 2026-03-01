@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { timingSafeEqual } from 'hono/utils/buffer';
 import { runWithConcurrency } from './concurrency';
 import { parseRss, mapToArticle } from './rss';
 import { resolveUrl } from './resolver';
@@ -28,8 +29,13 @@ app.use('/v1/*', async (c, next) => {
     const apiKey = c.req.header('X-API-Key');
     const userAgent = c.req.header('User-Agent');
 
-    // Check API Key strictly (Fail Closed)
-    if (!c.env.SHARED_KEY || apiKey !== c.env.SHARED_KEY) {
+    // Check API Key strictly (Fail Closed) and safely against timing attacks
+    if (!c.env.SHARED_KEY || !apiKey) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const isValid = await timingSafeEqual(c.env.SHARED_KEY, apiKey);
+    if (!isValid) {
         return c.json({ error: 'Unauthorized' }, 401);
     }
 
