@@ -110,7 +110,7 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.titleMedium
         )
         Text(
-            text = "Long-press articles in your feed to follow them.",
+            text = "Tap the bookmark icon on articles in your feed to follow them.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

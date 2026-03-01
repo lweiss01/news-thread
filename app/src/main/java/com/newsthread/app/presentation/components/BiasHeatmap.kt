@@ -47,7 +47,39 @@ fun BiasHeatmap(
     onSegmentClick: (Int) -> Unit = {},
     onUnratedClick: () -> Unit = {} // NEW: Deep link for unrated text
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    val summary = if (!interactive) {
+        val descriptions = biasCounts.entries
+            .filter { it.value > 0 }
+            .sortedBy { it.key }
+            .map { (score, count) ->
+                val label = when (score) {
+                    -2 -> "Left"
+                    -1 -> "Left Leaning"
+                    0 -> "Center"
+                    1 -> "Right Leaning"
+                    2 -> "Right"
+                    else -> "Unknown"
+                }
+                "$count $label"
+            }
+
+        if (descriptions.isEmpty()) "No rated sources available"
+        else "Coverage Bias Distribution: " + descriptions.joinToString(", ")
+    } else {
+        null
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (!interactive && summary != null) {
+                    Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = summary
+                    }
+                } else Modifier
+            )
+    ) {
         // Section Label
         Text(
             text = "Coverage Bias",
