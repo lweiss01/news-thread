@@ -14,10 +14,13 @@ import javax.inject.Inject
  */
 class ClusterArticlesUseCase @Inject constructor() {
 
-    private val stopWords = setOf(
-        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
-        "video", "live", "update", "new", "watch", "photos", "exclusive", "breaking", "news"
-    )
+    companion object {
+        private val STOP_WORDS = setOf(
+            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+            "video", "live", "update", "new", "watch", "photos", "exclusive", "breaking", "news"
+        )
+        private val NON_ALPHANUMERIC_REGEX = Regex("[^a-z0-9 ]")
+    }
 
     operator fun invoke(articles: List<Article>): List<Article> {
         val clusters = mutableListOf<Article>()
@@ -26,9 +29,9 @@ class ClusterArticlesUseCase @Inject constructor() {
 
         for (article in articles) {
             val titleWords = article.title.lowercase()
-                .replace(Regex("[^a-z0-9 ]"), "")
+                .replace(NON_ALPHANUMERIC_REGEX, "")
                 .split(" ")
-                .filter { it.isNotBlank() && !stopWords.contains(it) }
+                .filter { it.isNotBlank() && !STOP_WORDS.contains(it) }
                 .toSet()
 
             val sourceName = article.source.name ?: ""
