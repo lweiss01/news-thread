@@ -1,3 +1,4 @@
+import striptags from 'striptags';
 import { XMLParser } from 'fast-xml-parser';
 import { ParsedFeedItem, Article, RssFeedSource } from './types';
 import { findByDomain } from './sources';
@@ -9,7 +10,6 @@ const parser = new XMLParser({
 });
 
 // Optimization: Hoist regex literals to prevent re-compilation during high-volume feed parsing.
-const HTML_TAG_REGEX = /<[^>]*>?/gm;
 const WWW_PREFIX_REGEX = /^www\./;
 
 function getText(obj: any): string {
@@ -121,7 +121,7 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
 
 function stripHtml(html: string): string {
     if (!html) return '';
-    return html.replace(HTML_TAG_REGEX, '').trim();
+    return striptags(html).trim();
 }
 
 export function normalizeDate(raw: string): string | null {

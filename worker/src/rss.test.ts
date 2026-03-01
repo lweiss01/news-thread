@@ -41,4 +41,31 @@ describe('rss parser', () => {
         expect(items[0].link).toBe('https://example.com/atom/1');
         expect(items[0].publishedAt).toBe('2025-02-03T14:30:00.000Z');
     });
+
+    it('strips HTML from descriptions correctly', () => {
+        const xml = `
+      <rss version="2.0">
+        <channel>
+          <title>Test Feed</title>
+          <item>
+            <title>Malicious News</title>
+            <link>https://example.com/2</link>
+            <description>Some &lt;script&gt;alert(1)&lt;/script&gt; text with &lt;b&gt;bold&lt;/b&gt; and an unclosed &lt;img src=x onerror=alert(1)</description>
+            <pubDate>Mon, 03 Feb 2025 14:30:00 GMT</pubDate>
+          </item>
+          <item>
+            <title>More Malicious News</title>
+            <link>https://example.com/3</link>
+            <description>&lt;img src="valid" /&gt; Just text</description>
+            <pubDate>Mon, 03 Feb 2025 14:30:00 GMT</pubDate>
+          </item>
+        </channel>
+      </rss>
+    `;
+        const items = parseRss(xml);
+        expect(items).toHaveLength(2);
+
+expect(items[0].description).toBe('Some alert(1) text with bold and an unclosed');
+        expect(items[1].description).toBe('Just text');
+    });
 });
