@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.newsthread.app.domain.model.TrackedStory
@@ -122,16 +124,20 @@ fun StoryDetailScreen(
                              // User said: "Original story headline with a link to that story"
                              // I'll add a clickable "Read full story" text or button.
 
-                             Text(
-                                text = "Read original story ➤",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable {
+                             TextButton(
+                                onClick = {
                                     // Use the first article's URL as proxy for "original"
                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
                                     if (originalUrl != null) onArticleClick(originalUrl)
-                                }
-                             )
+                                },
+                                contentPadding = PaddingValues(0.dp)
+                             ) {
+                                Text(
+                                   text = "Read original story ➤",
+                                   style = MaterialTheme.typography.labelMedium,
+                                   color = MaterialTheme.colorScheme.primary
+                                )
+                             }
 
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
