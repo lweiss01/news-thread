@@ -269,15 +269,17 @@ private fun ComparisonContent(
 
                 Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
-                Text(
-                    text = "Read original story ▶",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable {
-                        onArticleClick(comparison.originalArticle)
-                    }
-                )
+                TextButton(
+                    onClick = { onArticleClick(comparison.originalArticle) },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "Read original story ▶",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
