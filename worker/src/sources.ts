@@ -17,8 +17,15 @@ export const CategoryTopics = {
 
 export const allSources: RssFeedSource[] = sources as RssFeedSource[];
 
+// Optimization: Pre-compute a Map for domain lookups to achieve O(1) performance
+// instead of O(N) array searching inside high-volume feed parsing loops.
+const sourceByDomain = new Map<string, RssFeedSource>();
+for (const source of allSources) {
+    sourceByDomain.set(source.domain, source);
+}
+
 export function findByDomain(domain: string): RssFeedSource | undefined {
-    return allSources.find(s => s.domain === domain);
+    return sourceByDomain.get(domain);
 }
 
 export function googleNewsCategoryUrl(topicId: string): string {
