@@ -37,7 +37,7 @@ fun StoryContent(
     onRejectMatch: (String) -> Unit = {}
 ) {
     val unreadCount = storyWithArticles.unreadCount
-    
+
     // Phase 9: Separate original article from updates
     val sortedArticles = remember(storyWithArticles.articles) {
         storyWithArticles.articles.sortedBy { it.fetchedAt }
@@ -57,18 +57,21 @@ fun StoryContent(
                     text = storyWithArticles.story.title,
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 // Original Source
                 originalArticle?.let { article ->
-                    Text(
-                        text = "Original: ${article.sourceName}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .clickable { onArticleClick(article.url) }
-                    )
-                    
+                    TextButton(
+                        onClick = { onArticleClick(article.url) },
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text(
+                            text = "Original: ${article.sourceName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     // Phase 9.5-05: Source Badge
                     val rating = sourceRatings[article.sourceId ?: ""] ?: sourceRatings[article.sourceName]
                     if (rating != null) {
@@ -79,7 +82,7 @@ fun StoryContent(
                         )
                     }
                 }
-                
+
                 // Explicit Last Updated (Phase 9.5 Fix)
                 Text(
                     text = "Checked: ${getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
@@ -135,7 +138,7 @@ fun StoryContent(
                     )
                 }
             }
-            
+
             Row {
                 IconButton(onClick = { onExpandChange(!isExpanded) }) {
                     Icon(
@@ -158,7 +161,7 @@ fun StoryContent(
             Column(modifier = Modifier.padding(top = 12.dp)) {
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 if (updates.isEmpty()) {
                     Text(
                         text = "No updates yet. Check back later.",
@@ -230,7 +233,7 @@ fun ArticleTimelineItem(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
+
                     if (isNew) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
@@ -248,7 +251,7 @@ fun ArticleTimelineItem(
                         }
                     }
                 }
-                
+
                 Text(
                     text = getRelativeTime(article.fetchedAt),
                     style = MaterialTheme.typography.labelSmall,
@@ -284,7 +287,7 @@ fun ArticleTimelineItem(
 private fun getRelativeTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
-    
+
     return when {
         diff < 60000 -> "Just now"
         diff < 3600000 -> "${diff / 60000}m ago"
