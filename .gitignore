@@ -78,6 +78,10 @@ Thumbs.db
 secrets.properties
 *.secret
 
+# Jules bot files (auto-generated, case-insensitive on Windows)
+.jules/
+.Jules/
+
 # Claude Code local settings
 .claude/
 
