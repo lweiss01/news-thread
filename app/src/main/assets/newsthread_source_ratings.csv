@@ -1,6 +1,7 @@
 sourceId,displayName,domain,allsidesRating,adFontesBias,adFontesReliability,mbfcBias,mbfcFactual,finalBias,finalBiasScore,finalReliability,finalReliabilityScore,notes
 reuters,Reuters,reuters.com,Center,0,Very High,Least Biased,Very High,Center,0,Very High,5,Gold standard wire service
 associated-press,Associated Press,apnews.com,Left,-5,Very High,Left-Center,Very High,Center-Left,-1,Very High,5,Wire service
+ap-news,AP News,apnews.com,Left,-5,Very High,Left-Center,Very High,Center-Left,-1,Very High,5,Wire service (alias)
 afp,AFP,afp.com,Center,0,Very High,Least Biased,Very High,Center,0,Very High,5,French global wire service
 bloomberg,Bloomberg,bloomberg.com,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Business/finance news
 wsj,Wall Street Journal,wsj.com,Center,5,High,Right-Center,High,Center-Right,1,High,4,Opinion separate from news
@@ -120,6 +121,7 @@ gizmodo-science,Gizmodo (Science),gizmodo.com/science,Left,-15,Mostly Factual,Le
 arstechnica-science,Ars Technica (Science),arstechnica.com/science,Center,0,High,Least Biased,High,Center,0,High,4,Pure science coverage
 businessinsider-tech,Business Insider (Tech),businessinsider.com/tech,Lean Left,-5,Mixed,Left-Center,Mixed,Center-Left,-1,Mixed,2,Tech news/opinion
 cnbc-tech,CNBC (Tech),cnbc.com/technology,Lean Left,-5,Mostly Factual,Left-Center,Mostly Factual,Center-Left,-1,High,4,Tech business news
+cnn,CNN,cnn.com,Left,-19,High,Left-Center,Mixed,Center-Left,-1,High,4,Cable news
 cnn-tech,CNN (Tech),cnn.com/business/tech,Left,-19,High,Left-Center,Mixed,Center-Left,-1,High,4,Tech news
 wsj-tech,WSJ (Tech),wsj.com/news/technology,Center,5,High,Right-Center,High,Center-Right,1,High,4,Business tech news
 bloomberg-tech,Bloomberg (Tech),bloomberg.com/technology,Lean Left,-5,High,Left-Center,High,Center-Left,-1,High,4,Global tech business
@@ -146,7 +148,7 @@ haaretz-tech,Haaretz (Tech),haaretz.com/science-and-health,Left,-15,High,Left,Hi
 the-daily-caller,The Daily Caller,dailycaller.com,Right,2,Low Reliability,Right,Mixed,Right,2,Low Reliability,1,Auto-downgraded
 newsbreak,Newsbreak,newsbreak.com,Center,0,Mixed,Least Biased,Mixed,Center,0,Mixed,2,Aggregator
 fox-news,Fox News,foxnews.com,Right,19,Mixed,Right,Mixed,Right,2,Mixed,2,Conservative cable news
-msnbc,MSNBC,msnbc.com,Left,-20,Mixed,Left,Mixed,Left,-2,Mixed,2,Progressive cable news
+msnow,MS NOW,ms.now,Left,-20,Mixed,Left,Mixed,Left,-2,Mixed,2,Progressive cable news
 huffpost,HuffPost,huffpost.com,Left,-20,Mixed,Left,Mixed,Left,-2,Mixed,2,Liberal news
 breitbart,Breitbart,breitbart.com,Right,30,Low,Right,Mixed,Right,2,Low,1,Conservative opinion
 newsmax,Newsmax,newsmax.com,Right,25,Low,Right,Mixed,Right,2,Low,1,Conservative news

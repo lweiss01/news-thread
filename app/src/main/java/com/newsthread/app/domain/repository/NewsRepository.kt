@@ -22,7 +22,8 @@ interface NewsRepository {
      *   then fresh data after network fetch if cache was stale
      */
     fun getTopHeadlines(
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
+        minReliability: Int = 1
     ): Flow<Result<List<Article>>>
 
     /**
@@ -35,7 +36,8 @@ interface NewsRepository {
     fun searchArticles(
         query: String,
         forceRefresh: Boolean = false,
-        onlyRated: Boolean = false
+        onlyRated: Boolean = true,
+        minReliability: Int = 1
     ): Flow<Result<List<Article>>>
 
     /**

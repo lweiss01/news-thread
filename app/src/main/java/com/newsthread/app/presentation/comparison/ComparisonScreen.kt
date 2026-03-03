@@ -6,13 +6,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +40,8 @@ import com.newsthread.app.presentation.components.BiasHeatmap
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import com.newsthread.app.presentation.theme.MonoFamily
 import com.newsthread.app.presentation.theme.ProjectTheme
+import com.newsthread.app.presentation.theme.Amber600
+import com.newsthread.app.presentation.theme.NewsLinkDark
 import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +58,15 @@ fun ComparisonScreen(
         viewModel.findSimilarArticles(article)
     }
 
+    // Hoist scroll state for Scaffold FAB access
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val showJumpToTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 5
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -63,6 +80,28 @@ fun ComparisonScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = showJumpToTop,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Jump to top"
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Box(
@@ -94,6 +133,8 @@ fun ComparisonScreen(
                     ComparisonContent(
                         comparison = state.comparison,
                         hintMessage = state.hintMessage,
+                        listState = listState,
+                        coroutineScope = coroutineScope,
                         onArticleClick = { clickedArticle ->
                             val encodedUrl = URLEncoder.encode(clickedArticle.url, "UTF-8")
                             navController.navigate(ArticleDetailRoute.createRoute(encodedUrl))
@@ -130,10 +171,10 @@ fun ComparisonScreen(
 private fun ComparisonContent(
     comparison: ArticleComparison,
     hintMessage: String?,
+    listState: LazyListState,
+    coroutineScope: CoroutineScope,
     onArticleClick: (Article) -> Unit
 ) {
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
 
     val hasHint = hintMessage != null
     val sectionIndices = remember(comparison, hasHint) {
@@ -242,6 +283,27 @@ private fun ComparisonContent(
                             }
                         }
                     )
+
+                    // "+N additional sources" deep link
+                    if (comparison.unratedPerspective.isNotEmpty()) {
+                        Text(
+                            text = "+ ${comparison.unratedPerspective.size} additional source${if (comparison.unratedPerspective.size != 1) "s" else ""}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isSystemInDarkTheme()) NewsLinkDark else Amber600,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs)
+                                .clickable {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                    sectionIndices[999]?.let { targetIndex ->
+                                        coroutineScope.launch {
+                                            val offset = with(density) { -160.dp.toPx().toInt() }
+                                            listState.animateScrollToItem(targetIndex, scrollOffset = offset)
+                                        }
+                                    }
+                                }
+                        )
+                    }
 
                     HorizontalDivider()
                 }

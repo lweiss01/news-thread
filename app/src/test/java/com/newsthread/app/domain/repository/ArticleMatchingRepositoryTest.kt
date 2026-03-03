@@ -298,11 +298,19 @@ class FakeNewsRepository : NewsRepository {
     var responseToReturn: List<Article> = emptyList()
     val queryResponses = mutableMapOf<String, List<Article>>()
 
-    override fun getTopHeadlines(forceRefresh: Boolean): Flow<Result<List<Article>>> {
+    override fun getTopHeadlines(
+        forceRefresh: Boolean,
+        minReliability: Int
+    ): Flow<Result<List<Article>>> {
         return flowOf(Result.success(responseToReturn))
     }
 
-    override fun searchArticles(query: String, forceRefresh: Boolean, onlyRated: Boolean): Flow<Result<List<Article>>> {
+    override fun searchArticles(
+        query: String,
+        forceRefresh: Boolean,
+        onlyRated: Boolean,
+        minReliability: Int
+    ): Flow<Result<List<Article>>> {
         searchCallCount++
         val response = queryResponses[query] ?: responseToReturn
         return flowOf(Result.success(response))
@@ -427,7 +435,11 @@ class FakeCachedArticleDao : CachedArticleDao {
     }
 
     override suspend fun deleteByFeed(feedKey: String) {
-        // Mock impl
+        savedArticles.values.removeIf { it.sourceFeed == feedKey && !it.isTracked }
+    }
+
+    override suspend fun deleteUntrackedByFeedPrefix(prefix: String) {
+        savedArticles.values.removeIf { it.sourceFeed?.startsWith(prefix) == true && !it.isTracked }
     }
 
     override suspend fun getByFeed(feedKey: String): List<CachedArticleEntity> {

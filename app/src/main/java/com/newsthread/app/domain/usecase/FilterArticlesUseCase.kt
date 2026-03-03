@@ -57,14 +57,29 @@ class FilterArticlesUseCase @Inject constructor(
         private val BLOCKLIST_DOMAINS = setOf(
             "facebook.com", "twitter.com", "x.com", "instagram.com", "reddit.com",
             "youtube.com", "tiktok.com", "pinterest.com", "linkedin.com", "ebay.com",
-            "amazon.com", "craigslist.org", "etsy.com"
+            "amazon.com", "craigslist.org", "etsy.com",
+            // Government / military — newsworthy items will be covered by journalists
+            // Design Decision: blocked per Lisa (2026-02-27). Revisit when user topic prefs are added.
+            ".gov", ".mil",
+            // Content farms & low-quality aggregators
+            "patch.com", "examiner.com", "inquisitr.com",
+            "newsbreak.com", "msn.com"
         )
     }
 
+    /**
+     * Filters articles against an allowlist of rated sources.
+     *
+     * @param articles List of articles to filter.
+     * @param allRatings List of all available source ratings.
+     * @param onlyRated If true, strictly only allows rated sources (no fallback).
+     * @param minReliability Minimum reliability score (1-5) required for rated sources. Default is 1.
+     */
     operator fun invoke(
         articles: List<Article>,
         allRatings: List<SourceRating>,
-        onlyRated: Boolean = false
+        onlyRated: Boolean = false,
+        minReliability: Int = 1
     ): List<Article> {
         return articles.mapNotNull { article ->
             val urlLower = article.url.lowercase()
@@ -81,29 +96,29 @@ class FilterArticlesUseCase @Inject constructor(
 
             // 3. Evaluation
             if (rating != null) {
-                // Lisa's Rule: Allow any rated source (all colors except gray)
-                if (rating.finalReliabilityScore >= 1) {
+                // Check against dynamic reliability threshold
+                if (rating.finalReliabilityScore >= minReliability) {
                     return@mapNotNull enrichedArticle
                 } else {
-                    Log.d("FeedFilter", "Blocked (Red/Poor): ${article.source.name}")
+                    Log.d("FeedFilter", "Blocked (Reliability < $minReliability): ${article.source.name}")
                     return@mapNotNull null
                 }
             }
 
-            // 4. REPUTABLE DOMAIN FALLBACK (Phase 16 Fix)
-            // If unrated but in our "Gold Standard" list, allow it.
+            // 4. Strict Mode Enforcement
             val extractedDomain = extractDomain(article.url)
-            if (REPUTABLE_DOMAINS.any { isDomainMatch(extractedDomain, it) }) {
-                return@mapNotNull enrichedArticle
-            }
-
-            // 5. Strict Mode Enforcement
             if (onlyRated) {
                 Log.d("FeedFilter", "Filtered (Unknown - Feed): ${article.source.name} ($extractedDomain)")
                 return@mapNotNull null
             }
 
-            // 6. Discovery Mode (DEFAULT)
+            // 5. REPUTABLE DOMAIN FALLBACK (Discovery mode only)
+            // Not used in strict mode — unrated articles would show gray shields
+            if (REPUTABLE_DOMAINS.any { isDomainMatch(extractedDomain, it) }) {
+                return@mapNotNull enrichedArticle
+            }
+
+            // 6. Discovery Mode — unknown source, let through
             enrichedArticle
         }
     }

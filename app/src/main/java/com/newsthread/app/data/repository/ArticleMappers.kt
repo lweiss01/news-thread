@@ -29,7 +29,7 @@ fun CachedArticleEntity.toDomain(): Article {
         ),
         author = author,
         title = title,
-        description = description,
+        description = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(description),
         url = url,
         urlToImage = urlToImage,
         publishedAt = publishedAt,

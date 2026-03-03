@@ -13,9 +13,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,10 +60,19 @@ fun StoryDetailScreen(
     onArticleClick: (String) -> Unit
 ) {
     val trackedStories by viewModel.trackedStories.collectAsStateWithLifecycle()
-    val trackedStory = trackedStories.find { it.story.id == storyId }
+    val trackedStory = trackedStories?.find { it.story.id == storyId }
 
     LaunchedEffect(storyId) {
         viewModel.markStoryViewed(storyId)
+    }
+
+    // Hoist scroll state for Scaffold FAB access
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val showJumpToTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 5
+        }
     }
 
     Scaffold(
@@ -71,6 +90,28 @@ fun StoryDetailScreen(
                 }
             )
         },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = showJumpToTop,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Jump to top"
+                    )
+                }
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
@@ -79,12 +120,14 @@ fun StoryDetailScreen(
                 .fillMaxSize()
         ) {
             if (trackedStory == null) {
-                 // Loading or Not Found (if trackedStories is empty initially, it might show this briefly)
-                 if (trackedStories.isEmpty()) {
+                 // Show loading spinner while data is still being fetched (null),
+                 // or when list is empty (no stories tracked yet)
+                 if (trackedStories == null || trackedStories?.isEmpty() == true) {
                       Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                  } else {
+                     // Data has loaded (non-null, non-empty list) but this story isn't in it
                      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = "Story not found", color = MaterialTheme.colorScheme.error)
                     }
@@ -92,14 +135,50 @@ fun StoryDetailScreen(
             } else {
                 val articles = trackedStory.articles.sortedByDescending { it.publishedAt }
 
+                // Group articles by bias category (using pre-attached ratings)
+                val leftArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) < 0 }
+                val centerArticles = articles.filter { it.sourceRating?.finalBiasScore == 0 }
+                val rightArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) > 0 }
+                val unratedArticles = articles.filter { it.sourceRating == null }
+
+                // Calculate section indices for deep-linking
+                val sectionIndices = remember(articles) {
+                    val indices = mutableMapOf<Int, Int>()
+                    // Index 0: Header (Heatmap)
+                    var currentIndex = 1
+
+                    if (leftArticles.isNotEmpty()) {
+                        indices[-2] = currentIndex
+                        indices[-1] = currentIndex
+                        currentIndex += 1 + leftArticles.size
+                    }
+                    if (centerArticles.isNotEmpty()) {
+                        indices[0] = currentIndex
+                        currentIndex += 1 + centerArticles.size
+                    }
+                    if (rightArticles.isNotEmpty()) {
+                        indices[1] = currentIndex
+                        indices[2] = currentIndex
+                        currentIndex += 1 + rightArticles.size
+                    }
+                    if (unratedArticles.isNotEmpty()) {
+                        indices[999] = currentIndex
+                    }
+                    indices
+                }
+
                 // Capture colors outside LazyListScope (which is not @Composable)
                 val outlineColor = MaterialTheme.colorScheme.outline
                 val leftColor = ProjectTheme.bias.leftLabel
                 val centerColor = ProjectTheme.bias.pointColors[0] ?: MaterialTheme.colorScheme.secondary
                 val rightColor = ProjectTheme.bias.rightLabel
 
+                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+                val density = androidx.compose.ui.platform.LocalDensity.current
+
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = ProjectTheme.spacing.xl)
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 300.dp) // Extra padding for deep link scrolling
                 ) {
                     // Sticky Header: Heatmap & Context
                     item {
@@ -116,6 +195,7 @@ fun StoryDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
+<<<<<<< HEAD
                             // "Original Story" Link/Button
                              // Assuming the first article or a specific URL is the "original"?
                              // The ViewModel has `getOriginalStoryUrl(storyId)`.
@@ -126,6 +206,13 @@ fun StoryDetailScreen(
 
                              TextButton(
                                 onClick = {
+=======
+                             Text(
+                                text = "Read original story ➤",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable {
+>>>>>>> b501044 (✨ Restore missing UI elements: FAB scroll-to-top, time-ago text, +N sources link)
                                     // Use the first article's URL as proxy for "original"
                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
                                     if (originalUrl != null) onArticleClick(originalUrl)
@@ -151,7 +238,25 @@ fun StoryDetailScreen(
 
                             BiasHeatmap(
                                 biasCounts = biasCounts,
-                                unratedCount = unratedCount
+                                unratedCount = unratedCount,
+                                onSegmentClick = { score ->
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                    sectionIndices[score]?.let { targetIndex ->
+                                        coroutineScope.launch {
+                                            val offset = with(density) { -16.dp.toPx().toInt() }
+                                            listState.animateScrollToItem(targetIndex, scrollOffset = offset)
+                                        }
+                                    }
+                                },
+                                onUnratedClick = {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                    sectionIndices[999]?.let { targetIndex ->
+                                        coroutineScope.launch {
+                                            val offset = with(density) { -16.dp.toPx().toInt() }
+                                            listState.animateScrollToItem(targetIndex, scrollOffset = offset)
+                                        }
+                                    }
+                                }
                             )
 
                              Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
@@ -163,12 +268,6 @@ fun StoryDetailScreen(
                         }
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
                     }
-
-                    // Group articles by bias category (using pre-attached ratings)
-                    val leftArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) < 0 }
-                    val centerArticles = articles.filter { it.sourceRating?.finalBiasScore == 0 }
-                    val rightArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) > 0 }
-                    val unratedArticles = articles.filter { it.sourceRating == null }
 
                     // Render each bias group
                     fun renderBiasSection(

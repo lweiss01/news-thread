@@ -102,6 +102,15 @@ app.get('/v1/feeds/top-stories', async (c) => {
         }
     }
 
+    // 5. Source-quality boost: prioritize curated sources from sources.json
+    // Known editorial sources float to the top; niche/local sources pushed down
+    const knownDomains = new Set(allSources.map(s => s.domain));
+    merged.sort((a, b) => {
+        const aKnown = knownDomains.has(extractDomain(a.url)) ? 1 : 0;
+        const bKnown = knownDomains.has(extractDomain(b.url)) ? 1 : 0;
+        return bKnown - aKnown; // Known sources first, preserves relative order within tiers
+    });
+
     return c.json(merged);
 });
 

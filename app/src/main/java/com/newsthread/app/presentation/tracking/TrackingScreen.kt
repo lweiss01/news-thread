@@ -70,7 +70,12 @@ fun TrackingScreen(
             onRefresh = { viewModel.refresh() },
             modifier = Modifier.padding(padding)
         ) {
-            if (stories.isEmpty()) {
+            val currentStories = stories
+            if (currentStories == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (currentStories.isEmpty()) {
                 EmptyTrackingState(modifier = Modifier.fillMaxSize())
             } else {
                 LazyColumn(
@@ -78,7 +83,7 @@ fun TrackingScreen(
                     contentPadding = PaddingValues(ProjectTheme.spacing.m),
                     verticalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.m)
                 ) {
-                    items(stories, key = { it.story.id }) { trackedStory ->
+                    items(currentStories, key = { it.story.id }) { trackedStory ->
                         EnhancedStoryCard(
                             trackedStory = trackedStory,
                             onUnfollow = { viewModel.unfollowStory(it) },

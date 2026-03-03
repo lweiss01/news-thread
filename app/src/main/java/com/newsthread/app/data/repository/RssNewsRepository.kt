@@ -49,7 +49,10 @@ class RssNewsRepository @Inject constructor(
         private const val WORKER_URL = "https://newsthread-api.newsthread.workers.dev" 
     }
 
-    override fun getTopHeadlines(forceRefresh: Boolean): Flow<Result<List<Article>>> = flow {
+    override fun getTopHeadlines(
+        forceRefresh: Boolean,
+        minReliability: Int
+    ): Flow<Result<List<Article>>> = flow {
         // 1. Emit cached data immediately
         val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
         
@@ -57,7 +60,7 @@ class RssNewsRepository @Inject constructor(
         
         if (cached.isNotEmpty()) {
             // Initial emit of cached data — use Strict Mode to keep initial UI high quality
-            cached = filterArticlesUseCase(cached, allRatings, onlyRated = true)
+            cached = filterArticlesUseCase(cached, allRatings, onlyRated = true, minReliability = minReliability)
             cached = clusterArticlesUseCase(cached)
             emit(Result.success(cached))
         }
@@ -92,13 +95,15 @@ class RssNewsRepository @Inject constructor(
             Log.d(TAG, "Parsed ${articles.size} articles from Worker")
 
             // Filter and cluster — Main Feed uses Strict Mode (onlyRated = true)
-            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true).take(MAX_ARTICLES)
+            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true, minReliability = minReliability).take(MAX_ARTICLES)
             val clustered = clusterArticlesUseCase(filtered)
 
             // Persist — delete old untracked articles for THIS FEED only now that we have fresh data
             val now = System.currentTimeMillis()
             if (forceRefresh && articles.isNotEmpty()) {
                 cachedArticleDao.deleteByFeed(FEED_KEY_TOP)
+                // Round 3: Also clear discovery cache on force refresh to ensure consistency
+                cachedArticleDao.deleteUntrackedByFeedPrefix("discovery_")
             }
             cachedArticleDao.insertAll(articles.map { it.toEntity(now, FEED_KEY_TOP) })
             feedCacheDao.upsert(FeedCacheEntity(
@@ -132,11 +137,16 @@ class RssNewsRepository @Inject constructor(
     override fun searchArticles(
         query: String,
         forceRefresh: Boolean,
-        onlyRated: Boolean
+        onlyRated: Boolean,
+        minReliability: Int
     ): Flow<Result<List<Article>>> = flow {
         val feedKey = "discovery_${query.lowercase().trim()}"
         val cached = safeDbCall { cachedArticleDao.getByFeed(feedKey).map { it.toDomain() } }
-        if (cached.isNotEmpty()) emit(Result.success(cached))
+        if (cached.isNotEmpty()) {
+            val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
+            val filtered = filterArticlesUseCase(cached, allRatings, onlyRated = onlyRated, minReliability = minReliability)
+            emit(Result.success(filtered))
+        }
 
         val cacheMetadata = feedCacheDao.get(feedKey)
         val shouldRefresh = forceRefresh || cacheMetadata == null || cacheMetadata.isStale()
@@ -149,7 +159,7 @@ class RssNewsRepository @Inject constructor(
             val articles = parseWorkerJson(json)
             val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
             
-            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = onlyRated)
+            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = onlyRated, minReliability = minReliability)
             val clustered = clusterArticlesUseCase(filtered)
 
             val now = System.currentTimeMillis()
@@ -256,13 +266,22 @@ class RssNewsRepository @Inject constructor(
         }
 
         val url = getString("url")
-        val title = getString("title")
+        val title = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(getString("title")) ?: ""
         val publishedAt = optStringClean("publishedAt") ?: System.currentTimeMillis().toString() // Fallback if missing
+        
+        val urlToImage = optStringClean("urlToImage")
+        
+        // Debug logging for missing images
+        if (urlToImage == null) {
+            Log.d(TAG, "Missing image for article: $title ($url)")
+        } else {
+            Log.v(TAG, "Found image: $urlToImage for $url")
+        }
 
         return Article(
             source = Source(
                 id = sourceObj.optString("id").takeIf { it != "null" && it.isNotBlank() },
-                name = sourceObj.optString("name", "Unknown Source"),
+                name = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(sourceObj.optString("name", "Unknown Source")) ?: "Unknown Source",
                 description = null,
                 url = null,
                 category = null,
@@ -271,11 +290,11 @@ class RssNewsRepository @Inject constructor(
             ),
             author = optStringClean("author"),
             title = title,
-            description = optStringClean("description"),
+            description = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(optStringClean("description")),
             url = url,
-            urlToImage = optStringClean("urlToImage"),
+            urlToImage = urlToImage,
             publishedAt = publishedAt,
-            content = optStringClean("content")
+            content = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(optStringClean("content"))
         )
     }
 }

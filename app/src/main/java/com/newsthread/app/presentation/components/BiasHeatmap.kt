@@ -205,7 +205,7 @@ fun BiasHeatmap(
         if (unratedCount > 0) {
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
             Text(
-                text = "+ unrated sources",
+                text = "+ $unratedCount unrated sources",
                 style = MaterialTheme.typography.labelSmall,
                 color = if (interactive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,

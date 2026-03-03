@@ -9,11 +9,13 @@ import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
 import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
+import com.newsthread.app.data.remote.OgImageResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 sealed interface FeedUiState {
@@ -27,7 +29,8 @@ class FeedViewModel @Inject constructor(
     private val newsRepository: NewsRepository,
     private val toggleFollowUseCase: ToggleFollowUseCase,
     private val trackingRepository: TrackingRepository,
-    private val clusterArticlesUseCase: ClusterArticlesUseCase
+    private val clusterArticlesUseCase: ClusterArticlesUseCase,
+    val ogImageResolver: OgImageResolver
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -56,7 +59,8 @@ class FeedViewModel @Inject constructor(
                 isFetching = true
                 _isRefreshing.value = true
                 fetchHeadlinesInternal(forceRefresh = true)
-                triggerContinuousDiscovery(forceRefresh = true)
+                // Do not force-refresh discovery channels to prevent Worker subrequest timeouts
+                triggerContinuousDiscovery(forceRefresh = false) 
             } finally {
                 _isRefreshing.value = false
                 isFetching = false
@@ -81,22 +85,36 @@ class FeedViewModel @Inject constructor(
         discoveryJob?.cancel()
         discoveryJob = viewModelScope.launch {
             Log.d("FeedViewModel", "Starting Continuous Discovery for categories: $discoveryCategories")
+            
+            // Sequential category loading to avoid jumping UI
             discoveryCategories.forEach { category ->
-                newsRepository.searchArticles(category, forceRefresh = forceRefresh, onlyRated = true).collect { result ->
+                // Discovery in Main Feed requires minReliability 3 (Mostly Factual)
+                newsRepository.searchArticles(
+                    query = category, 
+                    forceRefresh = forceRefresh, 
+                    onlyRated = true,
+                    minReliability = 3
+                ).collect { result ->
                     result.onSuccess { newArticles ->
                         if (newArticles.isNotEmpty()) {
-                            Log.d("FeedViewModel", "Discovery found ${newArticles.size} reputable articles for $category")
+                            // Round 3: Limit discovery impact - only take top 5 per category
+                            val limitedArticles = newArticles.take(5)
+                            Log.d("FeedViewModel", "Discovery found ${limitedArticles.size} high-reliability articles for $category (capped from ${newArticles.size})")
 
-                            val currentState = _uiState.value
-                            val currentArticles = (currentState as? FeedUiState.Success)?.articles ?: emptyList()
+                            // Offload processing to background
+                            withContext(Dispatchers.Default) {
+                                val currentState = _uiState.value
+                                if (currentState is FeedUiState.Success) {
+                                    val currentArticles = currentState.articles
+                                    val combined = (currentArticles + limitedArticles)
+                                        .distinctBy { it.url }
+                                        .sortedByDescending { it.publishedAt }
 
-                            val combined = (currentArticles + newArticles)
-                                .distinctBy { it.url }
-                                .sortedByDescending { it.publishedAt }
-
-                            // Final re-clustering to handle cross-category duplicates (e.g. Science + Tech)
-                            val clustered = clusterArticlesUseCase(combined)
-                            _uiState.value = FeedUiState.Success(clustered)
+                                    // Final re-clustering
+                                    val clustered = clusterArticlesUseCase(combined)
+                                    _uiState.value = FeedUiState.Success(clustered)
+                                }
+                            }
                         }
                     }
                 }
@@ -112,9 +130,15 @@ class FeedViewModel @Inject constructor(
                     _uiState.value = FeedUiState.Success(sorted)
                 },
                 onFailure = { error ->
-                    _uiState.value = FeedUiState.Error(
-                        error.message ?: "Failed to load articles"
-                    )
+                    val currentState = _uiState.value
+                    if (currentState is FeedUiState.Success && currentState.articles.isNotEmpty()) {
+                        // Preserve existing articles on transient error
+                        Log.e("FeedViewModel", "Fetch failed but preserving state: ${error.message}")
+                    } else {
+                        _uiState.value = FeedUiState.Error(
+                            error.message ?: "Failed to load articles"
+                        )
+                    }
                 }
             )
         }
@@ -122,15 +146,18 @@ class FeedViewModel @Inject constructor(
 
     private fun loadTrackedStories() {
         viewModelScope.launch {
-             trackingRepository.getTrackedStories().collect { stories ->
-                 val map = mutableMapOf<String, String>()
-                 stories.forEach { storyWithArticles ->
-                     storyWithArticles.articles.forEach { article ->
-                         map[article.url] = storyWithArticles.story.id
-                     }
-                 }
-                 _trackedStoriesMap.value = map
-             }
+            trackingRepository.getTrackedStories().collect { stories ->
+                // Offload map generation to background
+                withContext(Dispatchers.Default) {
+                    val map = mutableMapOf<String, String>()
+                    stories.forEach { storyWithArticles ->
+                        storyWithArticles.articles.forEach { article ->
+                            map[article.url] = storyWithArticles.story.id
+                        }
+                    }
+                    _trackedStoriesMap.value = map
+                }
+            }
         }
     }
 

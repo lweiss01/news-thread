@@ -153,6 +153,7 @@ fun FeedScreen(
                                     article = article,
                                     sourceRatings = emptyMap(), // Redundant, logic moved to Domain
                                     isTracked = trackedStoriesMap.containsKey(article.url),
+                                    ogImageResolver = viewModel.ogImageResolver,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
                                         navController.currentBackStackEntry

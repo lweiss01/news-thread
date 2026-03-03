@@ -5,13 +5,17 @@ import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.junit.Ignore
+import org.junit.Before
 
-@Ignore("Fix build: Missing dependencies")
 class FilterArticlesUseCaseTest {
+    private lateinit var findSourceRatingUseCase: FindSourceRatingUseCase
+    private lateinit var filterArticlesUseCase: FilterArticlesUseCase
 
-    /*
-    private val filterArticlesUseCase = FilterArticlesUseCase()
+    @Before
+    fun setup() {
+        findSourceRatingUseCase = FindSourceRatingUseCase()
+        filterArticlesUseCase = FilterArticlesUseCase(findSourceRatingUseCase)
+    }
 
     private val reuters = SourceRating(
         sourceId = "reuters",
@@ -19,21 +23,36 @@ class FilterArticlesUseCaseTest {
         domain = "reuters.com",
         allsidesRating = "Center",
         adFontesBias = 0,
-        adFontesReliability = "High",
+        adFontesReliability = "Satisfactory",
         mbfcBias = "Center",
         mbfcFactual = "High",
         finalBias = "Center",
         finalBiasScore = 0,
         finalReliability = "Very High",
-        finalReliabilityScore = 5,
+        finalReliabilityScore = 4, // High reliability
+        notes = ""
+    )
+    
+    private val mixedSource = SourceRating(
+        sourceId = "mixed",
+        displayName = "Mixed News",
+        domain = "mixednews.com",
+        allsidesRating = "Center",
+        adFontesBias = 0,
+        adFontesReliability = "Mixed",
+        mbfcBias = "Center",
+        mbfcFactual = "Mixed",
+        finalBias = "Center",
+        finalBiasScore = 0,
+        finalReliability = "Mixed",
+        finalReliabilityScore = 2, // Mixed reliability
         notes = ""
     )
 
-    private val allRatings = listOf(reuters)
+    private val allRatings = listOf(reuters, mixedSource)
 
     @Test
     fun `when onlyRated is true, unrated reputable source is blocked`() {
-        // This test confirms the NEW behavior: Unrated sources (even reputable ones) are BLOCKED.
         val article = Article(
             source = Source(id = null, name = "CNN", description = null, url = null, category = null, language = null, country = null),
             url = "https://www.cnn.com/story",
@@ -44,20 +63,15 @@ class FilterArticlesUseCaseTest {
             content = null,
             author = null
         )
-
-        // CNN is in REPUTABLE_DOMAINS but not in allRatings.
-        // It should now be blocked because onlyRated=true requires a rating.
         val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
-
-        // Assert that it IS BLOCKED (size 0)
         assertEquals(0, filtered.size)
     }
 
     @Test
-    fun `when onlyRated is true, unrated non-reputable source is blocked`() {
+    fun `when minReliability is higher than source rating, article is blocked`() {
         val article = Article(
-            source = Source(id = null, name = "Some Blog", description = null, url = null, category = null, language = null, country = null),
-            url = "https://some-random-blog.com/story",
+            source = Source(id = "mixed", name = "Mixed News", description = null, url = null, category = null, language = null, country = null),
+            url = "https://mixednews.com/story",
             title = "Test Story",
             description = "Test Description",
             urlToImage = null,
@@ -66,8 +80,13 @@ class FilterArticlesUseCaseTest {
             author = null
         )
 
-        val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
+        // Mixed source (2) should be blocked when minReliability is 3
+        val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true, minReliability = 3)
         assertEquals(0, filtered.size)
+
+        // Mixed source (2) should be allowed when minReliability is 1
+        val allowed = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true, minReliability = 1)
+        assertEquals(1, allowed.size)
     }
 
     @Test
@@ -86,5 +105,4 @@ class FilterArticlesUseCaseTest {
         val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
         assertEquals(1, filtered.size)
     }
-    */
 }

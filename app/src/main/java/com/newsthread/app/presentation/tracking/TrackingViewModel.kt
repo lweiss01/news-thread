@@ -12,14 +12,9 @@ import com.newsthread.app.domain.usecase.UnfollowStoryUseCase
 import com.newsthread.app.worker.StoryUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,11 +25,12 @@ class TrackingViewModel @Inject constructor(
     private val trackingRepository: TrackingRepository
 ) : ViewModel() {
 
-    val trackedStories: StateFlow<List<TrackedStory>> = getTrackedStoriesUseCase()
+    val trackedStories: StateFlow<List<TrackedStory>?> = getTrackedStoriesUseCase()
+        .flowOn(kotlinx.coroutines.Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            started = SharingStarted.Eagerly,
+            initialValue = null
         )
 
     // Phase 9: Pull-to-refresh state
@@ -50,12 +46,12 @@ class TrackingViewModel @Inject constructor(
     val lastRefreshed: StateFlow<Long> = _lastRefreshed.asStateFlow()
 
     fun getOriginalStoryUrl(storyId: String): String? {
-        val trackedStory = trackedStories.value.find { it.story.id == storyId } ?: return null
+        val trackedStory = trackedStories.value?.find { it.story.id == storyId } ?: return null
         return trackedStory.articles.minByOrNull { it.publishedAt }?.url
     }
     
     fun getLastUpdated(storyId: String): Long? {
-         return trackedStories.value.find { it.story.id == storyId }?.story?.updatedAt
+         return trackedStories.value?.find { it.story.id == storyId }?.story?.updatedAt
     }
 
     fun unfollowStory(storyId: String) {
