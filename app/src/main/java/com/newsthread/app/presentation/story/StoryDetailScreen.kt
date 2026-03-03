@@ -195,36 +195,16 @@ fun StoryDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
-<<<<<<< HEAD
-                            // "Original Story" Link/Button
-                             // Assuming the first article or a specific URL is the "original"?
-                             // The ViewModel has `getOriginalStoryUrl(storyId)`.
-                             // But here we have `storyWithArticles`.
-                             // Let's use the first article found or just a generic "Read Original" if we don't have a specific field.
-                             // User said: "Original story headline with a link to that story"
-                             // I'll add a clickable "Read full story" text or button.
-
-                             TextButton(
-                                onClick = {
-=======
                              Text(
                                 text = "Read original story ➤",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.clickable {
->>>>>>> b501044 (✨ Restore missing UI elements: FAB scroll-to-top, time-ago text, +N sources link)
                                     // Use the first article's URL as proxy for "original"
                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
                                     if (originalUrl != null) onArticleClick(originalUrl)
-                                },
-                                contentPadding = PaddingValues(0.dp)
-                             ) {
-                                Text(
-                                   text = "Read original story ➤",
-                                   style = MaterialTheme.typography.labelMedium,
-                                   color = MaterialTheme.colorScheme.primary
-                                )
-                             }
+                                }
+                             )
 
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
