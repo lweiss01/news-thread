@@ -113,3 +113,5 @@ replay_pid*.log
 # Automated session logs
 .agent/sessions/
 **/sync-upload.md
+.agent/rules/
+.agents/workflows/
