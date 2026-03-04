@@ -6,6 +6,7 @@ import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.remote.ArticleHtmlFetcher
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.ExtractionResult
+import com.newsthread.app.domain.repository.TextExtractionPort
 import com.newsthread.app.util.NetworkMonitor
 import com.newsthread.app.util.PaywallDetector
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +22,7 @@ class TextExtractionRepository @Inject constructor(
     private val cachedArticleDao: CachedArticleDao,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val networkMonitor: NetworkMonitor
-) {
+) : TextExtractionPort {
     /**
      * Extracts article text and saves it to the database.
      * Implements "retry once on next view" per user decision in 02-CONTEXT.md.
@@ -135,7 +136,7 @@ class TextExtractionRepository @Inject constructor(
      * @param url Article URL
      * @return ExtractionResult, or NetworkError if article not found in cache
      */
-    suspend fun extractByUrl(url: String): ExtractionResult {
+    override suspend fun extractByUrl(url: String): ExtractionResult {
         val article = cachedArticleDao.getByUrl(url)
             ?: return ExtractionResult.NetworkError("Article not found in cache: $url")
         return extractAndSave(article)

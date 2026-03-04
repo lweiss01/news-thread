@@ -1,11 +1,11 @@
 package com.newsthread.app.domain.repository
 
-import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.TrackedStory
 import kotlinx.coroutines.flow.Flow
 
 interface TrackingRepository {
-    fun getTrackedStories(): Flow<List<StoryWithArticles>>
+    fun getTrackedStories(): Flow<List<TrackedStory>>
     
     suspend fun followArticle(article: Article): Result<Unit>
     
@@ -26,3 +26,4 @@ interface TrackingRepository {
     suspend fun markAllStoriesChecked(timestamp: Long)
     suspend fun removeArticleFromStory(articleUrl: String, storyId: String)
 }
+

@@ -267,7 +267,8 @@ class RssNewsRepository @Inject constructor(
 
         val url = getString("url")
         val title = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(getString("title")) ?: ""
-        val publishedAt = optStringClean("publishedAt") ?: System.currentTimeMillis().toString() // Fallback if missing
+        val publishedAtRaw = optStringClean("publishedAt")
+        val publishedAt = parsePublishedAt(publishedAtRaw)
         
         val urlToImage = optStringClean("urlToImage")
         
@@ -296,5 +297,29 @@ class RssNewsRepository @Inject constructor(
             publishedAt = publishedAt,
             content = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(optStringClean("content"))
         )
+    }
+
+    /**
+     * Parse publishedAt string to epoch millis at the RSS boundary.
+     * Handles: numeric strings, ISO 8601, RFC 2822 dates.
+     * Falls back to current time if unparseable.
+     */
+    private fun parsePublishedAt(raw: String?): Long {
+        if (raw == null) return System.currentTimeMillis()
+        
+        // Numeric string (already epoch millis)
+        raw.toLongOrNull()?.let { return it }
+        
+        // ISO 8601 / RFC 2822 date strings
+        return try {
+            java.time.Instant.parse(raw).toEpochMilli()
+        } catch (_: Exception) {
+            try {
+                java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", java.util.Locale.US)
+                    .parse(raw)?.time ?: System.currentTimeMillis()
+            } catch (_: Exception) {
+                System.currentTimeMillis()
+            }
+        }
     }
 }
