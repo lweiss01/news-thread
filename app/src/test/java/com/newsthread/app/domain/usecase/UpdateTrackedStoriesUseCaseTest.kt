@@ -3,12 +3,14 @@ package com.newsthread.app.domain.usecase
 import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.SourceRatingDao
-import com.newsthread.app.data.local.dao.StoryWithArticles
+import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.Story
+import com.newsthread.app.domain.model.Source
+import com.newsthread.app.domain.model.TrackedStory
+import com.newsthread.app.data.local.entity.StoryEntity
+import com.newsthread.app.data.local.entity.EmbeddingStatus
 import com.newsthread.app.data.local.entity.ArticleEmbeddingEntity
 import com.newsthread.app.data.local.entity.CachedArticleEntity
-import com.newsthread.app.data.local.entity.EmbeddingStatus
-import com.newsthread.app.data.local.entity.SourceRatingEntity
-import com.newsthread.app.data.local.entity.StoryEntity
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.MatchStrength
@@ -59,6 +61,10 @@ class UpdateTrackedStoriesUseCaseTest {
             mock(), // embeddingRepository
             entityExtractor
         )
+        
+        runBlocking {
+            whenever(sourceRatingDao.getAll()).thenReturn(emptyList())
+        }
     }
 
     // ========== Core Matching Tests ==========
@@ -78,7 +84,7 @@ class UpdateTrackedStoriesUseCaseTest {
     @Test
     fun `invoke returns empty list when no candidate articles`() = runBlocking {
         // Given
-        val story = createStoryWithArticles("story1", "Test Story")
+        val story = createTrackedStory("story1", "Test Story")
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(cachedArticleDao.getRecentCandidateArticles(any())).thenReturn(emptyList())
 
@@ -95,7 +101,7 @@ class UpdateTrackedStoriesUseCaseTest {
         val storyEmbedding = floatArrayOf(1f, 0f, 0f) // Unit vector
         val candidateEmbedding = floatArrayOf(0.99f, 0.1f, 0f) // Very similar
 
-        val story = createStoryWithArticles("story1", "Test Story", listOf("article1"))
+        val story = createTrackedStory("story1", "Test Story", listOf("article1"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(listOf(storyEmbedding))
         whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
@@ -121,7 +127,7 @@ class UpdateTrackedStoriesUseCaseTest {
         val storyEmbedding = floatArrayOf(1f, 0f, 0f)
         val candidateEmbedding = floatArrayOf(0.7f, 0.7f, 0f) // ~0.7 norm, ~0.707 similarity
 
-        val story = createStoryWithArticles("story1", "Test Story", listOf("article1"))
+        val story = createTrackedStory("story1", "Test Story", listOf("article1"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(listOf(storyEmbedding))
         whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
@@ -147,7 +153,7 @@ class UpdateTrackedStoriesUseCaseTest {
         val storyEmbedding = floatArrayOf(1f, 0f, 0f)
         val candidateEmbedding = floatArrayOf(0f, 1f, 0f) // Orthogonal = 0 similarity
 
-        val story = createStoryWithArticles("story1", "Test Story", listOf("article1"))
+        val story = createTrackedStory("story1", "Test Story", listOf("article1"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(listOf(storyEmbedding))
         whenever(trackingRepository.getStoryArticleUrls("story1")).thenReturn(emptyList())
@@ -177,7 +183,7 @@ class UpdateTrackedStoriesUseCaseTest {
         // Candidate: similar enough to match but adds new perspective
         val candidateEmbedding = floatArrayOf(0.7f, 0.5f, 0f, 0f) // Different direction but similar magnitude
 
-        val story = createStoryWithArticles("story1", "Test Story", listOf("article1", "article2"))
+        val story = createTrackedStory("story1", "Test Story", listOf("article1", "article2"))
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
         whenever(trackingRepository.getStoryArticleEmbeddings("story1")).thenReturn(
             listOf(storyEmbedding1, storyEmbedding2)
@@ -203,22 +209,34 @@ class UpdateTrackedStoriesUseCaseTest {
 
     // ========== Helper Functions ==========
 
-    private fun createStoryWithArticles(
+    private fun createTrackedStory(
         storyId: String,
         title: String,
         articleUrls: List<String> = emptyList()
-    ): StoryWithArticles {
-        val story = StoryEntity(
+    ): TrackedStory {
+        val story = Story(
             id = storyId,
             title = title,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            lastViewedAt = System.currentTimeMillis() - 3600000 // 1 hour ago
+            lastViewedAt = System.currentTimeMillis() - 3600000, // 1 hour ago
+            lastCheckedAt = 0L,
+            lastNotifiedAt = 0L,
+            hasUnseenUpdates = false
         )
         val articles = articleUrls.map { url ->
-            createCachedArticle(url, "Article $url")
+            Article(
+                source = Source("test", "Test", null, null, null, null, null),
+                author = null,
+                title = "Article $url",
+                description = null,
+                url = url,
+                urlToImage = null,
+                publishedAt = 1672531200000L,
+                content = null
+            )
         }
-        return StoryWithArticles(story, articles)
+        return TrackedStory(story, articles)
     }
 
     private fun createCachedArticle(url: String, title: String): CachedArticleEntity {
@@ -230,7 +248,7 @@ class UpdateTrackedStoriesUseCaseTest {
             title = title,
             description = null,
             urlToImage = null,
-            publishedAt = "2024-01-01T00:00:00Z",
+            publishedAt = 1672531200000L,
             content = null,
             fullText = null,
             fetchedAt = System.currentTimeMillis(),

@@ -14,7 +14,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 @HiltViewModel
@@ -68,8 +67,16 @@ class TrackingViewModel @Inject constructor(
             val request = OneTimeWorkRequestBuilder<StoryUpdateWorker>().build()
             WorkManager.getInstance(context).enqueue(request)
             
-            // Brief delay to let worker complete
-            delay(2000)
+            // Observe work completion instead of blind delay
+            try {
+                kotlinx.coroutines.withTimeout(30_000L) {
+                    WorkManager.getInstance(context)
+                        .getWorkInfoByIdFlow(request.id)
+                        .first { it.state.isFinished }
+                }
+            } catch (_: Exception) {
+                // Timeout or cancellation — still clear refreshing state
+            }
             _isRefreshing.value = false
             _lastRefreshed.value = System.currentTimeMillis()
         }

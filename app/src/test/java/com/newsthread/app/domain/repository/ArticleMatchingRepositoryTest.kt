@@ -260,7 +260,7 @@ class ArticleMatchingRepositoryTest {
         description = "Test Description",
         url = url,
         urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = ""
     )
 
@@ -272,7 +272,7 @@ class ArticleMatchingRepositoryTest {
         title = title,
         description = "desc",
         urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = null,
         fullText = null,
         fetchedAt = 0,
@@ -286,7 +286,7 @@ class ArticleMatchingRepositoryTest {
         description = description,
         url = url,
         urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = null
     )
 }

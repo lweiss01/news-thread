@@ -122,7 +122,7 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    suspend fun fetchHeadlinesInternal(forceRefresh: Boolean) {
+    private suspend fun fetchHeadlinesInternal(forceRefresh: Boolean) {
         newsRepository.getTopHeadlines(forceRefresh = forceRefresh).collect { result ->
             result.fold(
                 onSuccess = { articles ->
@@ -150,9 +150,9 @@ class FeedViewModel @Inject constructor(
                 // Offload map generation to background
                 withContext(Dispatchers.Default) {
                     val map = mutableMapOf<String, String>()
-                    stories.forEach { storyWithArticles ->
-                        storyWithArticles.articles.forEach { article ->
-                            map[article.url] = storyWithArticles.story.id
+                    stories.forEach { trackedStory ->
+                        trackedStory.articles.forEach { article ->
+                            map[article.url] = trackedStory.story.id
                         }
                     }
                     _trackedStoriesMap.value = map

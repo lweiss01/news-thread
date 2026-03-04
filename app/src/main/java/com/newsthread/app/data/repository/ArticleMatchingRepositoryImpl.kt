@@ -94,7 +94,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             val sourceEmbedding = embeddingRepository.getOrGenerateEmbedding(article.url)
 
             // Calculate dynamic time window
-            val articleDate = try { Instant.parse(article.publishedAt) } catch (e: Exception) { Instant.now() }
+            val articleDate = Instant.ofEpochMilli(article.publishedAt)
             val (fromDate, toDate) = timeWindowCalculator.calculateWindowStrings(articleDate)
 
             val allMatches = mutableListOf<ScoredArticle>()
@@ -377,12 +377,12 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             }
         }
 
-        val articleDate = try { Instant.parse(original.publishedAt) } catch (e: Exception) { Instant.now() }
+        val articleDate = Instant.ofEpochMilli(original.publishedAt)
 
         fun sortByDateProximity(list: List<Article>): List<Article> {
             return list.sortedBy {
                 try {
-                    kotlin.math.abs(ChronoUnit.HOURS.between(Instant.parse(it.publishedAt), articleDate))
+                    kotlin.math.abs(ChronoUnit.HOURS.between(Instant.ofEpochMilli(it.publishedAt), articleDate))
                 } catch (e: Exception) { Long.MAX_VALUE }
             }
         }

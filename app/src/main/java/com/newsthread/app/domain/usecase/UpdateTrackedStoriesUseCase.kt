@@ -103,7 +103,7 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
 
         // Pre-fetch source ratings
         val allSourceIds = (candidateArticles.mapNotNull { it.sourceId } +
-            stories.flatMap { it.articles.mapNotNull { article -> article.sourceId } }).distinct()
+            stories.flatMap { it.articles.mapNotNull { article -> article.source.id } }).distinct()
         val sourceRatings = sourceRatingDao.getAll()
             .filter { it.sourceId in allSourceIds }
             .associate { it.sourceId to it.finalBiasScore }
@@ -135,7 +135,7 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
             val anchorEntities = entityExtractor.extractEntitiesSet(anchorTitle)
 
             val existingBiasCategories = trackedStory.articles
-                .mapNotNull { article -> article.sourceId?.let { sourceRatings[it] } }
+                .mapNotNull { article -> article.source.id?.let { sourceRatings[it] } }
                 .toSet()
 
             // Match candidates
@@ -209,7 +209,8 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
         existingBiasCategories: Set<Int>,
         sourceRatings: Map<String, Int>
     ): Boolean {
-        val newBiasCategory = article.sourceId?.let { sourceRatings[it] } ?: return false
+        val newBiasCategory = article.sourceId?.let { sourceRatings[it] }
+            ?: return false
         return newBiasCategory !in existingBiasCategories
     }
 
