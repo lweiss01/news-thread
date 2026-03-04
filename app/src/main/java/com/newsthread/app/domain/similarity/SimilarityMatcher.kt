@@ -9,11 +9,11 @@ import kotlin.math.sqrt
  * Per 04-CONTEXT.md thresholds.
  */
 enum class MatchStrength {
-    /** Similarity ≥ 0.70: High confidence match */
+    /** Similarity ≥ 0.78: High confidence match */
     STRONG,
-    /** Similarity 0.50-0.69: Lower confidence, shown when few matches */
+    /** Similarity 0.55-0.77: Lower confidence, shown when few matches */
     WEAK,
-    /** Similarity < 0.50: Not a match */
+    /** Similarity < 0.55: Not a match */
     NONE
 }
 
@@ -81,10 +81,10 @@ class SimilarityMatcher @Inject constructor() {
     /**
      * Classify match strength based on similarity score.
      *
-     * Thresholds per 04-CONTEXT.md:
-     * - STRONG: ≥ 0.70
-     * - WEAK: 0.50 - 0.69
-     * - NONE: < 0.50
+     * Thresholds (updated from 04-CONTEXT.md originals):
+     * - STRONG: ≥ 0.78
+     * - WEAK: 0.55 - 0.77
+     * - NONE: < 0.55
      *
      * @param similarity Cosine similarity score
      * @return Match strength classification
