@@ -1,9 +1,5 @@
 package com.newsthread.app.domain.model
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-
-@Parcelize
 data class Article(
     val source: Source,
     val author: String?,
@@ -11,7 +7,8 @@ data class Article(
     val description: String?,
     val url: String,
     val urlToImage: String?,
-    val publishedAt: String,
+    val publishedAt: Long,
     val content: String?,
     val sourceRating: SourceRating? = null
-) : Parcelable
+)
+

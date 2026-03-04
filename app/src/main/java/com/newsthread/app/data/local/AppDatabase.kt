@@ -38,7 +38,7 @@ import com.newsthread.app.data.local.entity.StoryEntity
         StoryEntity::class,
         com.newsthread.app.data.local.entity.StoryArticleCrossRef::class // NEW
     ],
-    version = 13, // Bumped for Phase 16 Fix (Cache Partitioning)
+    version = 14, // Phase 17: publishedAt TEXT → INTEGER migration
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -300,6 +300,73 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 13 to 14.
+         * Phase 17: publishedAt TEXT → INTEGER (epoch millis).
+         * Data-preserving: numeric strings are cast, everything else gets 0.
+         */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create new table with INTEGER publishedAt
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `cached_articles_new` (
+                        `url` TEXT NOT NULL,
+                        `sourceId` TEXT,
+                        `sourceName` TEXT NOT NULL,
+                        `author` TEXT,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT,
+                        `urlToImage` TEXT,
+                        `publishedAt` INTEGER NOT NULL DEFAULT 0,
+                        `content` TEXT,
+                        `fullText` TEXT,
+                        `fetchedAt` INTEGER NOT NULL,
+                        `expiresAt` INTEGER NOT NULL,
+                        `sourceFeed` TEXT DEFAULT NULL,
+                        `extractionFailedAt` INTEGER DEFAULT NULL,
+                        `extractionRetryCount` INTEGER NOT NULL DEFAULT 0,
+                        `isTracked` INTEGER NOT NULL DEFAULT 0,
+                        `storyId` TEXT DEFAULT NULL,
+                        `isNovel` INTEGER NOT NULL DEFAULT 0,
+                        `hasNewPerspective` INTEGER NOT NULL DEFAULT 0,
+                        `matchedAt` INTEGER DEFAULT NULL,
+                        PRIMARY KEY(`url`)
+                    )
+                """.trimIndent())
+
+                // Copy data — safely convert publishedAt TEXT to INTEGER
+                db.execSQL("""
+                    INSERT INTO `cached_articles_new` (
+                        `url`, `sourceId`, `sourceName`, `author`, `title`, `description`,
+                        `urlToImage`, `publishedAt`, `content`, `fullText`, `fetchedAt`, `expiresAt`,
+                        `sourceFeed`, `extractionFailedAt`, `extractionRetryCount`,
+                        `isTracked`, `storyId`, `isNovel`, `hasNewPerspective`, `matchedAt`
+                    )
+                    SELECT
+                        `url`, `sourceId`, `sourceName`, `author`, `title`, `description`,
+                        `urlToImage`,
+                        CASE
+                            WHEN typeof(`publishedAt`) = 'integer' THEN `publishedAt`
+                            WHEN `publishedAt` GLOB '[0-9]*' THEN CAST(`publishedAt` AS INTEGER)
+                            ELSE 0
+                        END,
+                        `content`, `fullText`, `fetchedAt`, `expiresAt`,
+                        `sourceFeed`, `extractionFailedAt`, `extractionRetryCount`,
+                        `isTracked`, `storyId`, `isNovel`, `hasNewPerspective`, `matchedAt`
+                    FROM `cached_articles`
+                """.trimIndent())
+
+                db.execSQL("DROP TABLE `cached_articles`")
+                db.execSQL("ALTER TABLE `cached_articles_new` RENAME TO `cached_articles`")
+
+                // Recreate indices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_articles_fetchedAt` ON `cached_articles` (`fetchedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_articles_sourceId` ON `cached_articles` (`sourceId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_articles_publishedAt` ON `cached_articles` (`publishedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_articles_sourceFeed` ON `cached_articles` (`sourceFeed`)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -319,7 +386,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_9_10, 
                         MIGRATION_10_11, 
                         MIGRATION_11_12,
-                        MIGRATION_12_13
+                        MIGRATION_12_13,
+                        MIGRATION_13_14
                     )
                     .build()
 

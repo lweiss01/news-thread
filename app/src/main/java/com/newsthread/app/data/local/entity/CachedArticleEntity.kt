@@ -22,7 +22,7 @@ data class CachedArticleEntity(
     val title: String,
     val description: String?,
     val urlToImage: String?,
-    val publishedAt: String,
+    val publishedAt: Long,
     val content: String?,           // Truncated content from backend
     val fullText: String?,          // Full article text (populated by Phase 2 text extraction)
     val fetchedAt: Long,            // System.currentTimeMillis() when fetched
