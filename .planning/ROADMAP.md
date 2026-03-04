@@ -37,8 +37,10 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 ### 🚧 v1.2 Google Play Release [In Progress]
 
 - [ ] **Phase 16: Identity & Store Assets** - Refine icon and generate Store assets
-- [ ] **Phase 17: Release Infrastructure** - Signing, R8/ProGuard, and legal prep
-- [ ] **Phase 18: Quality & Onboarding** - Bug fixes, onboarding UI, and release verification
+- [x] **Phase 17: Fix non-UI code review findings (architecture, concurrency, data model)** (completed 2026-03-03)
+- [ ] **Phase 18: Fix UI-related code review findings and polish**
+- [ ] **Phase 19: Release Infrastructure** - Signing, R8/ProGuard, and legal prep
+- [ ] **Phase 20: Quality & Onboarding** - Bug fixes, onboarding UI, and release verification
 
 
 
@@ -168,3 +170,25 @@ Plans:
 |-----------|--------|-----------|
 | v1.1 RSS Engine | ✅ Shipped | 2026-02-22 |
 | v1.2 Play Store | 🚧 In Progress | — |
+
+### Phase 17: Fix non-UI code review findings (architecture, concurrency, data model)
+
+**Goal:** Clean up non-UI code quality issues from audit: domain boundary violations, concurrency anti-patterns, publishedAt data model, and test coverage for changed code.
+**Depends on:** Phase 16
+**Plans:** 5/5 plans complete
+
+Plans:
+- [x] 17-01: Quick Fixes (visibility, KDoc, User-Agent) [Wave 1]
+- [x] 17-02: Domain Boundary Cleanup (Parcelable, Story model, TextExtractionPort) [Wave 1]
+- [x] 17-03: Concurrency Fixes (inject scope, remove delay, combine ratings) [Wave 2]
+- [x] 17-04: publishedAt String→Long Migration [Wave 3]
+- [x] 17-05: ViewModel Tests + Room Migration Test [Wave 4]
+
+### Phase 18: Fix UI-related code review findings and polish
+
+**Goal:** [To be planned]
+**Depends on:** Phase 17
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 18 to break down)

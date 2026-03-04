@@ -115,3 +115,6 @@ replay_pid*.log
 **/sync-upload.md
 .agent/rules/
 .agents/workflows/
+
+# Antigravity session state
+.antigravity_session/
