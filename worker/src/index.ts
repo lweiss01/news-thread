@@ -132,6 +132,7 @@ export function extractDomain(url: string): string {
 
     // Find the end of the hostname (start of path, query, or fragment)
     const pathIndex = hostname.indexOf('/');
+    const backslashIndex = hostname.indexOf('\\');
     const queryIndex = hostname.indexOf('?');
     const fragmentIndex = hostname.indexOf('#');
 
@@ -139,6 +140,9 @@ export function extractDomain(url: string): string {
 
     if (pathIndex !== -1 && pathIndex < endIndex) {
         endIndex = pathIndex;
+    }
+    if (backslashIndex !== -1 && backslashIndex < endIndex) {
+        endIndex = backslashIndex;
     }
     if (queryIndex !== -1 && queryIndex < endIndex) {
         endIndex = queryIndex;
