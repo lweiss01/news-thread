@@ -286,23 +286,27 @@ private fun ComparisonContent(
 
                     // "+N additional sources" deep link
                     if (comparison.unratedPerspective.isNotEmpty()) {
-                        Text(
-                            text = "+ ${comparison.unratedPerspective.size} additional source${if (comparison.unratedPerspective.size != 1) "s" else ""}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isSystemInDarkTheme()) NewsLinkDark else Amber600,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs)
-                                .clickable {
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                    sectionIndices[999]?.let { targetIndex ->
-                                        coroutineScope.launch {
-                                            val offset = with(density) { -160.dp.toPx().toInt() }
-                                            listState.animateScrollToItem(targetIndex, scrollOffset = offset)
-                                        }
+                        TextButton(
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                sectionIndices[999]?.let { targetIndex ->
+                                    coroutineScope.launch {
+                                        val offset = with(density) { -160.dp.toPx().toInt() }
+                                        listState.animateScrollToItem(targetIndex, scrollOffset = offset)
                                     }
                                 }
-                        )
+                            },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier
+                                .padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs)
+                        ) {
+                            Text(
+                                text = "+ ${comparison.unratedPerspective.size} additional source${if (comparison.unratedPerspective.size != 1) "s" else ""}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isSystemInDarkTheme()) NewsLinkDark else Amber600,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     HorizontalDivider()
