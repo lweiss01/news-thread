@@ -79,7 +79,7 @@ fun ArticleCard(
                     )
                     
                     // Time ago
-                    val timeAgo = getRelativeTimeFromString(article.publishedAt)
+                    val timeAgo = getRelativeTime(article.publishedAt)
                     if (timeAgo != null) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -265,33 +265,17 @@ fun ArticleCard(
     }
 }
 
-private fun getRelativeTimeFromString(publishedAt: String): String? {
-    return try {
-        val formats = listOf(
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") },
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US),
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") },
-            SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
-        )
-        var parsed: Date? = null
-        for (fmt in formats) {
-            try {
-                parsed = fmt.parse(publishedAt)
-                if (parsed != null) break
-            } catch (_: Exception) { }
-        }
-        if (parsed == null) return null
-        val now = System.currentTimeMillis()
-        val diff = now - parsed.time
-        when {
-            diff < 0 -> "Just now"
-            diff < 60_000 -> "Just now"
-            diff < 3_600_000 -> "${diff / 60_000}m ago"
-            diff < 86_400_000 -> "${diff / 3_600_000}h ago"
-            diff < 172_800_000 -> "Yesterday"
-            else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(parsed)
-        }
-    } catch (_: Exception) {
-        null
+private fun getRelativeTime(epochMillis: Long): String? {
+    if (epochMillis <= 0L) return null
+    val now = System.currentTimeMillis()
+    val diff = now - epochMillis
+    return when {
+        diff < 0 -> "Just now"
+        diff < 60_000 -> "Just now"
+        diff < 3_600_000 -> "${diff / 60_000}m ago"
+        diff < 86_400_000 -> "${diff / 3_600_000}h ago"
+        diff < 172_800_000 -> "Yesterday"
+        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(epochMillis))
     }
 }
+

@@ -47,15 +47,15 @@ import java.net.URLEncoder
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComparisonScreen(
-    article: Article,
+    articleUrl: String,
     navController: NavController,
     viewModel: ComparisonViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Load similar articles on first composition
-    LaunchedEffect(article.url) {
-        viewModel.findSimilarArticles(article)
+    LaunchedEffect(articleUrl) {
+        viewModel.loadAndFindSimilarArticles(articleUrl)
     }
 
     // Hoist scroll state for Scaffold FAB access
@@ -156,7 +156,7 @@ fun ComparisonScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
-                        Button(onClick = { viewModel.findSimilarArticles(article) }) {
+                        Button(onClick = { viewModel.loadAndFindSimilarArticles(articleUrl) }) {
                             Text("Retry")
                         }
                     }

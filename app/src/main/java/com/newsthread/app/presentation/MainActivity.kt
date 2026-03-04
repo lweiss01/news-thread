@@ -150,30 +150,26 @@ fun NewsThreadApp() {
                 val encodedUrl = backStackEntry.arguments?.getString("articleUrl")
                 val articleUrl = encodedUrl?.let { URLDecoder.decode(it, "UTF-8") }
 
-                // NEW: Get the article from savedStateHandle
-                val article = navController.previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.get<Article>("selected_article")
-
                 if (articleUrl != null) {
                     ArticleDetailScreen(
                         articleUrl = articleUrl,
-                        article = article, // NEW: Pass the article!
                         navController = navController
                     )
                 }
             }
 
-            // NEW: Add comparison route
-            composable(ComparisonRoute.route) {
-                // ... existing comparison route code ...
-                val article = navController.previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.get<Article>("selected_article")
+            composable(
+                route = ComparisonRoute.route,
+                arguments = listOf(
+                    navArgument("articleUrl") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val encodedUrl = backStackEntry.arguments?.getString("articleUrl")
+                val articleUrl = encodedUrl?.let { URLDecoder.decode(it, "UTF-8") }
 
-                if (article != null) {
+                if (articleUrl != null) {
                     ComparisonScreen(
-                        article = article,
+                        articleUrl = articleUrl,
                         navController = navController
                     )
                 }

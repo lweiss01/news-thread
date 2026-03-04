@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
@@ -40,17 +41,40 @@ class ArticleDetailViewModel @Inject constructor(
     private val followStoryUseCase: com.newsthread.app.domain.usecase.FollowStoryUseCase,
     private val unfollowStoryUseCase: com.newsthread.app.domain.usecase.UnfollowStoryUseCase,
     private val trackingRepository: com.newsthread.app.domain.repository.TrackingRepository,
-    private val matchingRepository: com.newsthread.app.domain.repository.ArticleMatchingRepository
+    private val matchingRepository: com.newsthread.app.domain.repository.ArticleMatchingRepository,
+    private val newsRepository: com.newsthread.app.domain.repository.NewsRepository
 ) : ViewModel() {
+
+    private val _article = kotlinx.coroutines.flow.MutableStateFlow<Article?>(null)
+    val article: kotlinx.coroutines.flow.StateFlow<Article?> = _article
 
     private val _isTracked = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isTracked: kotlinx.coroutines.flow.StateFlow<Boolean> = _isTracked
 
     /**
-     * Trigger embedding generation for the article.
-     * Called when article detail screen opens.
+     * Load article from database and trigger embedding generation.
      */
-    suspend fun generateEmbeddingForArticle(article: Article) {
+    fun loadArticle(url: String) {
+        viewModelScope.launch {
+            val fetchedArticle = newsRepository.getArticleByUrl(url)
+            _article.value = fetchedArticle
+            
+            val articleToProcess = fetchedArticle ?: Article(
+                source = Source(id = null, name = "Unknown", description = null, url = null, category = null, language = null, country = null),
+                author = null,
+                title = "",
+                description = null,
+                url = url,
+                urlToImage = null,
+                publishedAt = System.currentTimeMillis(),
+                content = null
+            )
+            
+            generateEmbeddingForArticle(articleToProcess)
+        }
+    }
+
+    private suspend fun generateEmbeddingForArticle(article: Article) {
         embeddingRepository.getOrGenerateEmbedding(article.url)
         // Also check tracking status
         _isTracked.value = isArticleTrackedUseCase(article.url)
@@ -89,34 +113,15 @@ class ArticleDetailViewModel @Inject constructor(
 @Composable
 fun ArticleDetailScreen(
     articleUrl: String,
-    article: Article? = null, // NEW: Optional article for comparison
     navController: NavController,
     viewModel: ArticleDetailViewModel = hiltViewModel()
 ) {
     val scope = rememberCoroutineScope()
+    val article by viewModel.article.collectAsStateWithLifecycle()
 
     // Phase 3: Trigger lazy embedding generation and proactive matching when article opens
     LaunchedEffect(articleUrl) {
-        article?.let {
-            viewModel.generateEmbeddingForArticle(it)
-        } ?: viewModel.generateEmbeddingForArticle(Article(
-            source = Source(
-                id = null,
-                name = "Unknown",
-                description = null,
-                url = null,
-                category = null,
-                language = null,
-                country = null
-            ),
-            author = null,
-            title = "",
-            description = null,
-            url = articleUrl,
-            urlToImage = null,
-            publishedAt = System.currentTimeMillis().toString(),
-            content = null
-        ))
+        viewModel.loadArticle(articleUrl)
     }
 
     Scaffold(
@@ -133,9 +138,9 @@ fun ArticleDetailScreen(
                 },
                 actions = {
                     val isTracked = viewModel.isTracked.collectAsStateWithLifecycle().value
-                    if (article != null) {
+                    article?.let { currentArticle ->
                         // Tracking Button
-                        IconButton(onClick = { viewModel.toggleTracking(article) }) {
+                        IconButton(onClick = { viewModel.toggleTracking(currentArticle) }) {
                             Icon(
                                 imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = if (isTracked) "Tracked" else "Follow Story",
@@ -146,10 +151,7 @@ fun ArticleDetailScreen(
                         // NEW: Compare button
                         IconButton(
                             onClick = {
-                                navController.currentBackStackEntry
-                                    ?.savedStateHandle
-                                    ?.set("selected_article", article)
-                                navController.navigate(ComparisonRoute.route)
+                                navController.navigate(ComparisonRoute.createRoute(articleUrl))
                             }
                         ) {
                             Icon(

@@ -156,10 +156,6 @@ fun FeedScreen(
                                     ogImageResolver = viewModel.ogImageResolver,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
-                                        navController.currentBackStackEntry
-                                            ?.savedStateHandle
-                                            ?.set("selected_article", article)
-
                                         val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
                                         navController.navigate(
                                             ArticleDetailRoute.createRoute(encodedUrl)

@@ -32,7 +32,10 @@ object ArticleDetailRoute {
 
 // Comparison screen route
 object ComparisonRoute {
-    const val route = "comparison"
+    const val route = "comparison/{articleUrl}"
 
-    fun createRoute(): String = route
+    fun createRoute(articleUrl: String): String {
+        val encodedUrl = java.net.URLEncoder.encode(articleUrl, "UTF-8")
+        return "comparison/$encodedUrl"
+    }
 }
