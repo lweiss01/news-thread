@@ -195,16 +195,20 @@ fun StoryDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
-                             Text(
-                                text = "Read original story ➤",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable {
-                                    // Use the first article's URL as proxy for "original"
-                                    val originalUrl = articles.minByOrNull { it.publishedAt }?.url
-                                    if (originalUrl != null) onArticleClick(originalUrl)
-                                }
-                             )
+                             TextButton(
+                                 onClick = {
+                                     // Use the first article's URL as proxy for "original"
+                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
+                                     if (originalUrl != null) onArticleClick(originalUrl)
+                                 },
+                                 contentPadding = PaddingValues(0.dp)
+                             ) {
+                                 Text(
+                                     text = "Read original story ➤",
+                                     style = MaterialTheme.typography.labelMedium,
+                                     color = MaterialTheme.colorScheme.primary
+                                 )
+                             }
 
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
