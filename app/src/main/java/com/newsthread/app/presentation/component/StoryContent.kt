@@ -33,7 +33,6 @@ fun StoryContent(
     onExpandChange: (Boolean) -> Unit,
     onUnfollow: (String) -> Unit,
     onArticleClick: (String) -> Unit,
-    onMarkViewed: (String) -> Unit,
     onRejectMatch: (String) -> Unit = {}
 ) {
     val unreadCount = trackedStory.unreadCount

@@ -29,9 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
-import com.newsthread.app.domain.model.TrackedStory
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.newsthread.app.domain.model.TrackedStorySummary
 import com.newsthread.app.domain.model.Article
 import java.text.SimpleDateFormat
 import java.util.*
@@ -44,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import com.newsthread.app.presentation.components.NewsTopAppBar
 import com.newsthread.app.presentation.theme.ProjectTheme
 
 // Removed biasColors map as it is replaced by ProjectTheme.bias.pointColors in BiasHeatmap
@@ -51,31 +53,56 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackingScreen(
-    onArticleClick: (String) -> Unit,
     onStoryClick: (String) -> Unit, // NEW
     viewModel: TrackingViewModel = hiltViewModel()
 ) {
-    val stories by viewModel.trackedStories.collectAsState()
+    val summaries by viewModel.trackedStorySummaries.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val lastRefreshed by viewModel.lastRefreshed.collectAsState()
 
-    // Phase 10: Notification Permission Request
-    // ... (unchanged)
+    val pullToRefreshState = rememberPullToRefreshState()
+    
+    // Explicitly handle refresh trigger from M3 state
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.refresh()
+        }
+    }
+
+    // Sync ViewModel state back to M3 state
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            pullToRefreshState.startRefresh()
+        } else {
+            pullToRefreshState.endRefresh()
+        }
+    }
 
     Scaffold(
-        // ... (unchanged)
+        topBar = {
+            NewsTopAppBar(
+                title = "My Tracking",
+                actions = {
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            )
+        }
     ) { padding ->
-        SwipeRefresh(
-            state = rememberSwipeRefreshState(isRefreshing),
-            onRefresh = { viewModel.refresh() },
-            modifier = Modifier.padding(padding)
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
         ) {
-            val currentStories = stories
-            if (currentStories == null) {
+            val currentSummaries = summaries
+            if (currentSummaries == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-            } else if (currentStories.isEmpty()) {
+            } else if (currentSummaries.isEmpty()) {
                 EmptyTrackingState(modifier = Modifier.fillMaxSize())
             } else {
                 LazyColumn(
@@ -83,15 +110,20 @@ fun TrackingScreen(
                     contentPadding = PaddingValues(ProjectTheme.spacing.m),
                     verticalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.m)
                 ) {
-                    items(currentStories, key = { it.story.id }) { trackedStory ->
+                    items(currentSummaries, key = { it.storyId }) { summary ->
                         EnhancedStoryCard(
-                            trackedStory = trackedStory,
+                            summary = summary,
                             onUnfollow = { viewModel.unfollowStory(it) },
                             onStoryClick = onStoryClick
                         )
                     }
                 }
             }
+
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }
@@ -126,41 +158,43 @@ fun EmptyTrackingState(modifier: Modifier = Modifier) {
 
 @Composable
 fun EnhancedStoryCard(
-    trackedStory: TrackedStory,
+    summary: TrackedStorySummary,
     onUnfollow: (String) -> Unit,
     onStoryClick: (String) -> Unit,
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onStoryClick(trackedStory.story.id) }
+            .clickable { onStoryClick(summary.storyId) }
     ) {
-        val isUpdated = trackedStory.story.hasUnseenUpdates
+        val hasNew = summary.unreadArticles > 0
 
         Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
             // Header: Title
             Text(
-                text = trackedStory.story.title,
+                text = summary.title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (isUpdated) FontWeight.ExtraBold else FontWeight.Bold,
-                color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                fontWeight = if (hasNew) FontWeight.ExtraBold else FontWeight.Bold,
+                color = if (hasNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
 
-            // Calculate Heatmap Data
-            val articles = trackedStory.articles
-            val biasCounts = remember(articles) {
-                 articles.mapNotNull { it.sourceRating?.finalBiasScore }
-                     .groupingBy { it }.eachCount()
+            // Heatmap Data from Summary
+            val biasCounts = remember(summary) {
+                 mapOf(
+                     -2 to summary.biasMinus2,
+                     -1 to summary.biasMinus1,
+                     0 to summary.bias0,
+                     1 to summary.bias1,
+                     2 to summary.bias2
+                 ).filterValues { it > 0 }
              }
-
-             val unratedCount = articles.count { it.sourceRating == null }
 
             // Heatmap Preview (Uninteractive)
             com.newsthread.app.presentation.components.BiasHeatmap(
                 biasCounts = biasCounts,
-                unratedCount = unratedCount,
+                unratedCount = summary.biasUnrated,
                 interactive = false, // Disable clicks per user feedback
                 modifier = Modifier.fillMaxWidth()
             )
@@ -172,14 +206,14 @@ fun EnhancedStoryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                 Text(
-                    text = if (isUpdated) "${articles.size} NEW updates" else "${articles.size} updates",
+                  Text(
+                    text = if (hasNew) "${summary.unreadArticles} NEW · ${summary.totalArticles} total" else "${summary.totalArticles} articles",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isUpdated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (isUpdated) FontWeight.Bold else FontWeight.Normal
+                    color = if (hasNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (hasNew) FontWeight.Bold else FontWeight.Normal
                 )
 
-                 IconButton(onClick = { onUnfollow(trackedStory.story.id) }) {
+                 IconButton(onClick = { onUnfollow(summary.storyId) }) {
                     Icon(
                         imageVector = Icons.Default.Bookmark,
                         contentDescription = "Unfollow",

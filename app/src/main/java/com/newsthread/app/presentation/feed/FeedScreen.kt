@@ -24,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.FloatingActionButtonDefaults
+import com.newsthread.app.presentation.common.glassBackground
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -151,7 +153,6 @@ fun FeedScreen(
                             items(articles) { article ->
                                 ArticleCard(
                                     article = article,
-                                    sourceRatings = emptyMap(), // Redundant, logic moved to Domain
                                     isTracked = trackedStoriesMap.containsKey(article.url),
                                     ogImageResolver = viewModel.ogImageResolver,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },

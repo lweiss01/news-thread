@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import com.newsthread.app.domain.model.TrackedStorySummary
+
 @HiltViewModel
 class TrackingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -24,7 +26,17 @@ class TrackingViewModel @Inject constructor(
     private val trackingRepository: TrackingRepository
 ) : ViewModel() {
 
+    // Legacy flow (slow, avoid using in main list)
     val trackedStories: StateFlow<List<TrackedStory>?> = getTrackedStoriesUseCase()
+        .flowOn(kotlinx.coroutines.Dispatchers.Default)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
+
+    // New lightweight flow (fast)
+    val trackedStorySummaries: StateFlow<List<TrackedStorySummary>?> = trackingRepository.getTrackedStorySummaries()
         .flowOn(kotlinx.coroutines.Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
@@ -45,12 +57,13 @@ class TrackingViewModel @Inject constructor(
     val lastRefreshed: StateFlow<Long> = _lastRefreshed.asStateFlow()
 
     fun getOriginalStoryUrl(storyId: String): String? {
+        // This is only called when needed, but we can optimize it if we have unred count in summary
         val trackedStory = trackedStories.value?.find { it.story.id == storyId } ?: return null
         return trackedStory.articles.minByOrNull { it.publishedAt }?.url
     }
     
     fun getLastUpdated(storyId: String): Long? {
-         return trackedStories.value?.find { it.story.id == storyId }?.story?.updatedAt
+         return trackedStorySummaries.value?.find { it.storyId == storyId }?.lastUpdate
     }
 
     fun unfollowStory(storyId: String) {

@@ -35,7 +35,9 @@ fun CachedArticleEntity.toDomain(): Article {
         url = url,
         urlToImage = urlToImage,
         publishedAt = publishedAt,
-        content = content
+        content = content,
+        fetchedAt = fetchedAt,
+        matchedAt = matchedAt
     )
 }
 
@@ -45,7 +47,7 @@ fun CachedArticleEntity.toDomain(): Article {
 internal fun Article.toEntity(now: Long, sourceFeed: String? = null): CachedArticleEntity {
     return CachedArticleEntity(
         url = url,
-        sourceId = source.id,
+        sourceId = sourceRating?.sourceId ?: source.id,
         sourceName = source.name,
         author = author,
         title = title,

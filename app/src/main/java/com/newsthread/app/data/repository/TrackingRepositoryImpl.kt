@@ -20,6 +20,8 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import com.newsthread.app.domain.model.TrackedStorySummary
+
 @Singleton
 class TrackingRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -37,6 +39,20 @@ class TrackingRepositoryImpl @Inject constructor(
                 )
             }
         }
+    }
+
+    override fun getTrackedStory(storyId: String): Flow<TrackedStory?> {
+        return storyDao.getStoryWithArticlesById(storyId).map { swa ->
+            if (swa == null) return@map null
+            TrackedStory(
+                story = swa.story.toStory(),
+                articles = swa.articles.map { it.toDomain() }
+            )
+        }
+    }
+
+    override fun getTrackedStorySummaries(): Flow<List<TrackedStorySummary>> {
+        return storyDao.getTrackedStorySummaries()
     }
 
     override suspend fun followArticle(article: Article): Result<Unit> {
@@ -169,6 +185,14 @@ class TrackingRepositoryImpl @Inject constructor(
 
     override suspend fun getStoryArticleUrls(storyId: String): List<String> {
         return storyDao.getStoryArticleUrls(storyId)
+    }
+
+    override suspend fun updateArticleImage(url: String, imageUrl: String) {
+        articleDao.updateArticleImage(url, imageUrl)
+    }
+
+    override suspend fun updateArticleSourceId(url: String, sourceId: String) {
+        articleDao.updateArticleSourceId(url, sourceId)
     }
 
     private fun bytesToFloatArray(bytes: ByteArray): FloatArray {

@@ -116,7 +116,6 @@ fun ArticleDetailScreen(
     navController: NavController,
     viewModel: ArticleDetailViewModel = hiltViewModel()
 ) {
-    val scope = rememberCoroutineScope()
     val article by viewModel.article.collectAsStateWithLifecycle()
 
     // Phase 3: Trigger lazy embedding generation and proactive matching when article opens

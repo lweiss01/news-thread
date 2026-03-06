@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -205,8 +207,6 @@ private fun ComparisonContent(
     }
 
     // Capture colors outside LazyListScope (which is not @Composable)
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val outlineColor = MaterialTheme.colorScheme.outline
     val secondaryColor = MaterialTheme.colorScheme.secondary
 
@@ -242,8 +242,8 @@ private fun ComparisonContent(
 
                 if (ratedArticles.isNotEmpty()) {
                     Text(
-                        text = "Bias Spectrum",
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "Bias Spectrum".uppercase(),
+                        style = ProjectTheme.typography.labelSmallProminent,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.m, bottom = ProjectTheme.spacing.s)
                     )
@@ -359,8 +359,8 @@ private fun ComparisonContent(
                     MatchedArticleCard(
                         article = article,
                         rating = article.sourceRating,
-                        similarityScore = 0.0f, // TODO: threaded score if available
                         accentColor = color, // Use the perspective color for the side accent
+                        onReadMoreClick = { onArticleClick(article) },
                         modifier = Modifier
                     )
                 }
@@ -418,10 +418,8 @@ private fun PerspectiveHeader(
         ) {
             Text(
                 text = title.uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                letterSpacing = 1.sp
+                style = ProjectTheme.typography.labelSmallProminent,
+                color = color
             )
             Spacer(modifier = Modifier.width(ProjectTheme.spacing.s))
             Surface(

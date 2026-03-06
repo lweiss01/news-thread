@@ -20,7 +20,7 @@ class GetTrackedStoriesUseCase @Inject constructor(
         val storiesFlow = repository.getTrackedStories()
 
         // 3. Combine and Enrich articles with source ratings
-        return combine(storiesFlow, ratingsFlow) { stories, allRatings ->
+        return combine(storiesFlow, ratingsFlow) { stories: List<TrackedStory>, allRatings ->
             stories.map { trackedStory ->
                 trackedStory.copy(
                     articles = trackedStory.articles.map { article ->

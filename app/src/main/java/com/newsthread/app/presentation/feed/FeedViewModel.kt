@@ -146,12 +146,12 @@ class FeedViewModel @Inject constructor(
 
     private fun loadTrackedStories() {
         viewModelScope.launch {
-            trackingRepository.getTrackedStories().collect { stories ->
+            trackingRepository.getTrackedStories().collect { stories: List<com.newsthread.app.domain.model.TrackedStory> ->
                 // Offload map generation to background
                 withContext(Dispatchers.Default) {
                     val map = mutableMapOf<String, String>()
-                    stories.forEach { trackedStory ->
-                        trackedStory.articles.forEach { article ->
+                    for (trackedStory in stories) {
+                        for (article in trackedStory.articles) {
                             map[article.url] = trackedStory.story.id
                         }
                     }

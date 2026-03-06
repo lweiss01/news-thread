@@ -66,6 +66,7 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = false
+            keepDebugSymbols.add("**/libtensorflowlite_jni.so")
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -74,9 +75,8 @@ android {
         }
     }
 
-    // Prevent compression of TensorFlow Lite model files
-    aaptOptions {
-        noCompress("tflite")
+    androidResources {
+        noCompress += "tflite"
     }
 
     testOptions {

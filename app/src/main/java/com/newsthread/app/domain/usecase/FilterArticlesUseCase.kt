@@ -92,6 +92,11 @@ class FilterArticlesUseCase @Inject constructor(
 
             // 2. Find and Attach Rating using robust UseCase
             val rating = findSourceRatingUseCase(article, allRatings)
+            if (rating == null) {
+                Log.d("FeedFilter", "No rating found for: ${article.source.name} (ID: ${article.source.id})")
+            } else {
+                Log.v("FeedFilter", "Found rating for ${article.source.name}: ${rating.finalBiasScore}")
+            }
             val enrichedArticle = article.copy(sourceRating = rating)
 
             // 3. Evaluation
@@ -115,6 +120,7 @@ class FilterArticlesUseCase @Inject constructor(
             // 5. REPUTABLE DOMAIN FALLBACK (Discovery mode only)
             // Not used in strict mode — unrated articles would show gray shields
             if (REPUTABLE_DOMAINS.any { isDomainMatch(extractedDomain, it) }) {
+                Log.d("FeedFilter", "Accepted (Reputable Fallback): ${article.source.name}")
                 return@mapNotNull enrichedArticle
             }
 

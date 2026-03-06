@@ -9,6 +9,8 @@ data class Article(
     val urlToImage: String?,
     val publishedAt: Long,
     val content: String?,
+    val fetchedAt: Long = 0L,
+    val matchedAt: Long? = null,
     val sourceRating: SourceRating? = null
 )
 

@@ -137,3 +137,9 @@ worker/build/
 .idea/
 *.iml
 .vscode/
+
+# Final sweep
+output/
+STORE_LISTING_DRAFT.md
+bd_list.json
+google_news.html

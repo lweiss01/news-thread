@@ -169,4 +169,10 @@ interface CachedArticleDao {
 
     @Query("DELETE FROM cached_articles WHERE sourceFeed LIKE :prefix || '%' AND isTracked = 0")
     suspend fun deleteUntrackedByFeedPrefix(prefix: String)
+
+    @Query("UPDATE cached_articles SET urlToImage = :imageUrl WHERE url = :url")
+    suspend fun updateArticleImage(url: String, imageUrl: String)
+
+    @Query("UPDATE cached_articles SET sourceId = :sourceId WHERE url = :url")
+    suspend fun updateArticleSourceId(url: String, sourceId: String)
 }
