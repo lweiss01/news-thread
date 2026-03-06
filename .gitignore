@@ -117,3 +117,8 @@ replay_pid*.log
 
 # Antigravity session state
 .antigravity_session/
+
+# Node modules
+node_modules/
+**/node_modules/
+package-lock.json
