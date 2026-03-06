@@ -111,9 +111,8 @@ hs_err_pid*.log
 replay_pid*.log
 
 # Automated session logs
-.agent/sessions/
+.agent/
 **/sync-upload.md
-.agent/rules/
 .agents/workflows/
 
 # Antigravity session state

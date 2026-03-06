@@ -13,11 +13,11 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 <details>
 <summary>✅ v1.1 Dual-Layer Edge RSS Engine (Phases 1-15) — SHIPPED 2026-02-22</summary>
 
-- [x] **Phase 1: Foundation** - Data models, Room schema, and caching infrastructure
-- [x] **Phase 2: Text Extraction** - Full article text fetching with Readability4J
-- [x] **Phase 3: Embedding Engine** - TensorFlow Lite integration for semantic embeddings
-- [x] **Phase 4: Similarity Matching** - Cosine similarity and article clustering
-- [x] **Phase 5: Pipeline Integration** - End-to-end orchestration with use cases
+- [x] **Phase 01: Foundation** - Data models, Room schema, and caching infrastructure
+- [x] **Phase 02: Text Extraction** - Full article text fetching with Readability4J
+- [x] **Phase 03: Embedding Engine** - TensorFlow Lite integration for semantic embeddings
+- [x] **Phase 04: Similarity Matching** - Cosine similarity and article clustering
+- [x] **Phase 05: Pipeline Integration** - End-to-end orchestration with use cases
 - [x] **Phase 6: Background Processing** - WorkManager pre-computation
 - [x] **Phase 7: UI Implementation** - Bias spectrum visualization
 - [x] **Phase 8: Tracking Foundation** - Database & UI for followed stories
@@ -39,8 +39,9 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 - [ ] **Phase 16: Identity & Store Assets** - Refine icon and generate Store assets
 - [x] **Phase 17: Fix non-UI code review findings (architecture, concurrency, data model)** (completed 2026-03-03)
 - [ ] **Phase 18: Fix UI-related code review findings and polish**
-- [ ] **Phase 19: Release Infrastructure** - Signing, R8/ProGuard, and legal prep
-- [ ] **Phase 20: Quality & Onboarding** - Bug fixes, onboarding UI, and release verification
+- [x] **Phase 19: Hygiene, Performance & Stability** - Performance fix, UI stability, and build hygiene (completed 2026-03-05)
+- [ ] **Phase 20: Release Infrastructure** - Signing, R8/ProGuard, and legal prep
+- [ ] **Phase 21: Quality & Onboarding** - Bug fixes, onboarding UI, and release verification
 
 
 
@@ -48,6 +49,21 @@ NewsThread has successfully replaced its keyword-based article matching with on-
 
 
 ## Phase Details
+
+### Phase 01: Foundation
+(Completed 2026-01-20)
+
+### Phase 02: Text Extraction
+(Completed 2026-01-25)
+
+### Phase 03: Embedding Engine
+(Completed 2026-02-01)
+
+### Phase 04: Similarity Matching
+(Completed 2026-02-05)
+
+### Phase 05: Pipeline Integration
+(Completed 2026-02-06)
 
 ### Phase 6: Background Processing
 (Completed 2026-02-07)
@@ -192,3 +208,17 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 18 to break down)
+
+### Phase 19: Hygiene, Performance & Stability
+
+**Goal:** Resolve 8-second load time on Tracking screen, fix ArticleCard layout jitter (TDD), ensure internal navigation for matched articles, and achieve 0-warning build.
+
+**Status**: Complete (2026-03-05)
+
+Plans:
+- [x] 19-01: Performance & Tracking Logic [Wave 1] (completed 2026-03-05)
+- [x] 19-02: UI Stability & Polish (TDD) [Wave 2] (completed 2026-03-05)
+- [x] 19-03: Code Hygiene Cleanup [Wave 3] (completed 2026-03-05)
+
+### Phase 20: Release Infrastructure
+**Goal**: [To be planned]

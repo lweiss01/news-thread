@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-20)
  
 ## Current Position
  
-- Phase: Phase 18: Fix UI-related code review findings and polish
-- Plan: Pending Breakdown
-- Status: Phase 17 non-UI code review audit fixes completed. Ready to plan Phase 18.
-- Last activity: 2026-03-03 — Finished Phase 17 (Architecture, Concurrency, Data Model) and fixed Navigation Crash
+- Phase: Phase 16: Identity & Store Assets
+- Plan: Waiting for Screenshots
+- Status: Phase 19 Hygiene & Stability fixes completed. Ready to capture final store assets.
+- Last activity: 2026-03-05 — Finished Phase 19 (Hygiene, Performance, Date/Image Stability)
 
 
 ## Accumulated Context
@@ -249,3 +249,11 @@ Recent decisions affecting current work:
     - **Data Model Migration**: Migrated `Article.publishedAt` from String (ISO8601) to `Long` (Epoch Millis) throughout the entire stack (Network response, Room cache, Domain). Added Room `AutoMigration` from v10 to v11 and `MigrationTest.kt`.
     - **Concurrency & Architecture**: Fixed `StateFlow` tests, injected `CoroutineScope` for DB operations to avoid tying background UI updates to ViewModel scope, fixed visibility on UseCases/ViewModels.
     - **Beads**: Closed 17 code-review findings resulting from the repo-wide audit.
+### Session Notes (2026-03-05, Phase 19 Hygiene & Stability)
+- **Phase 19 Validated & Complete**:
+    - **Date Fix**: Resolved the "Dec 31" epoch-0 drift for Google News articles by adding a seconds-vs-milliseconds heuristic in `RssNewsRepository`.
+    - **Bias Dots**: Enhanced `StoryDao` SQL join to fallback to `sourceName` if `sourceId` is missing, ensuring dots appear even for unmapped RSS sources.
+    - **Image Stability**: Robustified `OgImageResolver` regex for both attribute orders and added a transient failure cache to prevent redundant scraping hits.
+    - **UI Polish**: Removed pulse shimmer in `Modifiers.kt` for a calmer, static amber placeholder.
+    - **Performance**: Verified tracking screen loads in <1s after SQL optimization.
+    - **Build Hygiene**: Achieved 0-warning build state.

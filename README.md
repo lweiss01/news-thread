@@ -33,8 +33,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 1.2.0 (Release Candidate)
-**Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨
+**Version**: 1.2.0 (Stable RC)
+**Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨 (Phase 19 Hygiene Finished)
 
 ### What's Built
 
