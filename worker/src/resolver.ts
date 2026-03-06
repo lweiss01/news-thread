@@ -12,7 +12,7 @@ const BACKSLASH_REGEX = /\\/g;
 const DECODER_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
 const DECODER_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
 
-export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
+export async function resolveUrl(encodedUrl: string, cache: KVNamespace, onNetworkRequest?: () => void): Promise<string> {
     if (!isValidGoogleNewsHost(encodedUrl)) return encodedUrl;
 
     // Check KV cache
@@ -24,20 +24,27 @@ export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promis
     let resolved = tryBase64Decode(encodedUrl);
     if (resolved) console.log(`[Resolve] Strategy: Base64 success for ${encodedUrl.substring(0, 50)}...`);
 
-    // Strategy 2: HTTP Redirect
-    if (!resolved) {
+    // Only proceed to network strategies if permitted
+    if (!resolved && onNetworkRequest) {
+        // Strategy 2: HTTP Redirect
+        onNetworkRequest();
         resolved = await tryHttpRedirect(encodedUrl);
-        if (resolved) console.log(`[Resolve] Strategy: HTTP Redirect success`);
+        if (resolved) console.log(`[Resolve] Strategy: HTTP Redirect success for ${encodedUrl.substring(0, 50)}...`);
+
+        // Strategy 3: BatchExecute RPC
+        if (!resolved) {
+            onNetworkRequest();
+            resolved = await tryBatchExecute(encodedUrl);
+            if (resolved) console.log(`[Resolve] Strategy: BatchExecute success for ${encodedUrl.substring(0, 50)}...`);
+        }
     }
 
-    // Strategy 3: BatchExecute RPC
     if (!resolved) {
-        resolved = await tryBatchExecute(encodedUrl);
-        if (resolved) console.log(`[Resolve] Strategy: BatchExecute success`);
-    }
-
-    if (!resolved) {
-        console.warn(`[Resolve] All strategies failed for: ${encodedUrl}`);
+        if (!onNetworkRequest) {
+            console.warn(`[Resolve] Skipping network resolve strategies for ${encodedUrl.substring(0, 50)}... due to limits`);
+        } else {
+            console.warn(`[Resolve] All strategies failed for: ${encodedUrl}`);
+        }
     }
 
     const finalUrl = resolved || encodedUrl.replace('/rss/articles/', '/articles/');

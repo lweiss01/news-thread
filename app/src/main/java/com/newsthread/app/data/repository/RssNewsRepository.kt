@@ -10,6 +10,7 @@ import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
 import com.newsthread.app.domain.usecase.FilterArticlesUseCase
+import com.newsthread.app.domain.usecase.FindSourceRatingUseCase
 import com.newsthread.app.util.CacheConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -38,7 +39,8 @@ class RssNewsRepository @Inject constructor(
     private val feedCacheDao: FeedCacheDao,
     private val sourceRatingDao: SourceRatingDao,
     private val filterArticlesUseCase: FilterArticlesUseCase,
-    private val clusterArticlesUseCase: ClusterArticlesUseCase
+    private val clusterArticlesUseCase: ClusterArticlesUseCase,
+    private val findSourceRatingUseCase: FindSourceRatingUseCase
 ) : NewsRepository {
 
     companion object {
@@ -92,7 +94,7 @@ class RssNewsRepository @Inject constructor(
 
             Log.d(TAG, "Worker returned JSON (length: ${json.length}). Parsing...")
             val articles = parseWorkerJson(json)
-            Log.d(TAG, "Parsed ${articles.size} articles from Worker")
+            Log.d(TAG, "Parsed ${articles.size} articles from Worker. Database ratings: ${allRatings.size}")
 
             // Filter and cluster — Main Feed uses Strict Mode (onlyRated = true)
             val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true, minReliability = minReliability).take(MAX_ARTICLES)
@@ -105,7 +107,8 @@ class RssNewsRepository @Inject constructor(
                 // Round 3: Also clear discovery cache on force refresh to ensure consistency
                 cachedArticleDao.deleteUntrackedByFeedPrefix("discovery_")
             }
-            cachedArticleDao.insertAll(articles.map { it.toEntity(now, FEED_KEY_TOP) })
+            // Fix: Insert the `clustered` articles so that `sourceId` is successfully saved to Room
+            cachedArticleDao.insertAll(clustered.map { it.toEntity(now, FEED_KEY_TOP) })
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = FEED_KEY_TOP,
                 fetchedAt = now,
@@ -166,7 +169,8 @@ class RssNewsRepository @Inject constructor(
             if (forceRefresh && articles.isNotEmpty()) {
                 cachedArticleDao.deleteByFeed(feedKey)
             }
-            cachedArticleDao.insertAll(articles.map { it.toEntity(now, feedKey) })
+            // Fix: Insert the `clustered` articles so that `sourceId` and ratings are preserved in Room
+            cachedArticleDao.insertAll(clustered.map { it.toEntity(now, feedKey) })
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = feedKey,
                 fetchedAt = now,
@@ -279,10 +283,19 @@ class RssNewsRepository @Inject constructor(
             Log.v(TAG, "Found image: $urlToImage for $url")
         }
 
+        val rawId = sourceObj.optString("id").takeIf { it != "null" && it.isNotBlank() }
+        val sourceName = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(sourceObj.optString("name", "Unknown Source")) ?: "Unknown Source"
+        
+        // If ID is missing (common in RSS), slugify name to enable bias rating lookup
+        val sourceId = rawId ?: sourceName.lowercase()
+            .replace(Regex("[^a-z0-9]"), "-")
+            .replace(Regex("-+"), "-")
+            .trim('-')
+
         return Article(
             source = Source(
-                id = sourceObj.optString("id").takeIf { it != "null" && it.isNotBlank() },
-                name = com.newsthread.app.util.HtmlUtils.decodeHtmlEntities(sourceObj.optString("name", "Unknown Source")) ?: "Unknown Source",
+                id = sourceId,
+                name = sourceName,
                 description = null,
                 url = null,
                 category = null,
@@ -307,18 +320,40 @@ class RssNewsRepository @Inject constructor(
     private fun parsePublishedAt(raw: String?): Long {
         if (raw == null) return System.currentTimeMillis()
         
-        // Numeric string (already epoch millis)
-        raw.toLongOrNull()?.let { return it }
+        // 1. Numeric check (epoch seconds vs millis)
+        val numeric = raw.toLongOrNull()
+        if (numeric != null) {
+            // Heuristic: If < 10 billion, it's likely seconds (10B seconds is way in the future)
+            // Feb 2024 is ~1.7 billion seconds.
+            val epochMillis = if (numeric < 10_000_000_000L) numeric * 1000 else numeric
+            return epochMillis
+        }
         
-        // ISO 8601 / RFC 2822 date strings
+        // 2. ISO 8601 / RFC 2822 date strings
         return try {
             java.time.Instant.parse(raw).toEpochMilli()
         } catch (_: Exception) {
             try {
-                java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", java.util.Locale.US)
-                    .parse(raw)?.time ?: System.currentTimeMillis()
+                // Primary Cloudflare Worker format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+                val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+                format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                format.parse(raw)?.time ?: throw Exception()
             } catch (_: Exception) {
-                System.currentTimeMillis()
+                try {
+                    // Fallback for missing milliseconds: yyyy-MM-dd'T'HH:mm:ss'Z'
+                    val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                    format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    format.parse(raw)?.time ?: throw Exception()
+                } catch (_: Exception) {
+                    try {
+                        // Standard RSS RFC 2822 format
+                        val format = java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", java.util.Locale.US)
+                        format.parse(raw)?.time ?: System.currentTimeMillis()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse date: $raw (using System.currentTimeMillis)")
+                        System.currentTimeMillis()
+                    }
+                }
             }
         }
     }

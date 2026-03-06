@@ -17,15 +17,38 @@ export const CategoryTopics = {
 
 export const allSources: RssFeedSource[] = sources as RssFeedSource[];
 
-// Optimization: Pre-compute a Map for domain lookups to achieve O(1) performance
-// instead of O(N) array searching inside high-volume feed parsing loops.
+function normalizeSourceName(name: string): string {
+    return name
+        .trim()
+        .toLowerCase()
+        .replace(/^the\s+/, '')
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+// Optimization: Pre-compute maps for hot-path lookups.
 const sourceByDomain = new Map<string, RssFeedSource>();
+const sourceByDisplayName = new Map<string, RssFeedSource>();
+const sourceByNormalizedDisplayName = new Map<string, RssFeedSource>();
 for (const source of allSources) {
     sourceByDomain.set(source.domain, source);
+
+    const exact = source.displayName.trim().toLowerCase();
+    sourceByDisplayName.set(exact, source);
+    sourceByNormalizedDisplayName.set(normalizeSourceName(source.displayName), source);
 }
 
 export function findByDomain(domain: string): RssFeedSource | undefined {
     return sourceByDomain.get(domain);
+}
+
+export function findByDisplayName(displayName: string | null | undefined): RssFeedSource | undefined {
+    if (!displayName) return undefined;
+
+    const exact = displayName.trim().toLowerCase();
+    return sourceByDisplayName.get(exact) || sourceByNormalizedDisplayName.get(normalizeSourceName(displayName));
 }
 
 export function googleNewsCategoryUrl(topicId: string): string {
