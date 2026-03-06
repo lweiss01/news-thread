@@ -19,18 +19,27 @@ Deliver concrete findings with evidence, impact, and pragmatic fixes.
 1. Define scope and entry points.
    - Confirm modules and platforms in scope (Android app, worker/backend, shared schemas).
    - Identify critical user journeys: feed load, article detail, compare perspectives, follow/track, settings.
-2. Build a quick system map before deep critique.
+2. Load repo-specific guardrails before critique.
+   - Read [newsthread-repo-standards.md](references/newsthread-repo-standards.md).
+   - If repository standards conflict with assumptions, treat repository standards as source of truth.
+3. Build a quick system map before deep critique.
    - Trace data flow: ingestion -> normalization -> clustering/ranking -> persistence -> UI rendering.
    - Mark trust boundaries (device, network, edge worker, third-party content).
-3. Run role-based passes.
+4. Run the static baseline pass.
+   - Run `node scripts/static-audit.mjs --repo <repo-root>`.
+   - Ingest both outputs: `tmp/android-elite-review/static-audit.json` and `tmp/android-elite-review/static-audit.md`.
+5. Run role-based passes.
    - Read [android-engineering-checklist.md](references/android-engineering-checklist.md).
    - Read [security-checklist.md](references/security-checklist.md).
    - Read [ux-ui-checklist.md](references/ux-ui-checklist.md).
    - Read [news-aggregation-edge-ml-checklist.md](references/news-aggregation-edge-ml-checklist.md).
-4. Merge findings and de-duplicate overlaps.
+6. Merge findings and de-duplicate overlaps.
    - Keep one finding per root cause; reference secondary symptoms.
    - Prioritize by user harm, exploitability, regression risk, and effort.
-5. Produce a structured report.
+7. Score release readiness.
+   - Use the weighted model in [review-report-template.md](references/review-report-template.md).
+   - Calculate lens scores and final weighted score before giving release recommendation.
+8. Produce a structured report.
    - Use [review-report-template.md](references/review-report-template.md).
 
 ## Evidence Rules
@@ -60,10 +69,11 @@ Confidence:
 ## Output Contract
 Return:
 1. Executive summary (top risks and release recommendation).
-2. Findings sorted by severity, then confidence.
-3. Cross-cutting risks (issues spanning Android + worker/ML/UX).
-4. Quick wins (small changes, high impact).
-5. Strategic investments (larger refactors, tooling, observability).
-6. Open questions and evidence needed to close them.
+2. Weighted readiness score and lens breakdown.
+3. Findings sorted by severity, then confidence.
+4. Cross-cutting risks (issues spanning Android + worker/ML/UX).
+5. Quick wins (small changes, high impact).
+6. Strategic investments (larger refactors, tooling, observability).
+7. Open questions and evidence needed to close them.
 
 If no issues are found, state that explicitly and list residual risk areas not fully validated.
