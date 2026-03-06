@@ -449,6 +449,18 @@ class FakeCachedArticleDao : CachedArticleDao {
     override fun getByFeedFlow(feedKey: String): Flow<List<CachedArticleEntity>> {
         return flowOf(emptyList())
     }
+
+    override suspend fun updateArticleImage(url: String, imageUrl: String) {
+        savedArticles[url]?.let {
+            savedArticles[url] = it.copy(urlToImage = imageUrl)
+        }
+    }
+
+    override suspend fun updateArticleSourceId(url: String, sourceId: String) {
+        savedArticles[url]?.let {
+            savedArticles[url] = it.copy(sourceId = sourceId)
+        }
+    }
 }
 
 

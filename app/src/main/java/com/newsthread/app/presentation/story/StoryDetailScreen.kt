@@ -175,18 +175,21 @@ fun StoryDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
-                             Text(
-                                text = "Read original story".uppercase(),
-                                style = ProjectTheme.typography.labelSmallProminent,
-                                color = if (androidx.compose.foundation.isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600,
-                                modifier = Modifier
-                                    .clickable {
-                                        // Use the first article's URL as proxy for "original"
-                                        val originalUrl = articles.minByOrNull { it.publishedAt }?.url
-                                        if (originalUrl != null) onArticleClick(originalUrl)
-                                    }
-                                    .padding(vertical = ProjectTheme.spacing.xs)
-                             )
+                             TextButton(
+                                 onClick = {
+                                     // Use the first article's URL as proxy for "original"
+                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
+                                     if (originalUrl != null) onArticleClick(originalUrl)
+                                 },
+                                 modifier = Modifier.padding(vertical = ProjectTheme.spacing.xs),
+                                 contentPadding = PaddingValues(0.dp)
+                             ) {
+                                 Text(
+                                     text = "Read original story".uppercase(),
+                                     style = ProjectTheme.typography.labelSmallProminent,
+                                     color = if (androidx.compose.foundation.isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600
+                                 )
+                             }
 
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
