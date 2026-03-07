@@ -72,8 +72,14 @@ export const allSources: RssFeedSource[] = [
     { sourceId: "oann.com", displayName: "OAN", domain: "oann.com", mainFeedUrl: "https://news.google.com/rss/search?q=site:oann.com&hl=en-US&gl=US&ceid=US:en", allsidesRating: "Right" },
 ];
 
+// Pre-compute a map for O(1) lookups instead of O(N) array searching
+const domainToSourceMap = new Map<string, RssFeedSource>();
+for (const source of allSources) {
+    domainToSourceMap.set(source.domain, source);
+}
+
 export function findByDomain(domain: string): RssFeedSource | undefined {
-    return allSources.find(s => s.domain === domain);
+    return domainToSourceMap.get(domain);
 }
 
 export function googleNewsCategoryUrl(topicId: string): string {
