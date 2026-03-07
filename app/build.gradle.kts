@@ -18,6 +18,9 @@ android {
         versionCode = 1
         versionName = "1.2.0-RC"
 
+        buildConfigField("String", "WORKER_API_KEY", "\"${System.getenv("WORKER_API_KEY") ?: "dev_key_fallback"}\"")
+        buildConfigField("String", "WORKER_URL", "\"https://newsthread-api.newsthread.workers.dev\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables {
