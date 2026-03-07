@@ -1,6 +1,7 @@
 package com.newsthread.app.data.repository
 
 import android.util.Log
+import com.newsthread.app.BuildConfig
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.FeedCacheDao
 import com.newsthread.app.data.local.dao.SourceRatingDao
@@ -8,7 +9,6 @@ import com.newsthread.app.data.local.entity.FeedCacheEntity
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.repository.NewsRepository
-import com.newsthread.app.BuildConfig
 import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
 import com.newsthread.app.domain.usecase.FilterArticlesUseCase
 import com.newsthread.app.domain.usecase.FindSourceRatingUseCase
@@ -60,12 +60,12 @@ class RssNewsRepository @Inject constructor(
         var cached = safeDbCall { cachedArticleDao.getByFeed(FEED_KEY_TOP).map { it.toDomain() } }
         
         if (cached.isNotEmpty()) {
-            // Initial emit of cached data — use Strict Mode to keep initial UI high quality
             cached = filterArticlesUseCase(cached, allRatings, onlyRated = true, minReliability = minReliability)
             cached = clusterArticlesUseCase(cached)
             emit(Result.success(cached))
         }
-        // 2. Check staleness - with a safety timeout to detect deadlocks
+
+        // 2. Check staleness
         val cacheMetadata = try {
             kotlinx.coroutines.withTimeoutOrNull(5000L) {
                 feedCacheDao.get(FEED_KEY_TOP)
@@ -84,35 +84,51 @@ class RssNewsRepository @Inject constructor(
             }
             return@flow
         }
-
+        
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
         Log.d(TAG, "Fetching from Worker: ${BuildConfig.WORKER_URL}/v1/feeds/top-stories?num=100")
         val result = runCatching {
             val json = fetchWorker("/v1/feeds/top-stories?num=100")
                 ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
 
-            Log.d(TAG, "Worker returned JSON (length: ${json.length}). Parsing...")
             val articles = parseWorkerJson(json)
-            Log.d(TAG, "Parsed ${articles.size} articles from Worker. Database ratings: ${allRatings.size}")
-
-            // Filter and cluster — Main Feed uses Strict Mode (onlyRated = true)
+            
+            // Filter and cluster
             val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true, minReliability = minReliability).take(MAX_ARTICLES)
             val clustered = clusterArticlesUseCase(filtered)
 
-            // Persist — delete old untracked articles for THIS FEED only now that we have fresh data
+            // Persist — clear current feed view on force refresh to avoid ghost articles
             val now = System.currentTimeMillis()
             if (forceRefresh && articles.isNotEmpty()) {
-                cachedArticleDao.deleteByFeed(FEED_KEY_TOP)
-                // Round 3: Also clear discovery cache on force refresh to ensure consistency
+                cachedArticleDao.detachByFeed(FEED_KEY_TOP)
                 cachedArticleDao.deleteUntrackedByFeedPrefix("discovery_")
             }
-            // Fix: Insert the `clustered` articles so that `sourceId` is successfully saved to Room
-            cachedArticleDao.insertAll(clustered.map { it.toEntity(now, FEED_KEY_TOP) })
+
+            // Bulk Lookup Optimization
+            val urls = articles.map { it.url }
+            val existingArticles = cachedArticleDao.getByUrls(urls).associateBy { it.url }
+
+            val toInsert = articles.map { article ->
+                val existing = existingArticles[article.url]
+                if (existing != null) {
+                    existing.copy(
+                        sourceFeed = FEED_KEY_TOP,
+                        sourceId = article.source.id ?: existing.sourceId,
+                        publishedAt = article.publishedAt,
+                        urlToImage = article.urlToImage ?: existing.urlToImage
+                    )
+                } else {
+                    article.toEntity(now, FEED_KEY_TOP)
+                }
+            }
+            
+            cachedArticleDao.insertAll(toInsert)
+            
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = FEED_KEY_TOP,
                 fetchedAt = now,
                 expiresAt = now + CacheConstants.FEED_TTL_MS,
-                articleCount = clustered.size
+                articleCount = toInsert.size
             ))
 
             clustered
@@ -120,15 +136,12 @@ class RssNewsRepository @Inject constructor(
 
         result.fold(
             onSuccess = { articles ->
-                // Always emit on forceRefresh to clear the UI spinner, even if empty
                 if (forceRefresh || articles.isNotEmpty() || cached.isEmpty()) {
                     emit(Result.success(articles))
                 }
             },
             onFailure = { e ->
                 Log.e(TAG, "Worker fetch failed: ${e.message}", e)
-                // MANDATORY FEEDBACK: If forceRefresh is true, we MUST emit failure 
-                // so the UI can notify the user (e.g. Snackbar) that the refresh failed.
                 if (forceRefresh || cached.isEmpty()) {
                     emit(Result.failure(e))
                 }
@@ -143,9 +156,10 @@ class RssNewsRepository @Inject constructor(
         minReliability: Int
     ): Flow<Result<List<Article>>> = flow {
         val feedKey = "discovery_${query.lowercase().trim()}"
+        val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
         val cached = safeDbCall { cachedArticleDao.getByFeed(feedKey).map { it.toDomain() } }
+
         if (cached.isNotEmpty()) {
-            val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
             val filtered = filterArticlesUseCase(cached, allRatings, onlyRated = onlyRated, minReliability = minReliability)
             emit(Result.success(filtered))
         }
@@ -159,22 +173,40 @@ class RssNewsRepository @Inject constructor(
                 ?: throw IOException("Failed to fetch search results from Worker")
             
             val articles = parseWorkerJson(json)
-            val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
             
             val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = onlyRated, minReliability = minReliability)
             val clustered = clusterArticlesUseCase(filtered)
 
             val now = System.currentTimeMillis()
             if (forceRefresh && articles.isNotEmpty()) {
-                cachedArticleDao.deleteByFeed(feedKey)
+                cachedArticleDao.detachByFeed(feedKey)
             }
-            // Fix: Insert the `clustered` articles so that `sourceId` and ratings are preserved in Room
-            cachedArticleDao.insertAll(clustered.map { it.toEntity(now, feedKey) })
+
+            // Bulk Lookup Optimization
+            val urls = articles.map { it.url }
+            val existingArticles = cachedArticleDao.getByUrls(urls).associateBy { it.url }
+
+            val toInsert = articles.map { article ->
+                val existing = existingArticles[article.url]
+                if (existing != null) {
+                    existing.copy(
+                        sourceFeed = feedKey,
+                        sourceId = article.source.id ?: existing.sourceId,
+                        publishedAt = article.publishedAt,
+                        urlToImage = article.urlToImage ?: existing.urlToImage
+                    )
+                } else {
+                    article.toEntity(now, feedKey)
+                }
+            }
+            
+            cachedArticleDao.insertAll(toInsert)
+            
             feedCacheDao.upsert(FeedCacheEntity(
                 feedKey = feedKey,
                 fetchedAt = now,
                 expiresAt = now + CacheConstants.FEED_TTL_MS,
-                articleCount = clustered.size
+                articleCount = toInsert.size
             ))
             clustered
         }

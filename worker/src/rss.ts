@@ -1,4 +1,3 @@
-import striptags from 'striptags';
 import { XMLParser } from 'fast-xml-parser';
 import { ParsedFeedItem, Article, RssFeedSource } from './types';
 import { findByDomain } from './sources';
@@ -8,30 +7,6 @@ const parser = new XMLParser({
     attributeNamePrefix: "@_",
     parseAttributeValue: true,
 });
-
-// Optimization: Hoist regex literals to prevent re-compilation during high-volume feed parsing.
-const WWW_PREFIX_REGEX = /^www\./;
-
-function extractImageFromHtml(html: string, baseUrl?: string): string | null {
-    if (!html) return null;
-    // Improved regex: handles single/double quotes, spaces, and src anywhere in the tag
-    const imgRegex = /<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i;
-    const match = html.match(imgRegex);
-    if (!match) return null;
-
-    let imageUrl = match[1];
-
-    // Resolve relative URLs if baseUrl is provided
-    if (baseUrl) {
-        try {
-            imageUrl = new URL(imageUrl, baseUrl).href;
-        } catch (e) {
-            // If URL parsing fails, return as is
-        }
-    }
-
-    return imageUrl;
-}
 
 function getText(obj: any): string {
     if (obj === null || obj === undefined) return '';
@@ -71,7 +46,6 @@ function parseRss20(json: any, fallbackSourceName: string | null): ParsedFeedIte
 
     return rawItems.slice(0, 50).map((item: any) => {
         let imageUrl: string | null = null;
-        const descriptionRaw = getText(item.description);
 
         // media:content
         if (item['media:content']) {
@@ -93,15 +67,10 @@ function parseRss20(json: any, fallbackSourceName: string | null): ParsedFeedIte
             if (thumb['@_url']) imageUrl = thumb['@_url'];
         }
 
-        // Fallback: Extract image from description HTML (common in Google News RSS)
-        if (!imageUrl) {
-            imageUrl = extractImageFromHtml(descriptionRaw, getText(item.link));
-        }
-
         return {
             title: getText(item.title),
             link: getText(item.link),
-            description: stripHtml(descriptionRaw),
+            description: stripHtml(getText(item.description)),
             content: getText(item['content:encoded']) || null,
             imageUrl,
             publishedAt: normalizeDate(getText(item.pubDate)),
@@ -133,16 +102,10 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
             imageUrl = thumb['@_url'] || null;
         }
 
-        const summaryRaw = getText(entry.summary);
-        // Fallback: Extract from summary/content
-        if (!imageUrl) {
-            imageUrl = extractImageFromHtml(summaryRaw, link) || extractImageFromHtml(getText(entry.content), link);
-        }
-
         return {
             title: getText(entry.title),
             link,
-            description: stripHtml(summaryRaw),
+            description: stripHtml(getText(entry.summary)),
             content: getText(entry.content) || null,
             imageUrl,
             publishedAt: normalizeDate(getText(entry.published) || getText(entry.updated)),
@@ -154,7 +117,7 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
 
 function stripHtml(html: string): string {
     if (!html) return '';
-    return striptags(html).trim();
+    return html.replace(/<[^>]*>?/gm, '').trim();
 }
 
 export function normalizeDate(raw: string): string | null {
@@ -186,7 +149,7 @@ export function mapToArticle(item: ParsedFeedItem, source?: RssFeedSource): Arti
 function extractDomain(url: string): string {
     try {
         const host = new URL(url).hostname;
-        return host.replace(WWW_PREFIX_REGEX, '');
+        return host.replace(/^www\./, '');
     } catch (e) {
         return 'Unknown';
     }

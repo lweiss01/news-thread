@@ -1,19 +1,7 @@
 import { Buffer } from 'node:buffer';
 
-// Optimization: Hoist regex literals to module scope to prevent re-compilation on every function call.
-// This is critical for high-throughput resolver logic in Cloudflare Workers.
-const GOOGLE_NEWS_HOST_REGEX = /^news\.google\.(com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/;
-const BASE64_URL_REGEX = /https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/;
-const HREF_REGEX = /href="([^">]+)"/gi;
-const URL_LIKE_REGEX = /https?:\/\/[^\s"'<>]+/g;
-const BACKSLASH_REGEX = /\\/g;
-
-// Optimization: Hoist buffer creations to module scope to avoid allocation on every call.
-const DECODER_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
-const DECODER_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
-
-export async function resolveUrl(encodedUrl: string, cache: KVNamespace, onNetworkRequest?: () => void): Promise<string> {
-    if (!isValidGoogleNewsHost(encodedUrl)) return encodedUrl;
+export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
+    if (!encodedUrl.includes('news.google.com')) return encodedUrl;
 
     // Check KV cache
     const cacheKey = `resolve:${encodedUrl}`;
@@ -24,27 +12,20 @@ export async function resolveUrl(encodedUrl: string, cache: KVNamespace, onNetwo
     let resolved = tryBase64Decode(encodedUrl);
     if (resolved) console.log(`[Resolve] Strategy: Base64 success for ${encodedUrl.substring(0, 50)}...`);
 
-    // Only proceed to network strategies if permitted
-    if (!resolved && onNetworkRequest) {
-        // Strategy 2: HTTP Redirect
-        onNetworkRequest();
+    // Strategy 2: HTTP Redirect
+    if (!resolved) {
         resolved = await tryHttpRedirect(encodedUrl);
-        if (resolved) console.log(`[Resolve] Strategy: HTTP Redirect success for ${encodedUrl.substring(0, 50)}...`);
+        if (resolved) console.log(`[Resolve] Strategy: HTTP Redirect success`);
+    }
 
-        // Strategy 3: BatchExecute RPC
-        if (!resolved) {
-            onNetworkRequest();
-            resolved = await tryBatchExecute(encodedUrl);
-            if (resolved) console.log(`[Resolve] Strategy: BatchExecute success for ${encodedUrl.substring(0, 50)}...`);
-        }
+    // Strategy 3: BatchExecute RPC
+    if (!resolved) {
+        resolved = await tryBatchExecute(encodedUrl);
+        if (resolved) console.log(`[Resolve] Strategy: BatchExecute success`);
     }
 
     if (!resolved) {
-        if (!onNetworkRequest) {
-            console.warn(`[Resolve] Skipping network resolve strategies for ${encodedUrl.substring(0, 50)}... due to limits`);
-        } else {
-            console.warn(`[Resolve] All strategies failed for: ${encodedUrl}`);
-        }
+        console.warn(`[Resolve] All strategies failed for: ${encodedUrl}`);
     }
 
     const finalUrl = resolved || encodedUrl.replace('/rss/articles/', '/articles/');
@@ -68,19 +49,20 @@ function tryBase64Decode(url: string): string | null {
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
-        if (decodedStr.startsWith(DECODER_PREFIX)) {
-            decodedStr = decodedStr.substring(DECODER_PREFIX.length);
+        const prefix = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
+        if (decodedStr.startsWith(prefix)) {
+            decodedStr = decodedStr.substring(prefix.length);
         }
 
         // Suffix stripping (\xd2\x01\x00)
-        if (decodedStr.endsWith(DECODER_SUFFIX)) {
-            decodedStr = decodedStr.substring(0, decodedStr.length - DECODER_SUFFIX.length);
+        const suffix = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
+        if (decodedStr.endsWith(suffix)) {
+            decodedStr = decodedStr.substring(0, decodedStr.length - suffix.length);
         }
 
         // Length byte logic
-        // Optimization: Use charCodeAt(0) to get the byte value directly from the latin1 string
-        // instead of allocating a new Buffer just to read the first byte.
-        const length = decodedStr.charCodeAt(0);
+        const bytesArray = Buffer.from(decodedStr, 'latin1');
+        const length = bytesArray[0];
 
         if (length >= 0x80) {
             // Varint-like offset for longer payloads
@@ -90,7 +72,7 @@ function tryBase64Decode(url: string): string | null {
         }
 
         // Simple pattern match for URL inside decoded string
-        const match = decodedStr.match(BASE64_URL_REGEX);
+        const match = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/);
         if (match) {
             const result = match[0];
             if (!result.includes('news.google.com')) return result;
@@ -136,7 +118,7 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
             const html = await response.text();
 
             // Find all links and pick the first one that isn't Google
-            const allLinks = Array.from(html.matchAll(HREF_REGEX))
+            const allLinks = Array.from(html.matchAll(/href="([^">]+)"/gi))
                 .map(m => m[1]);
 
             for (const link of allLinks) {
@@ -151,7 +133,7 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
             }
 
             // Fallback: Search for any URL-like string in the HTML that isn't Google
-            const urlMatch = html.match(URL_LIKE_REGEX);
+            const urlMatch = html.match(/https?:\/\/[^\s"'<>]+/g);
             if (urlMatch) {
                 const finalUrl = urlMatch.find(u =>
                     !u.includes('google.com') &&
@@ -168,18 +150,6 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
     }
 }
 
-function isValidGoogleNewsHost(url: string): boolean {
-    try {
-        const u = new URL(url);
-        if (u.protocol !== 'https:') return false;
-        // Strict hostname check: news.google.com and regional variants
-        // Regex allows: .com, .fr (2 chars), .co.uk, .com.au
-        return GOOGLE_NEWS_HOST_REGEX.test(u.hostname);
-    } catch {
-        return false;
-    }
-}
-
 async function tryBatchExecute(url: string): Promise<string | null> {
     try {
         const id = url.split('/').pop()?.split('?')[0];
@@ -188,30 +158,8 @@ async function tryBatchExecute(url: string): Promise<string | null> {
         // Fetch the main page to get ts and sg (though the RPC might work without it if we use the right format)
         // Based on decoderv3.py and RssNewsRepository.kt
 
-        // Use strict JSON.stringify for safety to prevent injection in the nested JSON
-        const innerArray = [
-            "garturlreq",
-            [
-                ["en-US", "US", ["FINANCE_TOP_INDICES", "WEB_TEST_1_0_0"], null, null, 1, 1, "US:en", null, 180, null, null, null, null, null, 0, null, null, [1608992183, 723341000]],
-                "en-US",
-                "US",
-                1,
-                [2, 3, 4, 8],
-                1,
-                0,
-                "655000234",
-                0,
-                0,
-                null,
-                0
-            ],
-            id
-        ];
-
-        const innerArrayStr = JSON.stringify(innerArray);
-        const reqData = JSON.stringify([
-            [["Fbv4je", innerArrayStr, null, "generic"]]
-        ]);
+        const innerArrayStr = `["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0],"${id}"]`;
+        const reqData = `[[["Fbv4je","${innerArrayStr.replace(/"/g, '\\"')}",null,"generic"]]]`;
 
         const response = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je', {
             method: 'POST',
@@ -241,7 +189,7 @@ async function tryBatchExecute(url: string): Promise<string | null> {
             if (end !== -1) {
                 let result = text.substring(urlStart, end);
                 // Handle double escaping
-                result = result.replace(BACKSLASH_REGEX, '');
+                result = result.replace(/\\/g, '');
                 if (!result.includes('news.google.com')) return result;
             }
         }

@@ -47,7 +47,6 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 
 @Composable
 fun StoryDetailScreen(
-    storyId: String,
     viewModel: StoryDetailViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onArticleClick: (String) -> Unit
@@ -250,10 +249,13 @@ fun StoryDetailScreen(
                                 )
                             }
                             items(sectionArticles) { article ->
+                                val refTime = viewModel.referenceViewTime.collectAsStateWithLifecycle().value ?: currentStory.story.lastViewedAt
+                                val isNew = article.publishedAt > refTime
                                 MatchedArticleCard(
                                     article = article,
                                     rating = article.sourceRating,
                                     accentColor = color,
+                                    isNew = isNew,
                                     onReadMoreClick = { onArticleClick(article.url) }
                                 )
                             }
