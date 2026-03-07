@@ -164,6 +164,9 @@ interface CachedArticleDao {
     @Query("DELETE FROM cached_articles WHERE isTracked = 0")
     suspend fun deleteUntracked()
 
+    @Query("UPDATE cached_articles SET sourceFeed = NULL WHERE sourceFeed = :feedKey")
+    suspend fun detachByFeed(feedKey: String)
+
     @Query("DELETE FROM cached_articles WHERE sourceFeed = :feedKey AND isTracked = 0")
     suspend fun deleteByFeed(feedKey: String)
 

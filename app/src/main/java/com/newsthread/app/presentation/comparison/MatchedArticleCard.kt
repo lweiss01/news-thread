@@ -34,6 +34,7 @@ fun MatchedArticleCard(
     article: Article,
     rating: SourceRating?,
     accentColor: Color = MaterialTheme.colorScheme.primary, // NEW: Phase 13 bias accent
+    isNew: Boolean = false, // Added 'isNew' parameter
     onReadMoreClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -104,6 +105,25 @@ fun MatchedArticleCard(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
+                    }
+                    
+                    if (isNew) {
+                        Spacer(modifier = Modifier.width(ProjectTheme.spacing.s))
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "NEW",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 9.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
 

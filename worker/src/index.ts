@@ -139,15 +139,15 @@ export function extractDomain(url: string): string {
     if (hostname.startsWith('[')) {
         const closingBracket = hostname.indexOf(']');
         if (closingBracket !== -1) {
-             const colonAfterBracket = hostname.indexOf(':', closingBracket);
-             if (colonAfterBracket !== -1) {
-                 hostname = hostname.substring(0, colonAfterBracket);
-             }
+            const colonAfterBracket = hostname.indexOf(':', closingBracket);
+            if (colonAfterBracket !== -1) {
+                hostname = hostname.substring(0, colonAfterBracket);
+            }
         }
     } else {
         const portIndex = hostname.indexOf(':');
         if (portIndex !== -1) {
-             hostname = hostname.substring(0, portIndex);
+            hostname = hostname.substring(0, portIndex);
         }
     }
 
@@ -244,7 +244,7 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings,
 
         // Only cache if we actually got results
         if (articles.length > 0) {
-            await env.FEED_CACHE.put(cacheKey, JSON.stringify(articles), { expirationTtl: 900 });
+            await env.FEED_CACHE.put(cacheKey, JSON.stringify(articles), { expirationTtl: 300 });
             console.log(`[Cache Set] ${articles.length} articles for ${url}`);
         } else {
             console.log(`[No Articles] Not caching empty result for ${url}`);

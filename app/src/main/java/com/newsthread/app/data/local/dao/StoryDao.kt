@@ -24,7 +24,7 @@ data class StoryWithArticles(
 ) {
     // Phase 9: Computed properties for UI
     val unreadCount: Int
-        get() = articles.count { it.fetchedAt > story.lastViewedAt }
+        get() = articles.count { it.publishedAt > story.lastViewedAt }
 
     val biasSummary: Map<Int, Int>
         get() = emptyMap() // Bias lookup requires SourceRatingDao, computed in ViewModel
@@ -57,7 +57,7 @@ interface StoryDao {
             s.id as storyId, 
             s.title, 
             COUNT(r.articleUrl) as totalArticles,
-            SUM(CASE WHEN a.fetchedAt > s.lastViewedAt THEN 1 ELSE 0 END) as unreadArticles,
+            SUM(CASE WHEN a.publishedAt > s.lastViewedAt THEN 1 ELSE 0 END) as unreadArticles,
             s.updatedAt as lastUpdate,
             (SELECT urlToImage FROM cached_articles ca 
              INNER JOIN story_article_cross_ref cr ON ca.url = cr.articleUrl 
