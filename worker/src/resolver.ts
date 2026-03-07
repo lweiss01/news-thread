@@ -1,7 +1,16 @@
 import { Buffer } from 'node:buffer';
 
+const GOOGLE_NEWS_DOMAIN_REGEX = /^news\.google\.(com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/;
+
 export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
-    if (!encodedUrl.includes('news.google.com')) return encodedUrl;
+    try {
+        const url = new URL(encodedUrl);
+        if (!GOOGLE_NEWS_DOMAIN_REGEX.test(url.hostname)) {
+            return encodedUrl;
+        }
+    } catch (e) {
+        return encodedUrl;
+    }
 
     // Check KV cache
     const cacheKey = `resolve:${encodedUrl}`;
@@ -158,8 +167,8 @@ async function tryBatchExecute(url: string): Promise<string | null> {
         // Fetch the main page to get ts and sg (though the RPC might work without it if we use the right format)
         // Based on decoderv3.py and RssNewsRepository.kt
 
-        const innerArrayStr = `["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0],"${id}"]`;
-        const reqData = `[[["Fbv4je","${innerArrayStr.replace(/"/g, '\\"')}",null,"generic"]]]`;
+        const innerArray = ["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0], id];
+        const reqData = JSON.stringify([[["Fbv4je", JSON.stringify(innerArray), null, "generic"]]]);
 
         const response = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je', {
             method: 'POST',
