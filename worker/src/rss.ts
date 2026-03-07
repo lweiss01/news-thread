@@ -135,17 +135,10 @@ export function mapToArticle(item: ParsedFeedItem, source?: RssFeedSource): Arti
     const domain = extractDomain(item.link);
     const matchedSource = source || findByDomain(domain);
 
-    let finalSourceName = matchedSource?.displayName || item.sourceName || domain;
-
-    // Safety check: if source name is excessively long or matches description, it's likely a leak
-    if (finalSourceName.length > 60) {
-        finalSourceName = domain;
-    }
-
     return {
         source: {
             id: matchedSource?.sourceId || null,
-            name: finalSourceName,
+            name: matchedSource?.displayName || item.sourceName || domain,
         },
         author: item.author,
         title: item.title,

@@ -249,15 +249,6 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings,
             try {
                 const resolvedUrl = await resolveUrl(item.link, env.URL_CACHE);
                 const article = mapToArticle({ ...item, link: resolvedUrl });
-
-                // Clean redundant source name from title (Google News artifact)
-                if (article.source.name && article.title.includes(' - ')) {
-                    const separator = ` - ${article.source.name}`;
-                    if (article.title.endsWith(separator)) {
-                        article.title = article.title.substring(0, article.title.length - separator.length).trim();
-                    }
-                }
-
                 if (article.source.name === '[object Object]') {
                     console.warn(`[Found Bug] [object Object] source for item: ${article.title.substring(0, 30)}...`);
                     console.warn(`Original Link: ${item.link}`);
