@@ -86,9 +86,8 @@ class FeedViewModel @Inject constructor(
         discoveryJob = viewModelScope.launch {
             Log.d("FeedViewModel", "Starting Continuous Discovery for categories: $discoveryCategories")
             
-            // Sequential category loading to avoid jumping UI
+            val discoveryResults = mutableListOf<Article>()
             discoveryCategories.forEach { category ->
-                // Discovery in Main Feed requires minReliability 3 (Mostly Factual)
                 newsRepository.searchArticles(
                     query = category, 
                     forceRefresh = forceRefresh, 
@@ -97,25 +96,23 @@ class FeedViewModel @Inject constructor(
                 ).collect { result ->
                     result.onSuccess { newArticles ->
                         if (newArticles.isNotEmpty()) {
-                            // Round 3: Limit discovery impact - only take top 5 per category
-                            val limitedArticles = newArticles.take(5)
-                            Log.d("FeedViewModel", "Discovery found ${limitedArticles.size} high-reliability articles for $category (capped from ${newArticles.size})")
-
-                            // Offload processing to background
-                            withContext(Dispatchers.Default) {
-                                val currentState = _uiState.value
-                                if (currentState is FeedUiState.Success) {
-                                    val currentArticles = currentState.articles
-                                    val combined = (currentArticles + limitedArticles)
-                                        .distinctBy { it.url }
-                                        .sortedByDescending { it.publishedAt }
-
-                                    // Final re-clustering
-                                    val clustered = clusterArticlesUseCase(combined)
-                                    _uiState.value = FeedUiState.Success(clustered)
-                                }
-                            }
+                            discoveryResults.addAll(newArticles.take(5))
                         }
+                    }
+                }
+            }
+
+            if (discoveryResults.isNotEmpty()) {
+                withContext(Dispatchers.Default) {
+                    val currentState = _uiState.value
+                    if (currentState is FeedUiState.Success) {
+                        val currentArticles = currentState.articles
+                        val combined = (currentArticles + discoveryResults)
+                            .distinctBy { it.url }
+                            .sortedByDescending { it.publishedAt }
+
+                        val clustered = clusterArticlesUseCase(combined)
+                        _uiState.value = FeedUiState.Success(clustered)
                     }
                 }
             }
