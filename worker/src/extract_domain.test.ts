@@ -86,4 +86,8 @@ describe('extractDomain (optimized)', () => {
     it('handles SECURITY edge case: query with @ (SSRF)', () => {
         expect(extractDomain('https://evil.com?@google.com')).toBe('evil.com');
     });
+
+    it('handles SECURITY edge case: backslash with @ (SSRF parser differential)', () => {
+        expect(extractDomain('https://evil.com\\@google.com')).toBe('evil.com');
+    });
 });
