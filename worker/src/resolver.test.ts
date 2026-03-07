@@ -56,7 +56,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(targetUrl);
     });
 
@@ -84,7 +84,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(targetUrl);
     });
 
@@ -100,7 +100,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/'));
     });
 
@@ -132,7 +132,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/')); // Should fallback to normalized URL on CAPTCHA
     });
 
@@ -171,7 +171,7 @@ describe('resolver', () => {
             return { ok: false };
         });
 
-        await resolveUrl(encodedUrl, mockKV);
+        await resolveUrl(encodedUrl, mockKV, () => {});
 
         // Verify the fetch call to BatchExecute
         const calls = fetchMock.mock.calls;
