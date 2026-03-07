@@ -86,7 +86,26 @@ app.get('/v1/feeds/top-stories', async (c) => {
         }
     }
 
-    return c.json(merged);
+    // 5. Sort by date (newest first)
+    merged.sort((a, b) => {
+        const dateA = new Date(a.publishedAt).getTime();
+        const dateB = new Date(b.publishedAt).getTime();
+        return dateB - dateA;
+    });
+
+    // 6. Apply per-source cap (max 5) to ensure diversity
+    const sourceCounts = new Map<string, number>();
+    const diverseFeed = merged.filter(article => {
+        const sourceName = article.source.name || 'Unknown';
+        const count = sourceCounts.get(sourceName) || 0;
+        if (count < 5) {
+            sourceCounts.set(sourceName, count + 1);
+            return true;
+        }
+        return false;
+    });
+
+    return c.json(diverseFeed.slice(0, 100));
 });
 
 export function extractDomain(url: string): string {

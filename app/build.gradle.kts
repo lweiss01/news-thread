@@ -16,16 +16,17 @@ android {
         val workerUrl: String = providers.gradleProperty("WORKER_URL").getOrElse(
             com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers).getProperty("WORKER_URL", "")
         )
+        val workerApiKey: String = providers.gradleProperty("WORKER_API_KEY").getOrElse(
+            com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers).getProperty("WORKER_API_KEY", "dev_key_fallback")
+        )
         buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
+        buildConfigField("String", "WORKER_API_KEY", "\"$workerApiKey\"")
 
         applicationId = "com.newsthread.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.2.0-RC"
-
-        buildConfigField("String", "WORKER_API_KEY", "\"${System.getenv("WORKER_API_KEY") ?: "dev_key_fallback"}\"")
-        buildConfigField("String", "WORKER_URL", "\"https://newsthread-api.newsthread.workers.dev\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

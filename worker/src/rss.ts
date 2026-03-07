@@ -73,7 +73,11 @@ function parseRss20(json: any, fallbackSourceName: string | null): ParsedFeedIte
             description: stripHtml(getText(item.description)),
             content: getText(item['content:encoded']) || null,
             imageUrl,
-            publishedAt: normalizeDate(getText(item.pubDate)),
+            publishedAt: normalizeDate(
+                getText(item['dc:date']) ||
+                getText(item.pubDate) ||
+                getText(item['wp:pubDate'])
+            ),
             author: getText(item['dc:creator']) || getText(item.author) || null,
             sourceName: getText(item.source) || getText(feedTitle) || null,
         };
