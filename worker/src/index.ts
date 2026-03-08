@@ -109,16 +109,57 @@ app.get('/v1/feeds/top-stories', async (c) => {
     }
     console.log(`[Top Stories] Layer2 complete in ${Date.now() - layer2Start}ms (${layer2Articles.length} articles)`);
 
-    // 4. Merge and deduplicate
-    const seenUrls = new Set(layer1Articles.map(a => a.url));
+    // 4. Merge and deduplicate.
+    // If a duplicate URL appears in layer2 with richer metadata, enrich the existing layer1 article.
     const merged = [...layer1Articles];
+    const mergedIndexByUrl = new Map<string, number>();
+    merged.forEach((article, index) => {
+        mergedIndexByUrl.set(article.url, index);
+    });
+
+    let duplicateImageEnrichments = 0;
+    let duplicateSourceIdEnrichments = 0;
 
     for (const article of layer2Articles) {
-        if (!seenUrls.has(article.url)) {
+        const existingIndex = mergedIndexByUrl.get(article.url);
+        if (existingIndex === undefined) {
             merged.push(article);
-            seenUrls.add(article.url);
+            mergedIndexByUrl.set(article.url, merged.length - 1);
+            continue;
+        }
+
+        const existing = merged[existingIndex];
+        let updated = existing;
+
+        const existingIsPlaceholderImage = !!existing.urlToImage
+            && existing.urlToImage.includes('google.com/s2/favicons');
+        const incomingIsRealImage = !!article.urlToImage
+            && !article.urlToImage.includes('google.com/s2/favicons');
+
+        if ((!existing.urlToImage || existingIsPlaceholderImage) && incomingIsRealImage) {
+            updated = { ...updated, urlToImage: article.urlToImage };
+            duplicateImageEnrichments += 1;
+        }
+
+        if (!existing.source.id && article.source.id) {
+            updated = {
+                ...updated,
+                source: {
+                    ...updated.source,
+                    id: article.source.id,
+                },
+            };
+            duplicateSourceIdEnrichments += 1;
+        }
+
+        if (updated !== existing) {
+            merged[existingIndex] = updated;
         }
     }
+
+    console.log(
+        `[Top Stories] Duplicate enrichments: images=${duplicateImageEnrichments} sourceIds=${duplicateSourceIdEnrichments}`
+    );
 
     // 5. Sort by date (newest first)
     merged.sort((a, b) => {

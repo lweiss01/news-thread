@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +26,7 @@ class OgImageResolver @Inject constructor(
 
     companion object {
         private const val FAILURE_RETRY_MS = 10 * 60 * 1000L
+        private const val DEFAULT_RESOLVE_TIMEOUT_MS = 8000L
     }
 
     // LRU cache: URL -> success value or transient failure timestamp
@@ -40,12 +42,12 @@ class OgImageResolver @Inject constructor(
      * Resolve the OG image for the given article URL.
      * Returns the image URL or null if none found.
      */
-    suspend fun resolve(articleUrl: String): String? = withContext(Dispatchers.IO) {
+    suspend fun resolve(articleUrl: String, timeoutMs: Long = DEFAULT_RESOLVE_TIMEOUT_MS): String? = withContext(Dispatchers.IO) {
         // Handle Google News redirects first.
         if (articleUrl.contains("news.google.com") || articleUrl.contains("google.com/rss")) {
             val realUrl = extractGoogleNewsRedirectUrl(articleUrl)
             if (realUrl != null && realUrl != articleUrl) {
-                return@withContext resolve(realUrl)
+                return@withContext resolve(realUrl, timeoutMs)
             }
             return@withContext null
         }
@@ -65,7 +67,7 @@ class OgImageResolver @Inject constructor(
             cache.remove(articleUrl)
         }
 
-        val imageUrl = fetchOgImage(articleUrl)
+        val imageUrl = fetchOgImage(articleUrl, timeoutMs)
 
         if (imageUrl != null) {
             cache.put(articleUrl, CacheEntry(imageUrl = imageUrl))
@@ -76,7 +78,7 @@ class OgImageResolver @Inject constructor(
         imageUrl
     }
 
-    private fun fetchOgImage(url: String): String? {
+    private fun fetchOgImage(url: String, timeoutMs: Long): String? {
         return try {
             val request = Request.Builder()
                 .url(url)
@@ -85,7 +87,9 @@ class OgImageResolver @Inject constructor(
                 .header("Accept", "text/html")
                 .build()
 
-            okHttpClient.newCall(request).execute().use { response ->
+            val call = okHttpClient.newCall(request)
+            call.timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
+            call.execute().use { response ->
                 if (!response.isSuccessful && response.code != 206) return@use null
 
                 val html = response.body?.string() ?: return@use null

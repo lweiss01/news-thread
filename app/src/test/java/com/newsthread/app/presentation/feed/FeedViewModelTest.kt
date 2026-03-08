@@ -18,6 +18,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -155,5 +157,31 @@ class FeedViewModelTest {
 
         // Should not be refreshing anymore
         assert(!viewModel.isRefreshing.value)
+    }
+
+    @Test
+    fun `cacheResolvedImage persists only once for duplicate callbacks`() = runTest {
+        whenever(newsRepository.getTopHeadlines(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(
+            kotlinx.coroutines.flow.flowOf(Result.success(emptyList()))
+        )
+
+        viewModel = FeedViewModel(
+            newsRepository,
+            toggleFollowUseCase,
+            trackingRepository,
+            clusterArticlesUseCase,
+            ogImageResolver
+        )
+
+        runCurrent()
+
+        val url = "https://example.com/story"
+        val image = "https://cdn.example.com/story.jpg"
+        viewModel.cacheResolvedImage(url, image)
+        viewModel.cacheResolvedImage(url, image)
+
+        runCurrent()
+
+        verify(trackingRepository, times(1)).updateArticleImage(url, image)
     }
 }

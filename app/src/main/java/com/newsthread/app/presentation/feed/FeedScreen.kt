@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +47,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+private const val FEED_OG_LOOKAHEAD_ITEMS = 10
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,6 +148,9 @@ fun FeedScreen(
                             }
                         }
                     } else {
+                        val ogLookupIndexThreshold by remember {
+                            derivedStateOf { listState.firstVisibleItemIndex + FEED_OG_LOOKAHEAD_ITEMS }
+                        }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
@@ -163,15 +168,16 @@ fun FeedScreen(
                                     )
                                 }
                             }
-                            items(
+                            itemsIndexed(
                                 items = articles,
-                                key = { it.url }
-                            ) { article ->
+                                key = { _, article -> article.url }
+                            ) { index, article ->
                                 ArticleCard(
                                     article = article,
                                     isTracked = trackedStoriesMap.containsKey(article.url),
                                     ogImageResolver = viewModel.ogImageResolver,
-                                    enableOgImageLookup = false,
+                                    enableOgImageLookup = index <= ogLookupIndexThreshold,
+                                    onResolvedImage = viewModel::cacheResolvedImage,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
                                         val encodedUrl = URLEncoder.encode(article.url, "UTF-8")

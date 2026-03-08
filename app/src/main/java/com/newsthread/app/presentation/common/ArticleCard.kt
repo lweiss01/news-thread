@@ -33,12 +33,15 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
+private const val FEED_CARD_OG_TIMEOUT_MS = 3500L
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArticleCard(
     article: Article,
     ogImageResolver: OgImageResolver? = null,
     enableOgImageLookup: Boolean = true,
+    onResolvedImage: (articleUrl: String, imageUrl: String) -> Unit = { _, _ -> },
     isTracked: Boolean = false,
     isNew: Boolean = false,
     onBookmarkClick: () -> Unit = {},
@@ -189,9 +192,10 @@ fun ArticleCard(
                 // Lazy-fetch OG image if no real image from RSS/worker.
                 if (enableOgImageLookup && resolvedImageUrl == null && ogImageResolver != null) {
                     LaunchedEffect(article.url) {
-                        val ogImage = ogImageResolver.resolve(article.url)
+                        val ogImage = ogImageResolver.resolve(article.url, timeoutMs = FEED_CARD_OG_TIMEOUT_MS)
                         if (!ogImage.isNullOrEmpty() && !isFaviconImageUrl(ogImage)) {
                             resolvedImageUrl = ogImage
+                            onResolvedImage(article.url, ogImage)
                         }
                     }
                 }

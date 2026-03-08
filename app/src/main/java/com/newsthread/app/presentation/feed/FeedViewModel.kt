@@ -34,6 +34,9 @@ class FeedViewModel @Inject constructor(
     private val clusterArticlesUseCase: ClusterArticlesUseCase,
     val ogImageResolver: OgImageResolver
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "FeedViewModel"
+    }
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
@@ -45,6 +48,9 @@ class FeedViewModel @Inject constructor(
     private var discoveryJob: kotlinx.coroutines.Job? = null
 
     private val discoveryCategories = listOf("World", "Technology", "Science", "Business", "Health", "Politics")
+    private val persistedImageUrls = mutableSetOf<String>()
+    private val inFlightImageWrites = mutableSetOf<String>()
+    private val imageSetLock = Any()
 
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
@@ -64,14 +70,14 @@ class FeedViewModel @Inject constructor(
                 val headlineDurationMs = measureTimeMillis {
                     fetchHeadlinesInternal(forceRefresh = true)
                 }
-                Log.d("FeedViewModel", "Pull refresh headlines completed in ${headlineDurationMs}ms")
+                Log.d(TAG, "Pull refresh headlines completed in ${headlineDurationMs}ms")
                 // Do not force-refresh discovery channels to prevent Worker subrequest timeouts
                 triggerContinuousDiscovery(forceRefresh = false)
             } finally {
                 _isRefreshing.value = false
                 isFetching = false
                 val totalDurationMs = System.currentTimeMillis() - refreshStartedAt
-                Log.d("FeedViewModel", "Pull refresh finished in ${totalDurationMs}ms (discovery continues in background)")
+                Log.d(TAG, "Pull refresh finished in ${totalDurationMs}ms (discovery continues in background)")
             }
         }
     }
@@ -92,7 +98,7 @@ class FeedViewModel @Inject constructor(
     private fun triggerContinuousDiscovery(forceRefresh: Boolean) {
         discoveryJob?.cancel()
         discoveryJob = viewModelScope.launch {
-            Log.d("FeedViewModel", "Starting Continuous Discovery for categories: $discoveryCategories")
+            Log.d(TAG, "Starting Continuous Discovery for categories: $discoveryCategories")
             
             // Sequential category loading to avoid jumping UI
             discoveryCategories.forEach { category ->
@@ -107,7 +113,7 @@ class FeedViewModel @Inject constructor(
                         if (newArticles.isNotEmpty()) {
                             // Round 3: Limit discovery impact - only take top 5 per category
                             val limitedArticles = newArticles.take(5)
-                            Log.d("FeedViewModel", "Discovery found ${limitedArticles.size} high-reliability articles for $category (capped from ${newArticles.size})")
+                            Log.d(TAG, "Discovery found ${limitedArticles.size} high-reliability articles for $category (capped from ${newArticles.size})")
 
                             // Offload processing to background
                             withContext(Dispatchers.Default) {
@@ -147,15 +153,16 @@ class FeedViewModel @Inject constructor(
                         lastUpdatedAt = updatedAt
                     )
                     Log.d(
-                        "FeedViewModel",
+                        TAG,
                         "Feed UI updated (emission=$emissionCount, forceRefresh=$forceRefresh, articles=${sorted.size}, elapsed=${updatedAt - requestStartedAt}ms)"
                     )
+                    logFeedImageState(sorted)
                 },
                 onFailure = { error ->
                     val currentState = _uiState.value
                     if (currentState is FeedUiState.Success && currentState.articles.isNotEmpty()) {
                         // Preserve existing articles on transient error
-                        Log.e("FeedViewModel", "Fetch failed but preserving state: ${error.message}")
+                        Log.e(TAG, "Fetch failed but preserving state: ${error.message}")
                     } else {
                         _uiState.value = FeedUiState.Error(
                             error.message ?: "Failed to load articles"
@@ -164,6 +171,59 @@ class FeedViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun cacheResolvedImage(articleUrl: String, imageUrl: String) {
+        if (articleUrl.isBlank() || imageUrl.isBlank()) return
+        if (imageUrl.contains("google.com/s2/favicons", ignoreCase = true)) return
+        if (!imageUrl.startsWith("http")) return
+
+        val shouldPersist = synchronized(imageSetLock) {
+            if (persistedImageUrls.contains(articleUrl) || inFlightImageWrites.contains(articleUrl)) {
+                false
+            } else {
+                inFlightImageWrites.add(articleUrl)
+                true
+            }
+        }
+        if (!shouldPersist) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                trackingRepository.updateArticleImage(articleUrl, imageUrl)
+                synchronized(imageSetLock) {
+                    persistedImageUrls.add(articleUrl)
+                }
+                Log.d(TAG, "Persisted OG image for $articleUrl")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to persist OG image for $articleUrl: ${e.message}")
+            } finally {
+                synchronized(imageSetLock) {
+                    inFlightImageWrites.remove(articleUrl)
+                }
+            }
+        }
+    }
+
+    private fun logFeedImageState(articles: List<Article>) {
+        var payloadImages = 0
+        var ogResolvedImages = 0
+        var fallbackLogos = 0
+
+        for (article in articles) {
+            val hasPayloadImage = !article.urlToImage.isNullOrBlank()
+                && !article.urlToImage!!.contains("google.com/s2/favicons", ignoreCase = true)
+            when {
+                hasPayloadImage -> payloadImages += 1
+                synchronized(imageSetLock) { persistedImageUrls.contains(article.url) } -> ogResolvedImages += 1
+                else -> fallbackLogos += 1
+            }
+        }
+
+        Log.d(
+            TAG,
+            "Feed image state: payload=$payloadImages ogResolved=$ogResolvedImages fallbackLogos=$fallbackLogos total=${articles.size}"
+        )
     }
 
     private fun loadTrackedStories() {
