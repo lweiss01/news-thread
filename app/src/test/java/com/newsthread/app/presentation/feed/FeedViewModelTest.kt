@@ -93,6 +93,7 @@ class FeedViewModelTest {
         val state = viewModel.uiState.value
         assert(state is FeedUiState.Success)
         assertEquals(2, (state as FeedUiState.Success).articles.size)
+        assert(state.lastUpdatedAt != null)
         // Should be sorted by descending order of publishedAt
         assertEquals("Test Article 2", state.articles[0].title)
     }

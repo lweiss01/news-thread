@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseRss, normalizeDate } from './rss';
+import { parseRss } from './rss';
 
 describe('rss parser', () => {
     it('parses basic RSS 2.0', () => {
@@ -67,5 +67,45 @@ describe('rss parser', () => {
 
 expect(items[0].description).toBe('Some alert(1) text with bold and an unclosed');
         expect(items[1].description).toBe('Just text');
+    });
+
+    it('extracts image from media group content', () => {
+        const xml = `
+      <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+        <channel>
+          <title>Media Group Feed</title>
+          <item>
+            <title>Image Story</title>
+            <link>https://example.com/with-image</link>
+            <description>Story with media group image.</description>
+            <media:group>
+              <media:content url="https://cdn.example.com/story.jpg" type="image/jpeg" />
+            </media:group>
+          </item>
+        </channel>
+      </rss>
+    `;
+        const items = parseRss(xml);
+        expect(items).toHaveLength(1);
+        expect(items[0].imageUrl).toBe('https://cdn.example.com/story.jpg');
+    });
+
+    it('extracts first inline image from content when media tags are missing', () => {
+        const xml = `
+      <rss version="2.0">
+        <channel>
+          <title>Inline Image Feed</title>
+          <item>
+            <title>Inline Image Story</title>
+            <link>https://example.com/inline-image</link>
+            <description><![CDATA[<p>Lead paragraph</p><img src="https://images.example.com/inline.jpg" />]]></description>
+            <pubDate>Mon, 03 Feb 2025 14:30:00 GMT</pubDate>
+          </item>
+        </channel>
+      </rss>
+    `;
+        const items = parseRss(xml);
+        expect(items).toHaveLength(1);
+        expect(items[0].imageUrl).toBe('https://images.example.com/inline.jpg');
     });
 });

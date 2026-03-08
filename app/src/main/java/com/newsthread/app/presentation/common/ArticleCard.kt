@@ -38,6 +38,7 @@ import java.util.*
 fun ArticleCard(
     article: Article,
     ogImageResolver: OgImageResolver? = null,
+    enableOgImageLookup: Boolean = true,
     isTracked: Boolean = false,
     isNew: Boolean = false,
     onBookmarkClick: () -> Unit = {},
@@ -186,7 +187,7 @@ fun ArticleCard(
                 }
 
                 // Lazy-fetch OG image if no real image from RSS/worker.
-                if (resolvedImageUrl == null && ogImageResolver != null) {
+                if (enableOgImageLookup && resolvedImageUrl == null && ogImageResolver != null) {
                     LaunchedEffect(article.url) {
                         val ogImage = ogImageResolver.resolve(article.url)
                         if (!ogImage.isNullOrEmpty() && !isFaviconImageUrl(ogImage)) {

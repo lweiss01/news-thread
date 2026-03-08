@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.newsthread.app.domain.model.Article
-import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
@@ -13,14 +12,17 @@ import com.newsthread.app.data.remote.OgImageResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.system.measureTimeMillis
 import javax.inject.Inject
 
 sealed interface FeedUiState {
     data object Loading : FeedUiState
-    data class Success(val articles: List<Article>) : FeedUiState
+    data class Success(
+        val articles: List<Article>,
+        val lastUpdatedAt: Long? = null
+    ) : FeedUiState
     data class Error(val message: String) : FeedUiState
 }
 
@@ -55,15 +57,21 @@ class FeedViewModel @Inject constructor(
     fun refresh() {
         if (isFetching) return // Guard against parallel refreshes
         viewModelScope.launch {
+            val refreshStartedAt = System.currentTimeMillis()
             try {
                 isFetching = true
                 _isRefreshing.value = true
-                fetchHeadlinesInternal(forceRefresh = true)
+                val headlineDurationMs = measureTimeMillis {
+                    fetchHeadlinesInternal(forceRefresh = true)
+                }
+                Log.d("FeedViewModel", "Pull refresh headlines completed in ${headlineDurationMs}ms")
                 // Do not force-refresh discovery channels to prevent Worker subrequest timeouts
-                triggerContinuousDiscovery(forceRefresh = false) 
+                triggerContinuousDiscovery(forceRefresh = false)
             } finally {
                 _isRefreshing.value = false
                 isFetching = false
+                val totalDurationMs = System.currentTimeMillis() - refreshStartedAt
+                Log.d("FeedViewModel", "Pull refresh finished in ${totalDurationMs}ms (discovery continues in background)")
             }
         }
     }
@@ -112,7 +120,10 @@ class FeedViewModel @Inject constructor(
 
                                     // Final re-clustering
                                     val clustered = clusterArticlesUseCase(combined)
-                                    _uiState.value = FeedUiState.Success(clustered)
+                                    _uiState.value = FeedUiState.Success(
+                                        articles = clustered,
+                                        lastUpdatedAt = currentState.lastUpdatedAt
+                                    )
                                 }
                             }
                         }
@@ -123,11 +134,22 @@ class FeedViewModel @Inject constructor(
     }
 
     private suspend fun fetchHeadlinesInternal(forceRefresh: Boolean) {
+        val requestStartedAt = System.currentTimeMillis()
+        var emissionCount = 0
         newsRepository.getTopHeadlines(forceRefresh = forceRefresh).collect { result ->
             result.fold(
                 onSuccess = { articles ->
+                    emissionCount += 1
                     val sorted = articles.sortedByDescending { it.publishedAt }
-                    _uiState.value = FeedUiState.Success(sorted)
+                    val updatedAt = System.currentTimeMillis()
+                    _uiState.value = FeedUiState.Success(
+                        articles = sorted,
+                        lastUpdatedAt = updatedAt
+                    )
+                    Log.d(
+                        "FeedViewModel",
+                        "Feed UI updated (emission=$emissionCount, forceRefresh=$forceRefresh, articles=${sorted.size}, elapsed=${updatedAt - requestStartedAt}ms)"
+                    )
                 },
                 onFailure = { error ->
                     val currentState = _uiState.value

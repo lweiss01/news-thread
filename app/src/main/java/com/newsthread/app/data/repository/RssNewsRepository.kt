@@ -88,7 +88,7 @@ class RssNewsRepository @Inject constructor(
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
         Log.d(TAG, "Fetching from Worker: ${BuildConfig.WORKER_URL}/v1/feeds/top-stories?num=100")
         val result = runCatching {
-            val json = fetchWorker("/v1/feeds/top-stories?num=100")
+            val json = fetchWorker("/v1/feeds/top-stories?num=100", forceRefresh = forceRefresh)
                 ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
 
             val articles = parseWorkerJson(json)
@@ -102,6 +102,7 @@ class RssNewsRepository @Inject constructor(
             if (forceRefresh && articles.isNotEmpty()) {
                 cachedArticleDao.detachByFeed(FEED_KEY_TOP)
                 cachedArticleDao.deleteUntrackedByFeedPrefix("discovery_")
+                feedCacheDao.deleteByPrefix("discovery_")
             }
 
             // Bulk Lookup Optimization
@@ -169,7 +170,7 @@ class RssNewsRepository @Inject constructor(
         if (!shouldRefresh) return@flow
 
         val result = runCatching {
-            val json = fetchWorker("/v1/feeds/search?q=$query")
+            val json = fetchWorker("/v1/feeds/search?q=$query", forceRefresh = forceRefresh)
                 ?: throw IOException("Failed to fetch search results from Worker")
             
             val articles = parseWorkerJson(json)
@@ -240,14 +241,16 @@ class RssNewsRepository @Inject constructor(
         } ?: emptyList()
     }
 
-    private fun fetchWorker(endpoint: String): String? {
+    private fun fetchWorker(endpoint: String, forceRefresh: Boolean): String? {
         return try {
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(BuildConfig.WORKER_URL + endpoint)
                 .header("X-API-Key", BuildConfig.WORKER_API_KEY)
                 .header("User-Agent", "NewsThread/1.0")
-                .header("Cache-Control", "no-cache")
-                .build()
+            if (forceRefresh) {
+                requestBuilder.header("Cache-Control", "no-cache")
+            }
+            val request = requestBuilder.build()
             
             okHttpClient.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {

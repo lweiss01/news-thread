@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { runWithConcurrency } from './concurrency';
 import { parseRss, mapToArticle } from './rss';
 import { resolveUrl } from './resolver';
-import { GNEWS_BASE, GNEWS_PARAMS, CategoryTopics, googleNewsCategoryUrl, googleNewsSearchUrl, findByDomain, allSources } from './sources';
-import { Article, RssFeedSource } from './types';
+import { GNEWS_BASE, GNEWS_PARAMS, CategoryTopics, googleNewsCategoryUrl, googleNewsSearchUrl, findByDomain } from './sources';
+import { Article } from './types';
 
 type Bindings = {
     FEED_CACHE: KVNamespace;
@@ -12,6 +12,25 @@ type Bindings = {
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+const LAYER2_SOURCE_TIMEOUT_MS = 3000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        promise
+            .then((value) => {
+                clearTimeout(timeoutId);
+                resolve(value);
+            })
+            .catch((error) => {
+                clearTimeout(timeoutId);
+                reject(error);
+            });
+    });
+}
 
 // Middleware: API Key check
 app.use('/v1/*', async (c, next) => {
@@ -48,11 +67,14 @@ app.get('/health', async (c) => {
 });
 
 app.get('/v1/feeds/top-stories', async (c) => {
+    const requestStart = Date.now();
     const forceRefresh = c.req.header('Cache-Control') === 'no-cache';
     const gnewsUrl = `${GNEWS_BASE}?${GNEWS_PARAMS}`;
 
     // 1. Fetch Layer 1 (Google News)
+    const layer1Start = Date.now();
     const layer1Articles = await fetchAndNormalize(gnewsUrl, 'Google News', c.env, forceRefresh);
+    console.log(`[Top Stories] Layer1 complete in ${Date.now() - layer1Start}ms (${layer1Articles.length} articles)`);
 
     // 2. Identify top domains for Layer 2
     const domainCounts = new Map<string, number>();
@@ -66,14 +88,26 @@ app.get('/v1/feeds/top-stories', async (c) => {
         .slice(0, 15)
         .map(e => e[0]);
 
-    // 3. Fetch Layer 2 (Direct Feeds) concurrently
-    const layer2Results = await Promise.all(topDomains.map(async domain => {
+    // 3. Fetch Layer 2 (Direct Feeds) concurrently with bounded per-source wait.
+    // Layer2 should prefer cache even on pull-refresh to avoid long tail latency.
+    const layer2Start = Date.now();
+    const layer2Results = await Promise.allSettled(topDomains.map(async domain => {
         const source = findByDomain(domain);
         if (!source) return [];
-        return fetchAndNormalize(source.mainFeedUrl, source.displayName, c.env, forceRefresh);
+        return withTimeout(
+            fetchAndNormalize(source.mainFeedUrl, source.displayName, c.env, false),
+            LAYER2_SOURCE_TIMEOUT_MS,
+            source.displayName
+        );
     }));
-
-    const layer2Articles = layer2Results.flat();
+    const layer2Articles = layer2Results
+        .filter((result): result is PromiseFulfilledResult<Article[]> => result.status === 'fulfilled')
+        .flatMap(result => result.value);
+    const layer2Failures = layer2Results.filter(result => result.status === 'rejected').length;
+    if (layer2Failures > 0) {
+        console.warn(`[Top Stories] Layer2 had ${layer2Failures}/${layer2Results.length} failed or timed out source fetches`);
+    }
+    console.log(`[Top Stories] Layer2 complete in ${Date.now() - layer2Start}ms (${layer2Articles.length} articles)`);
 
     // 4. Merge and deduplicate
     const seenUrls = new Set(layer1Articles.map(a => a.url));
@@ -105,7 +139,9 @@ app.get('/v1/feeds/top-stories', async (c) => {
         return false;
     });
 
-    return c.json(diverseFeed.slice(0, 100));
+    const result = diverseFeed.slice(0, 100);
+    console.log(`[Top Stories] Total request finished in ${Date.now() - requestStart}ms (${result.length} articles)`);
+    return c.json(result);
 });
 
 export function extractDomain(url: string): string {
@@ -205,6 +241,7 @@ app.get('/v1/feeds/search', async (c) => {
 });
 
 async function fetchAndNormalize(url: string, sourceName: string, env: Bindings, forceRefresh: boolean = false): Promise<Article[]> {
+    const fetchStart = Date.now();
     // Check cache first (using v3 prefix to purge Feb 18-20 stale data)
     const cacheKey = `feed:v3:${url}`;
 
@@ -261,6 +298,9 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings,
             }
         });
 
+        const unresolvedGoogleLinks = articles.filter(article => article.url.includes('news.google.com')).length;
+        console.log(`[Resolve Stats] unresolvedGoogleLinks=${unresolvedGoogleLinks}/${articles.length} source=${sourceName}`);
+
         // Only cache if we actually got results
         if (articles.length > 0) {
             await env.FEED_CACHE.put(cacheKey, JSON.stringify(articles), { expirationTtl: 300 });
@@ -269,26 +309,13 @@ async function fetchAndNormalize(url: string, sourceName: string, env: Bindings,
             console.log(`[No Articles] Not caching empty result for ${url}`);
         }
 
+        console.log(`[Fetch Complete] ${sourceName} finished in ${Date.now() - fetchStart}ms`);
         return articles;
     } catch (e: any) {
-        console.error(`[Fetch Error] for ${url}:`, e.message);
+        console.error(`[Fetch Error] for ${url} after ${Date.now() - fetchStart}ms:`, e.message);
         // Don't just return [] silently if it's a main fetch
         return [];
     }
-}
-
-function getText(obj: any): string {
-    if (obj === null || obj === undefined) return '';
-    if (typeof obj === 'string') return obj;
-    if (typeof obj === 'object') {
-        if (obj['#text'] !== undefined) return String(obj['#text']);
-        // If it's an array for some reason (rare for these fields)
-        if (Array.isArray(obj) && obj.length > 0) return getText(obj[0]);
-        // If it's a JSON object without #text, stringify it for debug visibility if it would normally be [object Object]
-        // But for source names, let's just return empty string to fallback to domain
-        return '';
-    }
-    return String(obj);
 }
 
 export default app;

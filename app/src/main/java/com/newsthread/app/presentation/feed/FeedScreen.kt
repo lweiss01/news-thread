@@ -24,13 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.FloatingActionButtonDefaults
-import com.newsthread.app.presentation.common.glassBackground
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.newsthread.app.presentation.feed.components.SourceBadge
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import java.net.URLEncoder
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -47,6 +44,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -150,11 +150,28 @@ fun FeedScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(articles) { article ->
+                            state.lastUpdatedAt?.let { updatedAt ->
+                                item(key = "last-updated-indicator") {
+                                    Text(
+                                        text = "Updated ${formatLastUpdatedTime(updatedAt)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp
+                                        )
+                                    )
+                                }
+                            }
+                            items(
+                                items = articles,
+                                key = { it.url }
+                            ) { article ->
                                 ArticleCard(
                                     article = article,
                                     isTracked = trackedStoriesMap.containsKey(article.url),
                                     ogImageResolver = viewModel.ogImageResolver,
+                                    enableOgImageLookup = false,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
                                         val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
@@ -201,5 +218,15 @@ fun FeedScreen(
                 state = pullRefreshState,
             )
         }
+    }
+}
+
+private fun formatLastUpdatedTime(epochMillis: Long): String {
+    val now = System.currentTimeMillis()
+    val deltaMs = now - epochMillis
+    return when {
+        deltaMs < 60_000L -> "just now"
+        deltaMs < 3_600_000L -> "${deltaMs / 60_000L}m ago"
+        else -> SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epochMillis))
     }
 }
