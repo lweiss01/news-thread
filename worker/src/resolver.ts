@@ -1,5 +1,17 @@
 import { Buffer } from 'node:buffer';
 
+// Hoisted constants for performance
+const V3_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
+const V3_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
+
+// Hoisted RegExp for performance
+const DASH_REGEX = /-/g;
+const UNDERSCORE_REGEX = /_/g;
+const URL_MATCH_REGEX = /https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/;
+const HTTP_REDIRECT_LINKS_REGEX = /href="([^">]+)"/gi;
+const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\s"'<>]+/g;
+const DOUBLE_SLASH_ESCAPE_REGEX = /\\/g;
+
 export async function resolveUrl(encodedUrl: string, cache: KVNamespace): Promise<string> {
     if (!encodedUrl.includes('news.google.com')) return encodedUrl;
 
@@ -45,24 +57,21 @@ function tryBase64Decode(url: string): string | null {
         if (!encoded) return null;
 
         // Base64url decode
-        const buffer = Buffer.from(encoded.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+        const buffer = Buffer.from(encoded.replace(DASH_REGEX, '+').replace(UNDERSCORE_REGEX, '/'), 'base64');
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
-        const prefix = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
-        if (decodedStr.startsWith(prefix)) {
-            decodedStr = decodedStr.substring(prefix.length);
+        if (decodedStr.startsWith(V3_PREFIX)) {
+            decodedStr = decodedStr.substring(V3_PREFIX.length);
         }
 
         // Suffix stripping (\xd2\x01\x00)
-        const suffix = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
-        if (decodedStr.endsWith(suffix)) {
-            decodedStr = decodedStr.substring(0, decodedStr.length - suffix.length);
+        if (decodedStr.endsWith(V3_SUFFIX)) {
+            decodedStr = decodedStr.substring(0, decodedStr.length - V3_SUFFIX.length);
         }
 
-        // Length byte logic
-        const bytesArray = Buffer.from(decodedStr, 'latin1');
-        const length = bytesArray[0];
+        // Length byte logic - avoiding Buffer reallocation
+        const length = decodedStr.charCodeAt(0);
 
         if (length >= 0x80) {
             // Varint-like offset for longer payloads
@@ -72,7 +81,7 @@ function tryBase64Decode(url: string): string | null {
         }
 
         // Simple pattern match for URL inside decoded string
-        const match = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/);
+        const match = decodedStr.match(URL_MATCH_REGEX);
         if (match) {
             const result = match[0];
             if (!result.includes('news.google.com')) return result;
@@ -118,7 +127,7 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
             const html = await response.text();
 
             // Find all links and pick the first one that isn't Google
-            const allLinks = Array.from(html.matchAll(/href="([^">]+)"/gi))
+            const allLinks = Array.from(html.matchAll(HTTP_REDIRECT_LINKS_REGEX))
                 .map(m => m[1]);
 
             for (const link of allLinks) {
@@ -133,7 +142,7 @@ async function tryHttpRedirect(url: string): Promise<string | null> {
             }
 
             // Fallback: Search for any URL-like string in the HTML that isn't Google
-            const urlMatch = html.match(/https?:\/\/[^\s"'<>]+/g);
+            const urlMatch = html.match(URL_FALLBACK_MATCH_REGEX);
             if (urlMatch) {
                 const finalUrl = urlMatch.find(u =>
                     !u.includes('google.com') &&
@@ -158,8 +167,8 @@ async function tryBatchExecute(url: string): Promise<string | null> {
         // Fetch the main page to get ts and sg (though the RPC might work without it if we use the right format)
         // Based on decoderv3.py and RssNewsRepository.kt
 
-        const innerArrayStr = `["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0],"${id}"]`;
-        const reqData = `[[["Fbv4je","${innerArrayStr.replace(/"/g, '\\"')}",null,"generic"]]]`;
+        const innerArrayStr = `["garturlreq",[["en-US","US",["FINANCE_TOP_INDICES","WEB_TEST_1_0_0"],null,null,1,1,"US:en",null,180,null,null,null,null,null,0,null,null,[1608992183,723341000]],"en-US","US",1,[2,3,4,8],1,0,"655000234",0,0,null,0],${JSON.stringify(id)}]`;
+        const reqData = JSON.stringify([[["Fbv4je", innerArrayStr, null, "generic"]]]);
 
         const response = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je', {
             method: 'POST',
@@ -189,7 +198,7 @@ async function tryBatchExecute(url: string): Promise<string | null> {
             if (end !== -1) {
                 let result = text.substring(urlStart, end);
                 // Handle double escaping
-                result = result.replace(/\\/g, '');
+                result = result.replace(DOUBLE_SLASH_ESCAPE_REGEX, '');
                 if (!result.includes('news.google.com')) return result;
             }
         }
