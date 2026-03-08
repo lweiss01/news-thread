@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -144,7 +145,7 @@ private fun FetchPreferenceOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(role = Role.RadioButton, onClick = onClick)
             .padding(vertical = ProjectTheme.spacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -254,7 +255,7 @@ private fun BackgroundSyncSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onSyncEnabledChanged(!syncEnabled) }
+                .clickable(role = Role.Switch) { onSyncEnabledChanged(!syncEnabled) }
                 .padding(vertical = ProjectTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -283,7 +284,7 @@ private fun BackgroundSyncSection(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSyncStrategyChanged(strategy) }
+                        .clickable(role = Role.RadioButton) { onSyncStrategyChanged(strategy) }
                         .padding(vertical = ProjectTheme.spacing.s, horizontal = ProjectTheme.spacing.sm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -312,7 +313,7 @@ private fun BackgroundSyncSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onMeteredAllowedChanged(!meteredAllowed) }
+                    .clickable(role = Role.Switch) { onMeteredAllowedChanged(!meteredAllowed) }
                     .padding(vertical = ProjectTheme.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
