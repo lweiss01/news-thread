@@ -43,12 +43,13 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val FEED_OG_LOOKAHEAD_ITEMS = 10
+private const val FEED_OG_LOOKAHEAD_ITEMS = 60
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +59,7 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val isBackgroundSyncing by viewModel.isBackgroundSyncing.collectAsStateWithLifecycle()
     val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -66,6 +68,12 @@ fun FeedScreen(
     val showJumpToTop by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 5
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.transientMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -168,6 +176,19 @@ fun FeedScreen(
                                     )
                                 }
                             }
+                            if (isBackgroundSyncing) {
+                                item(key = "background-sync-indicator") {
+                                    Text(
+                                        text = "Updating feed...",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 2.dp
+                                        )
+                                    )
+                                }
+                            }
                             itemsIndexed(
                                 items = articles,
                                 key = { _, article -> article.url }
@@ -177,6 +198,7 @@ fun FeedScreen(
                                     isTracked = trackedStoriesMap.containsKey(article.url),
                                     ogImageResolver = viewModel.ogImageResolver,
                                     enableOgImageLookup = index <= ogLookupIndexThreshold,
+                                    showSourceFallbackLogo = false,
                                     onResolvedImage = viewModel::cacheResolvedImage,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {

@@ -25,16 +25,27 @@ class OgImageResolver @Inject constructor(
     )
 
     companion object {
-        private const val FAILURE_RETRY_MS = 10 * 60 * 1000L
+        private const val FAILURE_RETRY_MS = 2 * 60 * 1000L
         private const val DEFAULT_RESOLVE_TIMEOUT_MS = 8000L
+        private const val HTML_SNIFF_BYTES = 65535L
     }
 
     // LRU cache: URL -> success value or transient failure timestamp
     private val cache = LruCache<String, CacheEntry>(100)
 
-    // Unified regex handles both attribute orders for og:image meta tags.
-    private val OG_IMAGE_REGEX = Regex(
-        """<meta[^>]+(?:property=["']og:image["'][^>]+content=["']([^"']+)["']|content=["']([^"']+)["'][^>]+property=["']og:image["'])[^>]*>""",
+    // Unified regex handles both attribute orders for og/twitter image tags.
+    private val META_IMAGE_REGEX = Regex(
+        """<meta[^>]+(?:property|name|itemprop)=["'](?:og:image|og:image:secure_url|twitter:image|twitter:image:src|image)["'][^>]+content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name|itemprop)=["'](?:og:image|og:image:secure_url|twitter:image|twitter:image:src|image)["'][^>]*>""",
+        RegexOption.IGNORE_CASE
+    )
+
+    private val IMG_TAG_REGEX = Regex(
+        """<img[^>]+src=["']([^"']+)["'][^>]*>""",
+        RegexOption.IGNORE_CASE
+    )
+
+    private val JSON_IMAGE_REGEX = Regex(
+        """["'](?:thumbnailUrl|image)["']\s*:\s*["'](https?:\\?/\\?/[^"']+)["']""",
         RegexOption.IGNORE_CASE
     )
 
@@ -43,15 +54,6 @@ class OgImageResolver @Inject constructor(
      * Returns the image URL or null if none found.
      */
     suspend fun resolve(articleUrl: String, timeoutMs: Long = DEFAULT_RESOLVE_TIMEOUT_MS): String? = withContext(Dispatchers.IO) {
-        // Handle Google News redirects first.
-        if (articleUrl.contains("news.google.com") || articleUrl.contains("google.com/rss")) {
-            val realUrl = extractGoogleNewsRedirectUrl(articleUrl)
-            if (realUrl != null && realUrl != articleUrl) {
-                return@withContext resolve(realUrl, timeoutMs)
-            }
-            return@withContext null
-        }
-
         // Check cache first.
         val now = System.currentTimeMillis()
         val cached = cache.get(articleUrl)
@@ -67,7 +69,19 @@ class OgImageResolver @Inject constructor(
             cache.remove(articleUrl)
         }
 
-        val imageUrl = fetchOgImage(articleUrl, timeoutMs)
+        val imageUrl = if (articleUrl.contains("news.google.com") || articleUrl.contains("google.com/rss")) {
+            val realUrl = extractGoogleNewsRedirectUrl(articleUrl)
+            val directImage = if (!realUrl.isNullOrBlank() && realUrl != articleUrl) {
+                resolve(realUrl, timeoutMs)
+            } else {
+                null
+            }
+            // If Google URL could not be resolved to a direct publisher URL, still try
+            // reading OG tags from the Google article page instead of hard-failing.
+            directImage ?: fetchOgImage(articleUrl, timeoutMs)
+        } else {
+            fetchOgImage(articleUrl, timeoutMs)
+        }
 
         if (imageUrl != null) {
             cache.put(articleUrl, CacheEntry(imageUrl = imageUrl))
@@ -79,33 +93,68 @@ class OgImageResolver @Inject constructor(
     }
 
     private fun fetchOgImage(url: String, timeoutMs: Long): String? {
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+            "Accept" to "text/html"
+        )
+
+        val partialHtml = fetchHtml(url, timeoutMs, headers + ("Range" to "bytes=0-${HTML_SNIFF_BYTES}"))
+        val partialImage = partialHtml?.let { extractBestImageFromHtml(it) }
+        if (!partialImage.isNullOrBlank()) return partialImage
+
+        // Retry without Range for hosts that ignore/deny partial requests.
+        val fullHtml = fetchHtml(url, timeoutMs, headers)
+        return fullHtml?.let { extractBestImageFromHtml(it) }
+    }
+
+    private fun fetchHtml(url: String, timeoutMs: Long, headers: Map<String, String>): String? {
         return try {
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
-                .header("Range", "bytes=0-65535")
-                .header("Accept", "text/html")
-                .build()
+            val requestBuilder = Request.Builder().url(url)
+            headers.forEach { (key, value) -> requestBuilder.header(key, value) }
+            val request = requestBuilder.build()
 
             val call = okHttpClient.newCall(request)
             call.timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
             call.execute().use { response ->
                 if (!response.isSuccessful && response.code != 206) return@use null
-
-                val html = response.body?.string() ?: return@use null
-                val match = OG_IMAGE_REGEX.find(html)
-                val imageUrl = match?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() }
-                    ?: match?.groupValues?.getOrNull(2)?.takeIf { it.isNotBlank() }
-
-                if (imageUrl != null && imageUrl.startsWith("http") && imageUrl.length > 10) {
-                    imageUrl
-                } else {
-                    null
-                }
+                response.body?.string()
             }
         } catch (e: Exception) {
             null
         }
+    }
+
+    private fun extractBestImageFromHtml(html: String): String? {
+        val metaMatch = META_IMAGE_REGEX.find(html)
+        val metaImageUrl = metaMatch?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() }
+            ?: metaMatch?.groupValues?.getOrNull(2)?.takeIf { it.isNotBlank() }
+        if (isLikelyImageUrl(metaImageUrl)) {
+            return metaImageUrl
+        }
+
+        val jsonImageMatch = JSON_IMAGE_REGEX.find(html)
+        val jsonImageUrl = jsonImageMatch?.groupValues?.getOrNull(1)
+            ?.replace("\\/", "/")
+        if (isLikelyImageUrl(jsonImageUrl)) {
+            return jsonImageUrl
+        }
+
+        val imgMatch = IMG_TAG_REGEX.find(html)
+        val imgUrl = imgMatch?.groupValues?.getOrNull(1)
+        if (isLikelyImageUrl(imgUrl)) {
+            return imgUrl
+        }
+
+        return null
+    }
+
+    private fun isLikelyImageUrl(url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        if (!url.startsWith("http")) return false
+        if (url.startsWith("data:", ignoreCase = true)) return false
+        val lower = url.lowercase()
+        if (lower.contains("sprite") || lower.contains("favicon")) return false
+        return url.length > 10
     }
 
     private fun extractGoogleNewsRedirectUrl(googleUrl: String): String? {
