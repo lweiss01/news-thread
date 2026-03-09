@@ -108,4 +108,27 @@ expect(items[0].description).toBe('Some alert(1) text with bold and an unclosed'
         expect(items).toHaveLength(1);
         expect(items[0].imageUrl).toBe('https://images.example.com/inline.jpg');
     });
+
+    it('does not truncate large feeds at 50 items', () => {
+        const itemXml = Array.from({ length: 60 }, (_, i) => `
+          <item>
+            <title>Story ${i}</title>
+            <link>https://example.com/${i}</link>
+            <description>Desc ${i}</description>
+            <pubDate>Mon, 03 Feb 2025 14:30:00 GMT</pubDate>
+          </item>
+        `).join('');
+
+        const xml = `
+      <rss version="2.0">
+        <channel>
+          <title>Large Feed</title>
+          ${itemXml}
+        </channel>
+      </rss>
+    `;
+
+        const items = parseRss(xml);
+        expect(items).toHaveLength(60);
+    });
 });

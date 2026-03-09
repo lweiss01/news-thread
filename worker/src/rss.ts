@@ -44,7 +44,7 @@ function parseRss20(json: any, fallbackSourceName: string | null): ParsedFeedIte
     const feedTitle = channel.title || fallbackSourceName;
     const rawItems = Array.isArray(channel.item) ? channel.item : [channel.item].filter(Boolean);
 
-    return rawItems.slice(0, 50).map((item: any) => {
+    return rawItems.map((item: any) => {
         const rawDescription = getText(item.description);
         const rawContent = getText(item['content:encoded']);
         let imageUrl = extractMediaImageUrl(item)
@@ -74,7 +74,7 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
     const feedTitle = feed.title || fallbackSourceName;
     const rawEntries = Array.isArray(feed.entry) ? feed.entry : [feed.entry].filter(Boolean);
 
-    return rawEntries.slice(0, 50).map((entry: any) => {
+    return rawEntries.map((entry: any) => {
         let link = '';
         if (entry.link) {
             const links = Array.isArray(entry.link) ? entry.link : [entry.link];
