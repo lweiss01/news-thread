@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,6 +54,12 @@ fun StoryDetailScreen(
 ) {
     val trackedStory by viewModel.trackedStory.collectAsStateWithLifecycle()
 
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.markStoryViewed()
+        }
+    }
+
     // Hoist scroll state for Scaffold FAB access
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -67,7 +74,10 @@ fun StoryDetailScreen(
             NewsTopAppBar(
                 title = "Story Analysis",
                 actions = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        viewModel.markStoryViewed()
+                        onBackClick()
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
