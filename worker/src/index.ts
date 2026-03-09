@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { timingSafeEqual } from 'hono/utils/buffer';
 import { runWithConcurrency } from './concurrency';
 import { parseRss, mapToArticle } from './rss';
 import { resolveUrl, type ResolveUrlDiagnostics } from './resolver';
@@ -561,8 +562,10 @@ app.use('/v1/*', async (c, next) => {
     const userAgent = c.req.header('User-Agent');
 
     // Check API Key if set in environment
-    if (c.env.SHARED_KEY && apiKey !== c.env.SHARED_KEY) {
-        return c.json({ error: 'Unauthorized' }, 401);
+    if (c.env.SHARED_KEY) {
+        if (!apiKey || !await timingSafeEqual(c.env.SHARED_KEY, apiKey)) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
     }
 
     // Optional: Log NewsThread requests
