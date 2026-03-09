@@ -430,6 +430,13 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles.values.filter { it.fetchedAt > since }.toList()
     }
 
+    override suspend fun getRecentCandidateArticles(since: Long, limit: Int): List<CachedArticleEntity> {
+        return savedArticles.values
+            .filter { it.fetchedAt > since }
+            .sortedByDescending { it.fetchedAt }
+            .take(limit)
+    }
+
     override suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean, matchedAt: Long) {
         savedArticles[articleUrl]?.let {
             savedArticles[articleUrl] = it.copy(storyId = storyId, isTracked = true)
