@@ -8,6 +8,8 @@ import com.newsthread.app.data.local.dao.SourceRatingDao
 import com.newsthread.app.data.local.entity.FeedCacheEntity
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
+import com.newsthread.app.domain.repository.FeedEmission
+import com.newsthread.app.domain.repository.FeedEmissionSource
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
 import com.newsthread.app.domain.usecase.FilterArticlesUseCase
@@ -47,25 +49,17 @@ class RssNewsRepository @Inject constructor(
     companion object {
         private const val TAG = "RssNewsRepository"
         private const val FEED_KEY_TOP = "top_headlines_rss"
-        private const val MAX_ARTICLES = 100
+        private const val MAX_ARTICLES = 150
+        private const val HOME_FEED_TARGET = 120
     }
 
-    override fun getTopHeadlines(
+    override fun getTopHeadlinesDetailed(
         forceRefresh: Boolean,
         minReliability: Int
-    ): Flow<Result<List<Article>>> = flow {
+    ): Flow<Result<FeedEmission>> = flow {
         // 1. Emit cached data immediately
         val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
-        
-        var cached = safeDbCall { cachedArticleDao.getByFeed(FEED_KEY_TOP).map { it.toDomain() } }
-        
-        if (cached.isNotEmpty()) {
-            cached = filterArticlesUseCase(cached, allRatings, onlyRated = true, minReliability = minReliability)
-            cached = clusterArticlesUseCase(cached)
-            emit(Result.success(cached))
-        }
-
-        // 2. Check staleness
+        val homeMinReliability = maxOf(2, minReliability)
         val cacheMetadata = try {
             kotlinx.coroutines.withTimeoutOrNull(5000L) {
                 feedCacheDao.get(FEED_KEY_TOP)
@@ -73,34 +67,85 @@ class RssNewsRepository @Inject constructor(
         } catch (e: Exception) {
             null
         }
-        
+
+        var cached = safeDbCall { cachedArticleDao.getByFeed(FEED_KEY_TOP).map { it.toDomain() } }
+
+        if (cached.isNotEmpty()) {
+            cached = filterArticlesUseCase(
+                cached,
+                allRatings,
+                onlyRated = true,
+                minReliability = homeMinReliability,
+                allowReputableFallbackWhenUnrated = true,
+                allowUnknownUnrated = false
+            )
+            cached = clusterArticlesUseCase(cached)
+            emit(
+                Result.success(
+                    FeedEmission(
+                        articles = cached,
+                        source = FeedEmissionSource.CACHE,
+                        fetchedAt = cacheMetadata?.fetchedAt
+                    )
+                )
+            )
+        }
+
+        // 2. Check staleness
         val isStale = cacheMetadata?.isStale() ?: true
         val isEmpty = cacheMetadata?.articleCount == 0
         val shouldRefresh = forceRefresh || cacheMetadata == null || isStale || isEmpty
-        
+
         if (!shouldRefresh) {
             if (cached.isEmpty()) {
-                emit(Result.success(emptyList()))
+                emit(
+                    Result.success(
+                        FeedEmission(
+                            articles = emptyList(),
+                            source = FeedEmissionSource.CACHE,
+                            fetchedAt = cacheMetadata?.fetchedAt
+                        )
+                    )
+                )
             }
             return@flow
         }
-        
+
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
-        Log.d(TAG, "Fetching from Worker: ${BuildConfig.WORKER_URL}/v1/feeds/top-stories?num=100")
+        val homeEndpoint = if (forceRefresh) {
+            "/v1/feeds/home?num=$HOME_FEED_TARGET&refresh=fast"
+        } else {
+            "/v1/feeds/home?num=$HOME_FEED_TARGET"
+        }
+        Log.d(TAG, "Fetching from Worker: ${BuildConfig.WORKER_URL}$homeEndpoint")
         val result = runCatching {
-            val json = fetchWorker("/v1/feeds/top-stories?num=100", forceRefresh = forceRefresh)
-                ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
+            val json = fetchWorker(homeEndpoint, forceRefresh = forceRefresh)
+                ?: fetchWorker("/v1/feeds/top-stories?num=$HOME_FEED_TARGET", forceRefresh = forceRefresh)
+                ?: throw IOException("Failed to fetch home feed from Cloudflare Worker")
 
             val articles = parseWorkerJson(json)
             
             // Filter and cluster
-            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = true, minReliability = minReliability).take(MAX_ARTICLES)
+            val filtered = filterArticlesUseCase(
+                articles,
+                allRatings,
+                onlyRated = true,
+                minReliability = homeMinReliability,
+                allowReputableFallbackWhenUnrated = true,
+                allowUnknownUnrated = false
+            ).take(MAX_ARTICLES)
             val clustered = clusterArticlesUseCase(filtered)
+            Log.d(
+                TAG,
+                "Top headlines pipeline: fetched=${articles.size} filtered=${filtered.size} clustered=${clustered.size}"
+            )
 
-            // Persist — clear current feed view on force refresh to avoid ghost articles
+            // Persist - always replace Home feed membership so stale rows do not survive at the tail.
             val now = System.currentTimeMillis()
-            if (forceRefresh && articles.isNotEmpty()) {
+            if (articles.isNotEmpty()) {
                 cachedArticleDao.detachByFeed(FEED_KEY_TOP)
+            }
+            if (forceRefresh) {
                 cachedArticleDao.deleteUntrackedByFeedPrefix("discovery_")
                 feedCacheDao.deleteByPrefix("discovery_")
             }
@@ -132,14 +177,21 @@ class RssNewsRepository @Inject constructor(
                 articleCount = toInsert.size
             ))
 
-            clustered
+            FeedEmission(
+                articles = clustered,
+                source = FeedEmissionSource.NETWORK,
+                fetchedAt = now
+            )
         }
 
         result.fold(
-            onSuccess = { articles ->
-                if (forceRefresh || articles.isNotEmpty() || cached.isEmpty()) {
-                    emit(Result.success(articles))
+            onSuccess = { emission ->
+                val safeEmission = if (emission.articles.isEmpty() && cached.isNotEmpty()) {
+                    emission.copy(articles = cached)
+                } else {
+                    emission
                 }
+                emit(Result.success(safeEmission))
             },
             onFailure = { e ->
                 Log.e(TAG, "Worker fetch failed: ${e.message}", e)
@@ -154,14 +206,23 @@ class RssNewsRepository @Inject constructor(
         query: String,
         forceRefresh: Boolean,
         onlyRated: Boolean,
-        minReliability: Int
+        minReliability: Int,
+        allowReputableFallbackWhenUnrated: Boolean,
+        allowUnknownUnrated: Boolean
     ): Flow<Result<List<Article>>> = flow {
         val feedKey = "discovery_${query.lowercase().trim()}"
         val allRatings = safeDbCall { sourceRatingDao.getAll().map { it.toDomain() } }
         val cached = safeDbCall { cachedArticleDao.getByFeed(feedKey).map { it.toDomain() } }
 
         if (cached.isNotEmpty()) {
-            val filtered = filterArticlesUseCase(cached, allRatings, onlyRated = onlyRated, minReliability = minReliability)
+            val filtered = filterArticlesUseCase(
+                cached,
+                allRatings,
+                onlyRated = onlyRated,
+                minReliability = minReliability,
+                allowReputableFallbackWhenUnrated = allowReputableFallbackWhenUnrated,
+                allowUnknownUnrated = allowUnknownUnrated
+            )
             emit(Result.success(filtered))
         }
 
@@ -175,8 +236,19 @@ class RssNewsRepository @Inject constructor(
             
             val articles = parseWorkerJson(json)
             
-            val filtered = filterArticlesUseCase(articles, allRatings, onlyRated = onlyRated, minReliability = minReliability)
+            val filtered = filterArticlesUseCase(
+                articles,
+                allRatings,
+                onlyRated = onlyRated,
+                minReliability = minReliability,
+                allowReputableFallbackWhenUnrated = allowReputableFallbackWhenUnrated,
+                allowUnknownUnrated = allowUnknownUnrated
+            )
             val clustered = clusterArticlesUseCase(filtered)
+            Log.d(
+                TAG,
+                "Discovery pipeline[$query]: fetched=${articles.size} filtered=${filtered.size} clustered=${clustered.size}"
+            )
 
             val now = System.currentTimeMillis()
             if (forceRefresh && articles.isNotEmpty()) {
