@@ -60,7 +60,8 @@ class TrackingRepositoryTest {
         // Then
         assertTrue(result.isSuccess)
         verify(storyDao).insertStory(any())
-        verify(articleDao).updateTrackingStatus(any(), any(), any())
+        verify(storyDao).insertStoryArticleCrossRef(any())
+        verify(articleDao).assignArticleToStory(any(), any(), any(), any(), any())
     }
 
     @Test
