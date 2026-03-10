@@ -72,8 +72,15 @@ export const allSources: RssFeedSource[] = [
     { sourceId: "oann.com", displayName: "OAN", domain: "oann.com", mainFeedUrl: "https://news.google.com/rss/search?q=site:oann.com&hl=en-US&gl=US&ceid=US:en", allsidesRating: "Right" },
 ];
 
+const sourcesByDomain = new Map<string, RssFeedSource>();
+for (const source of allSources) {
+    if (source.domain) {
+        sourcesByDomain.set(source.domain, source);
+    }
+}
+
 export function findByDomain(domain: string): RssFeedSource | undefined {
-    return allSources.find(s => s.domain === domain);
+    return sourcesByDomain.get(domain);
 }
 
 export function googleNewsCategoryUrl(topicId: string): string {
