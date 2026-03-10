@@ -63,7 +63,15 @@ describe('API Key Authentication', () => {
             URL_CACHE: { get: async () => null, put: async () => null }
         };
 
-        const res = await app.request(req, {}, env as any);
-        expect(res.status).not.toBe(401);
+        // Mock fetch to prevent actual network calls during this test
+        const originalFetch = global.fetch;
+        global.fetch = async () => new Response('Mocked', { status: 200 }) as any;
+
+        try {
+            const res = await app.request(req, {}, env as any);
+            expect(res.status).not.toBe(401);
+        } finally {
+            global.fetch = originalFetch;
+        }
     });
 });

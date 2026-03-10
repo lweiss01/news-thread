@@ -59,12 +59,19 @@ export async function resolveUrl(encodedUrl: string, cache: KVNamespace, onNetwo
 
 function tryBase64Decode(url: string): string | null {
     try {
-        const parts = url.split('/');
-        const encoded = parts[parts.length - 1].split('?')[0];
+        const lastSlash = url.lastIndexOf('/');
+        if (lastSlash === -1) return null;
+
+        let encoded = url.substring(lastSlash + 1);
+        const questionMark = encoded.indexOf('?');
+        if (questionMark !== -1) {
+            encoded = encoded.substring(0, questionMark);
+        }
+
         if (!encoded) return null;
 
-        // Base64url decode
-        const buffer = Buffer.from(encoded.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+        // Optimization: Native base64url parsing avoids multi-step string replacements
+        const buffer = Buffer.from(encoded, 'base64url');
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
