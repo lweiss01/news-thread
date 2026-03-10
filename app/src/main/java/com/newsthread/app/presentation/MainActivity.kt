@@ -35,6 +35,11 @@ import com.newsthread.app.domain.model.Article
 import java.net.URLDecoder
 import java.net.URLEncoder
 import javax.inject.Inject
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.navigation.compose.currentBackStackEntryAsState
 
 import android.Manifest
 import android.os.Build
@@ -45,6 +50,7 @@ import android.content.pm.PackageManager
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject lateinit var userPreferencesRepository: com.newsthread.app.data.repository.UserPreferencesRepository
     @Inject lateinit var databaseSeeder: DatabaseSeeder
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -95,11 +101,27 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NewsThreadTheme {
+                val onboardingCompleted by userPreferencesRepository.isOnboardingCompleted.collectAsState(initial = null)
+                
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NewsThreadApp()
+                    if (onboardingCompleted != null) {
+                        NewsThreadApp(
+                            isOnboardingCompleted = onboardingCompleted!!,
+                            onOnboardingFinish = {
+                                lifecycleScope.launch {
+                                    userPreferencesRepository.setOnboardingCompleted(true)
+                                }
+                            }
+                        )
+                    } else {
+                        // Splash/Loading
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            androidx.compose.material3.CircularProgressIndicator()
+                        }
+                    }
                 }
             }
         }
@@ -107,30 +129,45 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun NewsThreadApp() {
+fun NewsThreadApp(
+    isOnboardingCompleted: Boolean,
+    onOnboardingFinish: () -> Unit
+) {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        bottomBar = { NewsThreadBottomBar(navController) }
+        bottomBar = { 
+            // Hide bottom bar on Onboarding
+            if (currentRoute != Screen.Onboarding.route) {
+                NewsThreadBottomBar(navController) 
+            }
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Feed.route,
-            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+            startDestination = if (isOnboardingCompleted) Screen.Feed.route else Screen.Onboarding.route,
+            modifier = Modifier.padding(bottom = if (currentRoute == Screen.Onboarding.route) 0.dp else innerPadding.calculateBottomPadding())
         ) {
+            composable(Screen.Onboarding.route) {
+                com.newsthread.app.presentation.onboarding.OnboardingScreen(
+                    onFinish = {
+                        onOnboardingFinish()
+                        navController.navigate(Screen.Feed.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(Screen.Feed.route) {
                 FeedScreen(navController = navController)
             }
 
             composable(Screen.Tracking.route) {
                 TrackingScreen(
-                    onArticleClick = { url ->
-                        val encodedUrl = URLEncoder.encode(url, "UTF-8")
-                        navController.navigate(
-                            ArticleDetailRoute.createRoute(encodedUrl)
-                        )
-                    },
                     onStoryClick = { storyId ->
                         navController.navigate("story/$storyId")
                     }
@@ -150,30 +187,26 @@ fun NewsThreadApp() {
                 val encodedUrl = backStackEntry.arguments?.getString("articleUrl")
                 val articleUrl = encodedUrl?.let { URLDecoder.decode(it, "UTF-8") }
 
-                // NEW: Get the article from savedStateHandle
-                val article = navController.previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.get<Article>("selected_article")
-
                 if (articleUrl != null) {
                     ArticleDetailScreen(
                         articleUrl = articleUrl,
-                        article = article, // NEW: Pass the article!
                         navController = navController
                     )
                 }
             }
 
-            // NEW: Add comparison route
-            composable(ComparisonRoute.route) {
-                // ... existing comparison route code ...
-                val article = navController.previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.get<Article>("selected_article")
+            composable(
+                route = ComparisonRoute.route,
+                arguments = listOf(
+                    navArgument("articleUrl") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val encodedUrl = backStackEntry.arguments?.getString("articleUrl")
+                val articleUrl = encodedUrl?.let { URLDecoder.decode(it, "UTF-8") }
 
-                if (article != null) {
+                if (articleUrl != null) {
                     ComparisonScreen(
-                        article = article,
+                        articleUrl = articleUrl,
                         navController = navController
                     )
                 }
@@ -188,7 +221,6 @@ fun NewsThreadApp() {
                 val storyId = backStackEntry.arguments?.getString("storyId")
                 if (storyId != null) {
                     com.newsthread.app.presentation.story.StoryDetailScreen(
-                        storyId = storyId,
                         onBackClick = { navController.popBackStack() },
                         onArticleClick = { url ->
                             val encodedUrl = URLEncoder.encode(url, "UTF-8")

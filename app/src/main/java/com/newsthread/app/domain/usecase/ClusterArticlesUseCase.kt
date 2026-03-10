@@ -34,7 +34,7 @@ class ClusterArticlesUseCase @Inject constructor() {
                 .filter { it.isNotBlank() && !STOP_WORDS.contains(it) }
                 .toSet()
 
-            val sourceName = article.source.name ?: ""
+            val sourceName = article.source.name
 
             if (titleWords.isEmpty()) {
                 clusters.add(article)

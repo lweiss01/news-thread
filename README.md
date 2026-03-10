@@ -5,7 +5,7 @@
 > [!IMPORTANT]
 > **Sign up at [NewsThread.io](https://newsthread.io)** to be notified when the app officially launches!
 
-A native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. Built with an offline-first, privacy-first design, and all processing happens on your device.
+A native Android news reader that shows how different media sources cover the same story, plotted along a political bias spectrum. Built with an offline-first, privacy-first design: feed aggregation runs through a Cloudflare Worker, while semantic matching and clustering run on-device.
 
 ---
 
@@ -21,10 +21,10 @@ A native Android news reader that shows how different media sources cover the sa
 Compare how sources across the political spectrum cover the same story. Inspired by Google News "Full Coverage" but with a bias transparency layer: articles are plotted along a continuous left-to-right spectrum so you can see where each source falls.
 
 ### On-Device NLP Matching 🧠
-The matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. No backend server, no data leaves your phone. The app extracts article text, generates semantic embeddings (384-dimensional vectors), and finds genuinely related stories — replacing keyword-based matching with real semantic understanding.
+The matching engine uses TensorFlow Lite sentence embeddings running entirely on your device. Feed retrieval and URL resolution are handled by a Cloudflare Worker, while embedding generation and similarity matching run locally. The app extracts article text, generates semantic embeddings (384-dimensional vectors), and finds genuinely related stories — replacing keyword-based matching with real semantic understanding.
 
 ### Privacy-First Design 🛡️
-- All processing happens on-device (no backend server)
+- Personalization, embedding generation, and similarity matching run on-device
 - No tracking, no ads, no data selling
 - Works offline with cached articles
 - Future: data backed up to your own Google Drive
@@ -33,8 +33,8 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 1.2.0 (Release Candidate)
-**Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨
+**Version**: 1.2.0 (Stable RC)
+**Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨 (Phase 19 Hygiene Finished)
 
 ### What's Built
 
@@ -73,7 +73,7 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 13.1 | App Icon Refresh | 2026-02-21 | Adaptive icon gradients, mirroring and scaling fixes |
 | 13.1.1 | Visual Parity | 2026-02-21 | ArticleCard footer, typography, metrics styling |
 | 13.1.2 | Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
-| 14 | RSS Migration | 2026-02-21 | Replaced NewsAPI with free, unlimited two-layer on-device RSS system |
+| 14 | RSS Migration | 2026-02-21 | Replaced NewsAPI with a free, unlimited two-layer RSS system (Cloudflare Worker + on-device processing) |
 | 15 | Cloudflare Backend | 2026-02-22 | Serverless edge backend for feed fetching & Google News proxy rendering |
 | 15.1 | Feed Enhancement | 2026-02-26 | Continuous Discovery engine, 70+ story feed volume, chronologically sorted |
 
@@ -91,13 +91,13 @@ Full details in [ROADMAP.md](.planning/ROADMAP.md).
 
 Until now, NewsThread relied on [NewsAPI](https://newsapi.org) — a fantastic service, but one that comes with rate limits, cost at scale, and a single point of dependency. That changed entirely in Phases 14 & 15.
 
-**We replaced NewsAPI with a free, unlimited system covering 150+ curated news outlets across the full political spectrum, powered by a Cloudflare Edge Worker.**
+**We replaced NewsAPI with a free, unlimited system powered by a Cloudflare Edge Worker, with 150+ rated sources and dozens of directly polled outlet feeds.**
 
 **Layer 1 — Google News RSS (Discovery & Volume)**
 Google News aggregates thousands of sources in real time. NewsThread taps their public RSS feeds to discover what's actually trending. In Phase 15.1, we introduced a **Continuous Discovery** loop that background-polls categories like World, Technology, Science, Health, and Business to build a rich, 70+ story feed on every refresh.
 
 **Layer 2 — Direct Outlet Feeds (Depth)**
-150+ handpicked outlets, rated and mapped by political bias, polled directly via RSS. From The Nation and Daily Kos on the left, to AP and Reuters in the center, to The Daily Wire and Newsmax on the right — the full spectrum, not just whatever NewsAPI happens to return.
+Dozens of handpicked outlets are polled directly via RSS at the Worker layer. Separately, NewsThread's ratings dataset covers 150+ sources mapped by bias and reliability, from left to right across the spectrum.
 
 | Bias | Outlets |
 |------|---------|
@@ -127,7 +127,7 @@ Critically, this is **fully consistent with NewsThread's privacy-first design**.
 | Decision | Rationale |
 |----------|-----------|
 | 🔒 **On-device NLP only** | Privacy-first — all data stays on your device |
-| 🌐 **Layered RSS Engine** | Google News for discovery + 150+ direct outlet feeds for depth — free, unlimited, no API keys |
+| 🌐 **Layered RSS Engine** | Google News for discovery + direct outlet feeds for depth — free, unlimited, and no user-provided NewsAPI key |
 | 🛡️ **Authenticated Quality** | Strict filtering ensures only rated sources reach the main feed (No 'Gray Shields') |
 | 🚀 **Discovery Engine** | Background loop builds a 70+ story feed automatically across major news categories |
 | 🤖 **TF Lite with all-MiniLM-L6-v2** | 2.17.0+ quantized model for 16KB alignment |
@@ -163,7 +163,7 @@ domain/               # Business logic (pure Kotlin)
 
 data/                 # Data layer
 ├── local/            # Room database, DAOs, entities
-├── remote/           # Retrofit API, DTOs
+├── remote/           # Worker/feed + HTML fetch clients
 └── repository/       # Repository implementations
 
 di/                   # Hilt dependency injection modules
@@ -176,7 +176,7 @@ util/                 # Utilities (DatabaseSeeder, etc.)
 - **Architecture**: MVVM + Clean Architecture
 - **DI**: Hilt (Dagger)
 - **Database**: Room (SQLite) with proper migrations
-- **Networking**: Retrofit + OkHttp with caching
+- **Networking**: OkHttp with caching
 - **Image Loading**: Coil
 - **Async**: Kotlin Coroutines + Flow
 - **Navigation**: Jetpack Navigation Compose
@@ -245,7 +245,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 - Android Studio Hedgehog or newer
 - Android SDK 34
 - Kotlin 1.9+
-- ~~NewsAPI key~~ *(Phase 14 removes this requirement — no API keys needed)*
+- ~~NewsAPI key~~ *(Phase 14 removes this requirement — no user-provided NewsAPI key needed)*
 
 ### Setup
 
@@ -255,11 +255,12 @@ NewsThread uses a **consensus approach** combining three respected media bias or
    cd news-thread
    ```
 
-2. **~~Add API key~~** *(Removed in Phase 14 — no API keys needed!)*
+2. **~~Add API key~~** *(Removed in Phase 14 — no user-provided NewsAPI key needed)*
    ~~Create `secrets.properties` in the project root:~~
    ```text
    ~~NEWS_API_KEY=your_key_here~~
    ```
+   No `secrets.properties` file is required for setup. App-to-worker authentication is internal.
 
 3. **Build and run**
    ```bash

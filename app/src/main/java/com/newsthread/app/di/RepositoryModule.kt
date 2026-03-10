@@ -3,11 +3,15 @@ package com.newsthread.app.di
 import com.newsthread.app.data.repository.ArticleMatchingRepositoryImpl
 import com.newsthread.app.data.repository.RssNewsRepository
 import com.newsthread.app.data.repository.SourceRatingRepositoryImpl
+import com.newsthread.app.data.repository.TextExtractionRepository
 import com.newsthread.app.domain.repository.ArticleMatchingRepository
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
+import com.newsthread.app.domain.repository.TextExtractionPort
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.data.repository.TrackingRepositoryImpl
+import com.newsthread.app.worker.StoryRefreshRunner
+import com.newsthread.app.worker.WorkManagerStoryRefreshRunner
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -41,4 +45,16 @@ abstract class RepositoryModule {
     abstract fun bindNewsRepository(
         impl: RssNewsRepository
     ): NewsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTextExtractionPort(
+        impl: TextExtractionRepository
+    ): TextExtractionPort
+
+    @Binds
+    @Singleton
+    abstract fun bindStoryRefreshRunner(
+        impl: WorkManagerStoryRefreshRunner
+    ): StoryRefreshRunner
 }

@@ -20,30 +20,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.newsthread.app.data.local.dao.StoryWithArticles
-import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.TrackedStory
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun StoryContent(
-    storyWithArticles: StoryWithArticles,
+    trackedStory: TrackedStory,
     sourceRatings: Map<String, com.newsthread.app.domain.model.SourceRating>,
     isExpanded: Boolean,
     onExpandChange: (Boolean) -> Unit,
     onUnfollow: (String) -> Unit,
     onArticleClick: (String) -> Unit,
-    onMarkViewed: (String) -> Unit,
     onRejectMatch: (String) -> Unit = {}
 ) {
-    val unreadCount = storyWithArticles.unreadCount
+    val unreadCount = trackedStory.unreadCount
 
     // Phase 9: Separate original article from updates
-    val sortedArticles = remember(storyWithArticles.articles) {
-        storyWithArticles.articles.sortedBy { it.fetchedAt }
+    // Articles are sorted by publishedAt (Long epoch or String-based)
+    val sortedArticles = remember(trackedStory.articles) {
+        trackedStory.articles.sortedBy { it.publishedAt }
     }
     val originalArticle = sortedArticles.firstOrNull()
-    val updates = sortedArticles.drop(1).sortedByDescending { it.fetchedAt }
+    val updates = sortedArticles.drop(1).sortedByDescending { it.publishedAt }
 
     Column(modifier = Modifier.padding(16.dp)) {
         // Header row
@@ -54,7 +54,7 @@ fun StoryContent(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = storyWithArticles.story.title,
+                    text = trackedStory.story.title,
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -66,14 +66,14 @@ fun StoryContent(
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Text(
-                            text = "Original: ${article.sourceName}",
+                            text = "Original: ${article.source.name}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
 
                     // Phase 9.5-05: Source Badge
-                    val rating = sourceRatings[article.sourceId ?: ""] ?: sourceRatings[article.sourceName]
+                    val rating = sourceRatings[article.source.id ?: ""] ?: sourceRatings[article.source.name]
                     if (rating != null) {
                         com.newsthread.app.presentation.comparison.ReliabilityBadge(
                             rating = rating,
@@ -85,14 +85,14 @@ fun StoryContent(
 
                 // Explicit Last Updated (Phase 9.5 Fix)
                 Text(
-                    text = "Checked: ${getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
+                    text = "Checked: ${getRelativeTime(trackedStory.story.lastCheckedAt)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
                 )
 
                 // Unread badge
-                if (storyWithArticles.story.hasUnseenUpdates) {
+                if (trackedStory.story.hasUnseenUpdates) {
                      Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 8.dp)
@@ -146,7 +146,7 @@ fun StoryContent(
                         contentDescription = if (isExpanded) "Collapse" else "Expand"
                     )
                 }
-                IconButton(onClick = { onUnfollow(storyWithArticles.story.id) }) {
+                IconButton(onClick = { onUnfollow(trackedStory.story.id) }) {
                     Icon(
                         imageVector = Icons.Default.Bookmark,
                         contentDescription = "Unfollow (Tracked)",
@@ -171,14 +171,8 @@ fun StoryContent(
                     )
                 } else {
                         updates.forEach { article ->
-                            // Show as new if:
-                            // 1. Article matched/fetched after last view (Using matchedAt handles old articles newly added)
-                            // 2. OR Article is marked novel/perspective AND story has unseen updates
-                            val effectiveTime = article.matchedAt ?: article.fetchedAt
-                            val isNew = effectiveTime > storyWithArticles.story.lastViewedAt ||
-                                       ((article.isNovel || article.hasNewPerspective) && storyWithArticles.story.hasUnseenUpdates)
-
-                            android.util.Log.d("StoryHighlight", "Article: ${article.title.take(20)}... | MatchedAt: ${article.matchedAt} | FetchedAt: ${article.fetchedAt} | LastViewedAt: ${storyWithArticles.story.lastViewedAt} | HasUnseen: ${storyWithArticles.story.hasUnseenUpdates} | IsNew: $isNew")
+                            // Show as new if article published after last view
+                            val isNew = article.publishedAt > trackedStory.story.lastViewedAt
 
                             ArticleTimelineItem(
                                 article = article,
@@ -195,7 +189,7 @@ fun StoryContent(
 
 @Composable
 fun ArticleTimelineItem(
-    article: CachedArticleEntity,
+    article: Article,
     isNew: Boolean,
     onClick: () -> Unit,
     onReject: (() -> Unit)? = null
@@ -229,7 +223,7 @@ fun ArticleTimelineItem(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = article.sourceName,
+                        text = article.source.name,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -253,7 +247,7 @@ fun ArticleTimelineItem(
                 }
 
                 Text(
-                    text = getRelativeTime(article.fetchedAt),
+                    text = getRelativeTime(article.publishedAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -295,3 +289,4 @@ private fun getRelativeTime(timestamp: Long): String {
         else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }
+

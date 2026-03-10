@@ -12,6 +12,16 @@ android {
     compileSdk = 34
 
     defaultConfig {
+        // Read WORKER_URL from local.properties (gitignored, keeps secrets out of source)
+        val workerUrl: String = providers.gradleProperty("WORKER_URL").getOrElse(
+            com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers).getProperty("WORKER_URL", "")
+        )
+        val workerApiKey: String = providers.gradleProperty("WORKER_API_KEY").getOrElse(
+            com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers).getProperty("WORKER_API_KEY", "dev_key_fallback")
+        )
+        buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
+        buildConfigField("String", "WORKER_API_KEY", "\"$workerApiKey\"")
+
         applicationId = "com.newsthread.app"
         minSdk = 26
         targetSdk = 34
@@ -66,6 +76,7 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = false
+            keepDebugSymbols.add("**/libtensorflowlite_jni.so")
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -74,9 +85,8 @@ android {
         }
     }
 
-    // Prevent compression of TensorFlow Lite model files
-    aaptOptions {
-        noCompress("tflite")
+    androidResources {
+        noCompress += "tflite"
     }
 
     testOptions {
@@ -115,6 +125,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
 
     // OkHttp (Networking — RSS feeds + article HTML fetching)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

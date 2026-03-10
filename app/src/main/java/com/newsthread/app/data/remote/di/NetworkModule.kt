@@ -1,6 +1,7 @@
 package com.newsthread.app.data.remote.di
 
 import android.content.Context
+import android.os.Build
 import com.newsthread.app.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -45,7 +46,7 @@ object NetworkModule {
             .addInterceptor { chain ->
                 // User-Agent required by many RSS servers to avoid bot blocking
                 val request = chain.request().newBuilder()
-                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) NewsThread/1.0")
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android ${Build.VERSION.RELEASE}) NewsThread/${BuildConfig.VERSION_NAME}")
                     .build()
                 chain.proceed(request)
             }

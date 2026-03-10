@@ -1,0 +1,4 @@
+﻿interface:
+  display_name: "Android Elite Review"
+  short_description: "Audit Android app quality and risk"
+  default_prompt: "Use $android-elite-review to audit this Android app codebase for engineering, security, UX, UI, and Cloudflare/TFLite news-aggregation risks, then return prioritized findings with evidence and fixes."

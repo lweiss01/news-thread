@@ -2,9 +2,11 @@ package com.newsthread.app.data.repository
 
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.SourceRatingEntity
+import com.newsthread.app.data.local.entity.StoryEntity
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.model.Story
 import com.newsthread.app.util.CacheConstants
 
 /**
@@ -33,7 +35,9 @@ fun CachedArticleEntity.toDomain(): Article {
         url = url,
         urlToImage = urlToImage,
         publishedAt = publishedAt,
-        content = content
+        content = content,
+        fetchedAt = fetchedAt,
+        matchedAt = matchedAt
     )
 }
 
@@ -43,7 +47,7 @@ fun CachedArticleEntity.toDomain(): Article {
 internal fun Article.toEntity(now: Long, sourceFeed: String? = null): CachedArticleEntity {
     return CachedArticleEntity(
         url = url,
-        sourceId = source.id,
+        sourceId = sourceRating?.sourceId ?: source.id,
         sourceName = source.name,
         author = author,
         title = title,
@@ -78,3 +82,21 @@ fun SourceRatingEntity.toDomain(): SourceRating {
         notes = notes
     )
 }
+
+/**
+ * Convert StoryEntity to domain Story.
+ * Phase 17: domain layer must not reference Room entities.
+ */
+fun StoryEntity.toStory(): Story {
+    return Story(
+        id = id,
+        title = title,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        lastViewedAt = lastViewedAt,
+        lastCheckedAt = lastCheckedAt,
+        lastNotifiedAt = lastNotifiedAt,
+        hasUnseenUpdates = hasUnseenUpdates
+    )
+}
+

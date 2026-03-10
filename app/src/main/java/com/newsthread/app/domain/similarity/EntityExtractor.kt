@@ -11,6 +11,14 @@ import javax.inject.Singleton
 @Singleton
 class EntityExtractor @Inject constructor() {
 
+    companion object {
+        // Pre-compile Regex instances to avoid recompiling them on every method call or inside loops.
+        private val DASH_UNDERSCORE_REGEX = Regex("[-_]")
+        private val WHITESPACE_REGEX = Regex("\\s+")
+        private val NON_ALPHANUMERIC_AMP_DOT_REGEX = Regex("[^a-zA-Z0-9&.]")
+        private val NON_ALPHANUMERIC_AMP_DOT_WHITESPACE_REGEX = Regex("[^a-z0-9&.\\s]")
+    }
+
     private val stopWords: Set<String> = setOf(
         "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
         "of", "with", "by", "from", "as", "is", "was", "are", "were", "be",
@@ -45,7 +53,7 @@ class EntityExtractor @Inject constructor() {
      */
     fun extractEntitiesSet(text: String, excludedText: String? = null): Set<String> {
         val entities = mutableSetOf<String>()
-        val cleanText = text.replace(PUNCTUATION_REGEX, " ")
+        val cleanText = text.replace(DASH_UNDERSCORE_REGEX, " ")
         val words = cleanText.split(WHITESPACE_REGEX)
 
         // Split excluded text into tokens to filter out
@@ -54,7 +62,7 @@ class EntityExtractor @Inject constructor() {
         var currentEntity = mutableListOf<String>()
 
         words.forEach { word ->
-            val cleanWord = word.replace(ALPHANUMERIC_REGEX, "")
+            val cleanWord = word.replace(NON_ALPHANUMERIC_AMP_DOT_REGEX, "")
 
             if (cleanWord.isNotEmpty() &&
                 cleanWord[0].isUpperCase() &&
@@ -74,7 +82,7 @@ class EntityExtractor @Inject constructor() {
 
         val importantWords = cleanText
             .lowercase()
-            .replace(ALPHANUMERIC_SPACE_REGEX, "")
+            .replace(NON_ALPHANUMERIC_AMP_DOT_WHITESPACE_REGEX, "")
             .split(WHITESPACE_REGEX)
             .filter { it.length > 3 && it !in stopWords }
 

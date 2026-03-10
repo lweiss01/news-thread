@@ -1,37 +1,16 @@
-import striptags from 'striptags';
 import { XMLParser } from 'fast-xml-parser';
 import { ParsedFeedItem, Article, RssFeedSource } from './types';
 import { findByDomain } from './sources';
+
+// Hoisted constants for performance
+const HTML_STRIP_REGEX = /<[^>]*>?/gm;
+const WWW_PREFIX_REGEX = /^www\./;
 
 const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
     parseAttributeValue: true,
 });
-
-// Optimization: Hoist regex literals to prevent re-compilation during high-volume feed parsing.
-const WWW_PREFIX_REGEX = /^www\./;
-
-function extractImageFromHtml(html: string, baseUrl?: string): string | null {
-    if (!html) return null;
-    // Improved regex: handles single/double quotes, spaces, and src anywhere in the tag
-    const imgRegex = /<img[^>]+src\s*=\s*['"]([^'"]+)['"]/i;
-    const match = html.match(imgRegex);
-    if (!match) return null;
-
-    let imageUrl = match[1];
-
-    // Resolve relative URLs if baseUrl is provided
-    if (baseUrl) {
-        try {
-            imageUrl = new URL(imageUrl, baseUrl).href;
-        } catch (e) {
-            // If URL parsing fails, return as is
-        }
-    }
-
-    return imageUrl;
-}
 
 function getText(obj: any): string {
     if (obj === null || obj === undefined) return '';
@@ -69,42 +48,25 @@ function parseRss20(json: any, fallbackSourceName: string | null): ParsedFeedIte
     const feedTitle = channel.title || fallbackSourceName;
     const rawItems = Array.isArray(channel.item) ? channel.item : [channel.item].filter(Boolean);
 
-    return rawItems.slice(0, 50).map((item: any) => {
-        let imageUrl: string | null = null;
-        const descriptionRaw = getText(item.description);
-
-        // media:content
-        if (item['media:content']) {
-            const media = Array.isArray(item['media:content']) ? item['media:content'][0] : item['media:content'];
-            if (media['@_url']) imageUrl = media['@_url'];
-        }
-
-        // enclosure
-        if (!imageUrl && item.enclosure) {
-            const enclosure = Array.isArray(item.enclosure) ? item.enclosure[0] : item.enclosure;
-            if (enclosure['@_url'] && enclosure['@_type']?.startsWith('image/')) {
-                imageUrl = enclosure['@_url'];
-            }
-        }
-
-        // media:thumbnail
-        if (!imageUrl && item['media:thumbnail']) {
-            const thumb = Array.isArray(item['media:thumbnail']) ? item['media:thumbnail'][0] : item['media:thumbnail'];
-            if (thumb['@_url']) imageUrl = thumb['@_url'];
-        }
-
-        // Fallback: Extract image from description HTML (common in Google News RSS)
-        if (!imageUrl) {
-            imageUrl = extractImageFromHtml(descriptionRaw, getText(item.link));
-        }
+    return rawItems.map((item: any) => {
+        const rawDescription = getText(item.description);
+        const rawContent = getText(item['content:encoded']);
+        let imageUrl = extractMediaImageUrl(item)
+            || extractEnclosureImageUrl(item.enclosure)
+            || extractImageFromHtml(rawContent)
+            || extractImageFromHtml(rawDescription);
 
         return {
             title: getText(item.title),
             link: getText(item.link),
-            description: stripHtml(descriptionRaw),
-            content: getText(item['content:encoded']) || null,
+            description: stripHtml(rawDescription),
+            content: rawContent || null,
             imageUrl,
-            publishedAt: normalizeDate(getText(item.pubDate)),
+            publishedAt: normalizeDate(
+                getText(item['dc:date']) ||
+                getText(item.pubDate) ||
+                getText(item['wp:pubDate'])
+            ),
             author: getText(item['dc:creator']) || getText(item.author) || null,
             sourceName: getText(item.source) || getText(feedTitle) || null,
         };
@@ -116,7 +78,7 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
     const feedTitle = feed.title || fallbackSourceName;
     const rawEntries = Array.isArray(feed.entry) ? feed.entry : [feed.entry].filter(Boolean);
 
-    return rawEntries.slice(0, 50).map((entry: any) => {
+    return rawEntries.map((entry: any) => {
         let link = '';
         if (entry.link) {
             const links = Array.isArray(entry.link) ? entry.link : [entry.link];
@@ -124,26 +86,17 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
             link = altLink?.['@_href'] || links[0]?.['@_href'] || '';
         }
 
-        let imageUrl: string | null = null;
-        if (entry['media:content']) {
-            const media = Array.isArray(entry['media:content']) ? entry['media:content'][0] : entry['media:content'];
-            imageUrl = media['@_url'] || null;
-        } else if (entry['media:thumbnail']) {
-            const thumb = Array.isArray(entry['media:thumbnail']) ? entry['media:thumbnail'][0] : entry['media:thumbnail'];
-            imageUrl = thumb['@_url'] || null;
-        }
-
-        const summaryRaw = getText(entry.summary);
-        // Fallback: Extract from summary/content
-        if (!imageUrl) {
-            imageUrl = extractImageFromHtml(summaryRaw, link) || extractImageFromHtml(getText(entry.content), link);
-        }
+        const rawSummary = getText(entry.summary);
+        const rawContent = getText(entry.content);
+        const imageUrl = extractMediaImageUrl(entry)
+            || extractImageFromHtml(rawContent)
+            || extractImageFromHtml(rawSummary);
 
         return {
             title: getText(entry.title),
             link,
-            description: stripHtml(summaryRaw),
-            content: getText(entry.content) || null,
+            description: stripHtml(rawSummary),
+            content: rawContent || null,
             imageUrl,
             publishedAt: normalizeDate(getText(entry.published) || getText(entry.updated)),
             author: getText(entry.author?.name) || null,
@@ -154,7 +107,55 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
 
 function stripHtml(html: string): string {
     if (!html) return '';
-    return striptags(html).trim();
+    return html.replace(HTML_STRIP_REGEX, '').trim();
+}
+
+function normalizeImageUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    return null;
+}
+
+function extractMediaImageUrl(node: any): string | null {
+    const mediaContent = pickFirstMediaUrl(node?.['media:content']);
+    if (mediaContent) return mediaContent;
+
+    const mediaThumb = pickFirstMediaUrl(node?.['media:thumbnail']);
+    if (mediaThumb) return mediaThumb;
+
+    const mediaGroup = node?.['media:group'];
+    if (mediaGroup) {
+        const groupContent = pickFirstMediaUrl(mediaGroup['media:content']);
+        if (groupContent) return groupContent;
+
+        const groupThumb = pickFirstMediaUrl(mediaGroup['media:thumbnail']);
+        if (groupThumb) return groupThumb;
+    }
+
+    return null;
+}
+
+function extractEnclosureImageUrl(enclosure: any): string | null {
+    if (!enclosure) return null;
+    const selected = Array.isArray(enclosure) ? enclosure[0] : enclosure;
+    const type = getText(selected?.['@_type']).toLowerCase();
+    if (type && !type.startsWith('image/')) return null;
+    return normalizeImageUrl(selected?.['@_url']);
+}
+
+function pickFirstMediaUrl(mediaNode: any): string | null {
+    if (!mediaNode) return null;
+    const selected = Array.isArray(mediaNode) ? mediaNode[0] : mediaNode;
+    return normalizeImageUrl(selected?.['@_url']);
+}
+
+function extractImageFromHtml(html: string | null): string | null {
+    if (!html) return null;
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return normalizeImageUrl(match?.[1] || null);
 }
 
 export function normalizeDate(raw: string): string | null {
