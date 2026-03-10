@@ -25,8 +25,7 @@ import com.newsthread.app.domain.model.SourceRating
 import com.newsthread.app.presentation.theme.Amber600
 import com.newsthread.app.presentation.theme.NewsLinkDark
 import com.newsthread.app.presentation.theme.ProjectTheme
-import java.text.SimpleDateFormat
-import java.util.*
+import com.newsthread.app.util.TimeUtils
 
 @Composable
 fun MatchedArticleCard(
@@ -67,9 +66,9 @@ fun MatchedArticleCard(
                     maxLines = if (expanded) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 // Source Row
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val darkTheme = isSystemInDarkTheme()
@@ -82,17 +81,17 @@ fun MatchedArticleCard(
                         color = sourceColor,
                         letterSpacing = 1.sp
                     )
-                    
+
                     Spacer(modifier = Modifier.width(12.dp))
-                    
+
                     // Reliability Shield
                     ReliabilityBadge(
                         rating = rating,
                         size = 16.dp
                     )
-                    
+
                     // Time ago
-                    val timeAgo = getRelativeTimeFromString(article.publishedAt)
+                    val timeAgo = TimeUtils.getRelativeTimeFromString(article.publishedAt)
                     if (timeAgo != null) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -112,7 +111,7 @@ fun MatchedArticleCard(
                 // Expanded Content
                 if (expanded) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     if (!article.description.isNullOrEmpty()) {
                         Text(
                             text = article.description,
@@ -121,7 +120,7 @@ fun MatchedArticleCard(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                    
+
                     // Align button to end
                     Box(modifier = Modifier.fillMaxWidth()) {
                         FilledTonalButton(
@@ -145,34 +144,3 @@ fun MatchedArticleCard(
         } // END OF ROW
     } // END OF CARD
 } // END OF FUNCTION
-
-private fun getRelativeTimeFromString(publishedAt: String): String? {
-    return try {
-        val formats = listOf(
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") },
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US),
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") },
-            SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
-        )
-        var parsed: Date? = null
-        for (fmt in formats) {
-            try {
-                parsed = fmt.parse(publishedAt)
-                if (parsed != null) break
-            } catch (_: Exception) { }
-        }
-        if (parsed == null) return null
-        val now = System.currentTimeMillis()
-        val diff = now - parsed.time
-        when {
-            diff < 0 -> "Just now"
-            diff < 60_000 -> "Just now"
-            diff < 3_600_000 -> "${diff / 60_000}m ago"
-            diff < 86_400_000 -> "${diff / 3_600_000}h ago"
-            diff < 172_800_000 -> "Yesterday"
-            else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(parsed)
-        }
-    } catch (_: Exception) {
-        null
-    }
-}

@@ -33,8 +33,7 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.newsthread.app.domain.model.TrackedStory
 import com.newsthread.app.domain.model.Article
-import java.text.SimpleDateFormat
-import java.util.*
+import com.newsthread.app.util.TimeUtils
 import android.Manifest
 import android.os.Build
 import android.content.pm.PackageManager
@@ -188,17 +187,5 @@ fun EnhancedStoryCard(
                 }
             }
         }
-    }
-}
-
-private fun getRelativeTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-
-    return when {
-        diff < 60000 -> "Just now"
-        diff < 3600000 -> "${diff / 60000}m ago"
-        diff < 86400000 -> "${diff / 3600000}h ago"
-        else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }

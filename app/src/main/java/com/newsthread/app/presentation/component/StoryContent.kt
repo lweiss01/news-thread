@@ -22,8 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.data.local.entity.CachedArticleEntity
-import java.text.SimpleDateFormat
-import java.util.*
+import com.newsthread.app.util.TimeUtils
 
 @Composable
 fun StoryContent(
@@ -85,7 +84,7 @@ fun StoryContent(
 
                 // Explicit Last Updated (Phase 9.5 Fix)
                 Text(
-                    text = "Checked: ${getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
+                    text = "Checked: ${TimeUtils.getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
@@ -253,7 +252,7 @@ fun ArticleTimelineItem(
                 }
 
                 Text(
-                    text = getRelativeTime(article.fetchedAt),
+                    text = TimeUtils.getRelativeTime(article.fetchedAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -281,17 +280,5 @@ fun ArticleTimelineItem(
                 )
             }
         }
-    }
-}
-
-private fun getRelativeTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-
-    return when {
-        diff < 60000 -> "Just now"
-        diff < 3600000 -> "${diff / 60000}m ago"
-        diff < 86400000 -> "${diff / 3600000}h ago"
-        else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }
