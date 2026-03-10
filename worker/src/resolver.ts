@@ -129,7 +129,7 @@ function tryBase64Decode(url: string): ResolveAttemptResult {
         if (!encoded) return { resolved: null, failureReason: 'base64_fail' };
 
         // Base64url decode
-        const buffer = Buffer.from(encoded.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+        const buffer = Buffer.from(encoded.replace(DASH_REGEX, '+').replace(UNDERSCORE_REGEX, '/'), 'base64');
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
@@ -153,7 +153,7 @@ function tryBase64Decode(url: string): ResolveAttemptResult {
         }
 
         // Simple pattern match for URL inside decoded string
-        const match = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+/);
+        const match = decodedStr.match(URL_MATCH_REGEX);
         if (match) {
             const result = match[0];
             if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
@@ -199,7 +199,7 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
             const html = await response.text();
 
             // Find all links and pick the first one that isn't Google
-            const allLinks = Array.from(html.matchAll(/href="([^">]+)"/gi))
+            const allLinks = Array.from(html.matchAll(HTTP_REDIRECT_LINKS_REGEX))
                 .map(m => m[1]);
 
             for (const link of allLinks) {
@@ -214,7 +214,7 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
             }
 
             // Fallback: Search for any URL-like string in the HTML that isn't Google
-            const urlMatch = html.match(/https?:\/\/[^\s"'<>]+/g);
+            const urlMatch = html.match(URL_FALLBACK_MATCH_REGEX);
             if (urlMatch) {
                 const finalUrl = urlMatch.find(u =>
                     !u.includes('google.com') &&

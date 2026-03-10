@@ -2,6 +2,10 @@ import { XMLParser } from 'fast-xml-parser';
 import { ParsedFeedItem, Article, RssFeedSource } from './types';
 import { findByDomain } from './sources';
 
+// Hoisted constants for performance
+const HTML_STRIP_REGEX = /<[^>]*>?/gm;
+const WWW_PREFIX_REGEX = /^www\./;
+
 const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
@@ -103,7 +107,7 @@ function parseAtom(json: any, fallbackSourceName: string | null): ParsedFeedItem
 
 function stripHtml(html: string): string {
     if (!html) return '';
-    return html.replace(/<[^>]*>?/gm, '').trim();
+    return html.replace(HTML_STRIP_REGEX, '').trim();
 }
 
 function normalizeImageUrl(url: string | null | undefined): string | null {
@@ -183,7 +187,7 @@ export function mapToArticle(item: ParsedFeedItem, source?: RssFeedSource): Arti
 function extractDomain(url: string): string {
     try {
         const host = new URL(url).hostname;
-        return host.replace(/^www\./, '');
+        return host.replace(WWW_PREFIX_REGEX, '');
     } catch (e) {
         return 'Unknown';
     }
