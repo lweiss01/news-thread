@@ -50,16 +50,18 @@ class ComparisonViewModelTest {
     )
 
     @Before
-    fun setup() {
+    fun setup() = runTest {
         getSimilarArticlesUseCase = mock()
         findSourceRatingUseCase = mock()
         sourceRatingRepository = mock()
         newsRepository = mock()
         networkMonitor = mock()
         userPreferencesRepository = mock()
+        val newsRepository: com.newsthread.app.domain.repository.NewsRepository = mock()
 
         whenever(userPreferencesRepository.articleFetchPreference).thenReturn(flowOf(ArticleFetchPreference.WIFI_ONLY))
         whenever(networkMonitor.isCurrentlyOnWifi()).thenReturn(true)
+        whenever(newsRepository.getArticleByUrl(any())).thenReturn(stubArticle)
         
         viewModel = ComparisonViewModel(
             getSimilarArticlesUseCase,
