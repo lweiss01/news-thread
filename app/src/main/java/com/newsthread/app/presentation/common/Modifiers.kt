@@ -1,6 +1,7 @@
 package com.newsthread.app.presentation.common
 
 import android.os.Build
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -78,4 +80,28 @@ fun Modifier.glassBackground(
                 Modifier
             }
         )
+}
+
+/**
+ * Branded radial pulse shimmer for image loading.
+ */
+fun Modifier.radialPulseShimmer(): Modifier = composed {
+    this.drawBehind {
+        val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
+        // Static amber glow placeholder as requested by user (no pulse)
+        val safeRadius = (size.width.coerceAtMost(size.height) / 2).coerceAtLeast(0.01f)
+        
+        drawCircle(
+            brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                colors = listOf(
+                    com.newsthread.app.presentation.theme.Amber500.copy(alpha = 0.2f), 
+                    androidx.compose.ui.graphics.Color.Transparent
+                ),
+                center = center,
+                radius = safeRadius
+            ),
+            radius = safeRadius,
+            center = center
+        )
+    }
 }

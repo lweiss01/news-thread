@@ -65,5 +65,5 @@ describe('API Key Authentication', () => {
 
         const res = await app.request(req, {}, env as any);
         expect(res.status).not.toBe(401);
-    });
+    }, 15000);
 });

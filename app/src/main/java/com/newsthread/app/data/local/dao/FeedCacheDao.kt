@@ -17,6 +17,9 @@ interface FeedCacheDao {
     @Query("DELETE FROM feed_cache WHERE expiresAt < :now")
     suspend fun deleteExpired(now: Long = System.currentTimeMillis())
 
+    @Query("DELETE FROM feed_cache WHERE feedKey LIKE :prefix || '%'")
+    suspend fun deleteByPrefix(prefix: String)
+
     @Query("DELETE FROM feed_cache")
     suspend fun deleteAll()
 }

@@ -92,11 +92,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
             // 2. Try to get source embedding for semantic matching
             val sourceEmbedding = embeddingRepository.getOrGenerateEmbedding(article.url)
-
-            // Calculate dynamic time window
-            val articleDate = try { Instant.parse(article.publishedAt) } catch (e: Exception) { Instant.now() }
-            val (fromDate, toDate) = timeWindowCalculator.calculateWindowStrings(articleDate)
-
+ 
             val allMatches = mutableListOf<ScoredArticle>()
             val visitedUrls = mutableSetOf<String>()
             visitedUrls.add(article.url) // Don't match self
@@ -114,10 +110,10 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                 if (allMatches.size < 3) {
                     val titleEntities = entityExtractor.extractEntities(article.title, article.source.name)
                     val query = titleEntities.take(3).joinToString(" ").ifEmpty { article.title.take(50) }
-
+ 
                     safeLogD("Searching backend for more matches: $query")
                     val apiMatches = searchSemanticMatches(
-                        sourceEmbedding, query, article, fromDate, toDate, visitedUrls
+                        sourceEmbedding, query, article, visitedUrls
                     )
                     allMatches.addAll(apiMatches)
                     safeLogD("Backend semantic matching found ${apiMatches.size} matches")
@@ -125,7 +121,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             } else {
                 // 4. Fallback to keyword matching (embedding unavailable)
                 safeLogW("Embedding unavailable, falling back to keyword matching")
-                val keywordMatches = findKeywordMatches(article, fromDate, toDate, visitedUrls)
+                val keywordMatches = findKeywordMatches(article, visitedUrls)
                 allMatches.addAll(keywordMatches.map { ScoredArticle(it, 0f) })
             }
 
@@ -223,8 +219,6 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         sourceEmbedding: FloatArray,
         query: String,
         originalArticle: Article,
-        fromDate: String,
-        toDate: String,
         visitedUrls: MutableSet<String>
     ): List<ScoredArticle> {
         try {
@@ -285,40 +279,38 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
      */
     private suspend fun findKeywordMatches(
         article: Article,
-        fromDate: String,
-        toDate: String,
         visitedUrls: MutableSet<String>
     ): List<Article> {
         val titleEntities = entityExtractor.extractEntities(article.title, article.source.name)
         val descEntities = entityExtractor.extractEntities(article.description ?: "", article.source.name)
         val allEntities = (titleEntities + descEntities).distinct()
-
+ 
         val allMatches = mutableListOf<Article>()
-
+ 
         // Stage 1: Precision Search
         if (allEntities.isNotEmpty()) {
             val query1 = allEntities.take(3).joinToString(" ")
-            val matches1 = searchAndMatchKeywords(query1, article, allEntities, fromDate, toDate, visitedUrls)
+            val matches1 = searchAndMatchKeywords(query1, article, allEntities, visitedUrls)
             allMatches.addAll(matches1)
         }
-
+ 
         // Stage 2: Recall Search
         if (allMatches.size < 3 && allEntities.isNotEmpty()) {
             val query2 = "${allEntities.first()} News"
-            val matches2 = searchAndMatchKeywords(query2, article, allEntities, fromDate, toDate, visitedUrls)
+            val matches2 = searchAndMatchKeywords(query2, article, allEntities, visitedUrls)
             allMatches.addAll(matches2)
         }
-
+ 
         // Stage 3: Fallback
         if (allMatches.size < 3) {
             val titleKeywords = entityExtractor.extractEntities(article.title, article.source.name)
             if (titleKeywords.isNotEmpty()) {
                 val query3 = titleKeywords.take(4).joinToString(" ")
-                val matches3 = searchAndMatchKeywords(query3, article, allEntities, fromDate, toDate, visitedUrls)
+                val matches3 = searchAndMatchKeywords(query3, article, allEntities, visitedUrls)
                 allMatches.addAll(matches3)
             }
         }
-
+ 
         return allMatches.distinctBy { it.url }
     }
 
@@ -377,12 +369,12 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             }
         }
 
-        val articleDate = try { Instant.parse(original.publishedAt) } catch (e: Exception) { Instant.now() }
+        val articleDate = Instant.ofEpochMilli(original.publishedAt)
 
         fun sortByDateProximity(list: List<Article>): List<Article> {
             return list.sortedBy {
                 try {
-                    kotlin.math.abs(ChronoUnit.HOURS.between(Instant.parse(it.publishedAt), articleDate))
+                    kotlin.math.abs(ChronoUnit.HOURS.between(Instant.ofEpochMilli(it.publishedAt), articleDate))
                 } catch (e: Exception) { Long.MAX_VALUE }
             }
         }
@@ -410,8 +402,6 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         query: String,
         originalArticle: Article,
         allEntities: List<String>,
-        fromDate: String,
-        toDate: String,
         visitedUrls: MutableSet<String>
     ): List<Article> {
         try {

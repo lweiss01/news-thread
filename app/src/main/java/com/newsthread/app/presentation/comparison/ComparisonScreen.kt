@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -47,15 +49,15 @@ import java.net.URLEncoder
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComparisonScreen(
-    article: Article,
+    articleUrl: String,
     navController: NavController,
     viewModel: ComparisonViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Load similar articles on first composition
-    LaunchedEffect(article.url) {
-        viewModel.findSimilarArticles(article)
+    LaunchedEffect(articleUrl) {
+        viewModel.loadAndFindSimilarArticles(articleUrl)
     }
 
     // Hoist scroll state for Scaffold FAB access
@@ -156,7 +158,7 @@ fun ComparisonScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
-                        Button(onClick = { viewModel.findSimilarArticles(article) }) {
+                        Button(onClick = { viewModel.loadAndFindSimilarArticles(articleUrl) }) {
                             Text("Retry")
                         }
                     }
@@ -205,8 +207,6 @@ private fun ComparisonContent(
     }
 
     // Capture colors outside LazyListScope (which is not @Composable)
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
     val outlineColor = MaterialTheme.colorScheme.outline
     val secondaryColor = MaterialTheme.colorScheme.secondary
 
@@ -242,8 +242,8 @@ private fun ComparisonContent(
 
                 if (ratedArticles.isNotEmpty()) {
                     Text(
-                        text = "Bias Spectrum",
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "Bias Spectrum".uppercase(),
+                        style = ProjectTheme.typography.labelSmallProminent,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.m, bottom = ProjectTheme.spacing.s)
                     )
@@ -297,7 +297,8 @@ private fun ComparisonContent(
                                 }
                             },
                             contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs)
+                            modifier = Modifier
+                                .padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs)
                         ) {
                             Text(
                                 text = "+ ${comparison.unratedPerspective.size} additional source${if (comparison.unratedPerspective.size != 1) "s" else ""}",
@@ -362,8 +363,8 @@ private fun ComparisonContent(
                     MatchedArticleCard(
                         article = article,
                         rating = article.sourceRating,
-                        similarityScore = 0.0f, // TODO: threaded score if available
                         accentColor = color, // Use the perspective color for the side accent
+                        onReadMoreClick = { onArticleClick(article) },
                         modifier = Modifier
                     )
                 }
@@ -421,10 +422,8 @@ private fun PerspectiveHeader(
         ) {
             Text(
                 text = title.uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = color,
-                letterSpacing = 1.sp
+                style = ProjectTheme.typography.labelSmallProminent,
+                color = color
             )
             Spacer(modifier = Modifier.width(ProjectTheme.spacing.s))
             Surface(

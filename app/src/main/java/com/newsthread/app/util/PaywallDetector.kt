@@ -56,7 +56,7 @@ object PaywallDetector {
         }
 
         // Check text patterns in visible content
-        val visibleText = doc.body()?.text()?.lowercase() ?: ""
+        val visibleText = doc.body().text().lowercase()
         for (pattern in PAYWALL_TEXT_PATTERNS) {
             if (visibleText.contains(pattern)) {
                 return true

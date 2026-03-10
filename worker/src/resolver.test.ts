@@ -56,7 +56,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(targetUrl);
     });
 
@@ -84,7 +84,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(targetUrl);
     });
 
@@ -100,7 +100,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/'));
     });
 
@@ -132,7 +132,7 @@ describe('resolver', () => {
         };
         global.fetch = vi.fn().mockResolvedValue(mockResponse) as any;
 
-        const result = await resolveUrl(encodedUrl, mockKV);
+        const result = await resolveUrl(encodedUrl, mockKV, () => {});
         expect(result).toBe(encodedUrl.replace('/rss/articles/', '/articles/')); // Should fallback to normalized URL on CAPTCHA
     });
 
@@ -171,7 +171,7 @@ describe('resolver', () => {
             return { ok: false };
         });
 
-        await resolveUrl(encodedUrl, mockKV);
+        await resolveUrl(encodedUrl, mockKV, () => {});
 
         // Verify the fetch call to BatchExecute
         const calls = fetchMock.mock.calls;
@@ -193,5 +193,52 @@ describe('resolver', () => {
         const actualId = innerJson[innerJson.length - 1];
 
         expect(actualId).toBe(maliciousId);
+    });
+
+    it('caches negative resolution outcomes and reuses them', async () => {
+        const encodedUrl = 'https://news.google.com/rss/articles/always-fails';
+        global.fetch = vi.fn().mockResolvedValue({
+            status: 404,
+            headers: { get: () => null },
+            text: async () => 'Not Found',
+            ok: false,
+            url: encodedUrl,
+        }) as any;
+
+        await resolveUrl(encodedUrl, mockKV);
+        expect(mockKVPut).toHaveBeenCalledWith(
+            `resolve:${encodedUrl}`,
+            '__resolve_negative__',
+            { expirationTtl: 600 }
+        );
+
+        mockKVGet.mockResolvedValue('__resolve_negative__');
+        (global.fetch as any).mockClear();
+
+        const secondResult = await resolveUrl(encodedUrl, mockKV);
+        expect(secondResult).toBe(encodedUrl.replace('/rss/articles/', '/articles/'));
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('reports structured failure reasons when resolution fails', async () => {
+        const encodedUrl = 'https://news.google.com/rss/articles/failure-tags';
+        global.fetch = vi.fn().mockResolvedValue({
+            status: 404,
+            headers: { get: () => null },
+            text: async () => 'Not Found',
+            ok: false,
+            url: encodedUrl,
+        }) as any;
+
+        let diagnostics: any = null;
+        await resolveUrl(encodedUrl, mockKV, (d) => {
+            diagnostics = d;
+        });
+
+        expect(diagnostics).toBeTruthy();
+        expect(diagnostics.successStrategy).toBeNull();
+        expect(diagnostics.failureReasons).toContain('base64_fail');
+        expect(diagnostics.failureReasons).toContain('redirect_fail');
+        expect(diagnostics.failureReasons).toContain('rpc_fail');
     });
 });

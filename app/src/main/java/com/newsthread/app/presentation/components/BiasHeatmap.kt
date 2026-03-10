@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -206,24 +207,28 @@ fun BiasHeatmap(
         // Unrated count
         if (unratedCount > 0) {
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
+
             if (interactive) {
-                TextButton(
-                    onClick = { onUnratedClick() },
-                    contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = ProjectTheme.spacing.xs)
-                        .semantics {
-                            contentDescription = "$unratedCount unrated sources available"
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Text(
-                        text = "+ $unratedCount unrated sources",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    TextButton(
+                        onClick = onUnratedClick,
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier
+                            .padding(vertical = ProjectTheme.spacing.xs)
+                            .semantics {
+                                contentDescription = "$unratedCount unrated sources available"
+                            }
+                    ) {
+                        Text(
+                            text = "+ $unratedCount unrated sources",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.End
+                        )
+                    }
                 }
             } else {
                 Text(

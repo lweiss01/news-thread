@@ -18,9 +18,9 @@ fun NewsThreadBottomBar(navController: NavController) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface, // Slate900 / White
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = ProjectTheme.elevation.level4
+        containerColor = MaterialTheme.colorScheme.background, // Match screen background instead of surface to blend in
+        contentColor = MaterialTheme.colorScheme.onBackground,
+        tonalElevation = ProjectTheme.elevation.none
     ) {
         Screen.items.forEach { screen ->
             NavigationBarItem(
@@ -33,10 +33,10 @@ fun NewsThreadBottomBar(navController: NavController) {
                 },
                 selected = currentRoute == screen.route,
                 colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer, // Slate800/Slate100
-                    selectedIconColor = MaterialTheme.colorScheme.primary, // Cyan500
+                    indicatorColor = MaterialTheme.colorScheme.surfaceVariant, // Subtle pill color
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, // Slate500
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 onClick = {

@@ -8,11 +8,10 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.newsthread.app.data.repository.UserPreferencesRepository
+import com.newsthread.app.di.AppScope
 import com.newsthread.app.domain.model.SyncStrategy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -23,10 +22,10 @@ import javax.inject.Singleton
 @Singleton
 class BackgroundWorkScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    @AppScope private val scope: CoroutineScope
 ) {
     private val workManager = WorkManager.getInstance(context)
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     fun startObserving() {
         scope.launch {

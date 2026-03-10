@@ -47,7 +47,7 @@ class TrackingRepositoryTest {
             url = "http://test.com",
             title = "Test Article",
             source = Source("id", "name", null, null, null, null, null),
-            publishedAt = "2023-01-01",
+            publishedAt = 1672531200000L,
             author = null,
             description = null,
             urlToImage = null,
@@ -60,7 +60,7 @@ class TrackingRepositoryTest {
         // Then
         assertTrue(result.isSuccess)
         verify(storyDao).insertStory(any())
-        verify(articleDao).updateTrackingStatus(any(), any(), any())
+        verify(articleDao).assignArticleToStory(any(), any(), any(), any(), any())
     }
 
     @Test
@@ -71,7 +71,7 @@ class TrackingRepositoryTest {
             url = "http://test.com",
             title = "Test Article",
             source = Source("id", "name", null, null, null, null, null),
-            publishedAt = "2023-01-01",
+            publishedAt = 1672531200000L,
             author = null,
             description = null,
             urlToImage = null,

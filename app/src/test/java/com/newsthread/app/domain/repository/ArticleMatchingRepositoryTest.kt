@@ -13,6 +13,8 @@ import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.repository.FeedEmission
+import com.newsthread.app.domain.repository.FeedEmissionSource
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.similarity.SimilarityMatcher
@@ -260,7 +262,7 @@ class ArticleMatchingRepositoryTest {
         description = "Test Description",
         url = url,
         urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = ""
     )
 
@@ -272,7 +274,7 @@ class ArticleMatchingRepositoryTest {
         title = title,
         description = "desc",
         urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = null,
         fullText = null,
         fetchedAt = 0,
@@ -286,7 +288,7 @@ class ArticleMatchingRepositoryTest {
         description = description,
         url = url,
         urlToImage = null,
-        publishedAt = "2024-01-01T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = null
     )
 }
@@ -298,18 +300,27 @@ class FakeNewsRepository : NewsRepository {
     var responseToReturn: List<Article> = emptyList()
     val queryResponses = mutableMapOf<String, List<Article>>()
 
-    override fun getTopHeadlines(
+    override fun getTopHeadlinesDetailed(
         forceRefresh: Boolean,
         minReliability: Int
-    ): Flow<Result<List<Article>>> {
-        return flowOf(Result.success(responseToReturn))
+    ): Flow<Result<FeedEmission>> {
+        return flowOf(
+            Result.success(
+                FeedEmission(
+                    articles = responseToReturn,
+                    source = FeedEmissionSource.NETWORK
+                )
+            )
+        )
     }
 
     override fun searchArticles(
         query: String,
         forceRefresh: Boolean,
         onlyRated: Boolean,
-        minReliability: Int
+        minReliability: Int,
+        allowReputableFallbackWhenUnrated: Boolean,
+        allowUnknownUnrated: Boolean
     ): Flow<Result<List<Article>>> {
         searchCallCount++
         val response = queryResponses[query] ?: responseToReturn
@@ -419,6 +430,13 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles.values.filter { it.fetchedAt > since }.toList()
     }
 
+    override suspend fun getRecentCandidateArticles(since: Long, limit: Int): List<CachedArticleEntity> {
+        return savedArticles.values
+            .filter { it.fetchedAt > since }
+            .sortedByDescending { it.fetchedAt }
+            .take(limit)
+    }
+
     override suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean, matchedAt: Long) {
         savedArticles[articleUrl]?.let {
             savedArticles[articleUrl] = it.copy(storyId = storyId, isTracked = true)
@@ -438,6 +456,13 @@ class FakeCachedArticleDao : CachedArticleDao {
         savedArticles.values.removeIf { it.sourceFeed == feedKey && !it.isTracked }
     }
 
+    override suspend fun detachByFeed(feedKey: String) {
+        val updates = savedArticles.values
+            .filter { it.sourceFeed == feedKey }
+            .map { it.copy(sourceFeed = null) }
+        updates.forEach { savedArticles[it.url] = it }
+    }
+
     override suspend fun deleteUntrackedByFeedPrefix(prefix: String) {
         savedArticles.values.removeIf { it.sourceFeed?.startsWith(prefix) == true && !it.isTracked }
     }
@@ -448,6 +473,14 @@ class FakeCachedArticleDao : CachedArticleDao {
 
     override fun getByFeedFlow(feedKey: String): Flow<List<CachedArticleEntity>> {
         return flowOf(emptyList())
+    }
+
+    override suspend fun updateArticleImage(url: String, imageUrl: String) {
+        savedArticles[url]?.let { savedArticles[url] = it.copy(urlToImage = imageUrl) }
+    }
+
+    override suspend fun updateArticleSourceId(url: String, sourceId: String) {
+        savedArticles[url]?.let { savedArticles[url] = it.copy(sourceId = sourceId) }
     }
 }
 

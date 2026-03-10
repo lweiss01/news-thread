@@ -11,6 +11,14 @@ import javax.inject.Singleton
 @Singleton
 class EntityExtractor @Inject constructor() {
 
+    companion object {
+        // Pre-compile Regex instances to avoid recompiling them on every method call or inside loops.
+        private val DASH_UNDERSCORE_REGEX = Regex("[-_]")
+        private val WHITESPACE_REGEX = Regex("\\s+")
+        private val NON_ALPHANUMERIC_AMP_DOT_REGEX = Regex("[^a-zA-Z0-9&.]")
+        private val NON_ALPHANUMERIC_AMP_DOT_WHITESPACE_REGEX = Regex("[^a-z0-9&.\\s]")
+    }
+
     private val stopWords: Set<String> = setOf(
         "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
         "of", "with", "by", "from", "as", "is", "was", "are", "were", "be",
@@ -33,21 +41,28 @@ class EntityExtractor @Inject constructor() {
         return extractEntitiesSet(text, excludedText).toList()
     }
 
+    companion object {
+        private val PUNCTUATION_REGEX = Regex("[-_]")
+        private val WHITESPACE_REGEX = Regex("\\s+")
+        private val ALPHANUMERIC_REGEX = Regex("[^a-zA-Z0-9&.]")
+        private val ALPHANUMERIC_SPACE_REGEX = Regex("[^a-z0-9&.\\s]")
+    }
+
     /**
      * Optimized version of extractEntities that returns a Set for faster intersection.
      */
     fun extractEntitiesSet(text: String, excludedText: String? = null): Set<String> {
         val entities = mutableSetOf<String>()
-        val cleanText = text.replace(Regex("[-_]"), " ")
-        val words = cleanText.split(Regex("\\s+"))
+        val cleanText = text.replace(DASH_UNDERSCORE_REGEX, " ")
+        val words = cleanText.split(WHITESPACE_REGEX)
 
         // Split excluded text into tokens to filter out
-        val excludedTokens = excludedText?.lowercase()?.split(Regex("\\s+"))?.toSet() ?: emptySet()
+        val excludedTokens = excludedText?.lowercase()?.split(WHITESPACE_REGEX)?.toSet() ?: emptySet()
 
         var currentEntity = mutableListOf<String>()
 
         words.forEach { word ->
-            val cleanWord = word.replace(Regex("[^a-zA-Z0-9&.]"), "")
+            val cleanWord = word.replace(NON_ALPHANUMERIC_AMP_DOT_REGEX, "")
 
             if (cleanWord.isNotEmpty() &&
                 cleanWord[0].isUpperCase() &&
@@ -67,8 +82,8 @@ class EntityExtractor @Inject constructor() {
 
         val importantWords = cleanText
             .lowercase()
-            .replace(Regex("[^a-z0-9&.\\s]"), "")
-            .split("\\s+".toRegex())
+            .replace(NON_ALPHANUMERIC_AMP_DOT_WHITESPACE_REGEX, "")
+            .split(WHITESPACE_REGEX)
             .filter { it.length > 3 && it !in stopWords }
 
         entities.addAll(importantWords)

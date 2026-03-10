@@ -6,18 +6,21 @@ import androidx.work.WorkManager
 import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.StoryDao
-import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.data.local.entity.StoryEntity
 import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.TrackedStory
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.worker.StoryUpdateWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+import com.newsthread.app.domain.model.TrackedStorySummary
 
 @Singleton
 class TrackingRepositoryImpl @Inject constructor(
@@ -27,8 +30,29 @@ class TrackingRepositoryImpl @Inject constructor(
     private val embeddingDao: ArticleEmbeddingDao
 ) : TrackingRepository {
 
-    override fun getTrackedStories(): Flow<List<StoryWithArticles>> {
-        return storyDao.getStoriesWithArticles()
+    override fun getTrackedStories(): Flow<List<TrackedStory>> {
+        return storyDao.getStoriesWithArticles().map { storiesWithArticles ->
+            storiesWithArticles.map { swa ->
+                TrackedStory(
+                    story = swa.story.toStory(),
+                    articles = swa.articles.map { it.toDomain() }
+                )
+            }
+        }
+    }
+
+    override fun getTrackedStory(storyId: String): Flow<TrackedStory?> {
+        return storyDao.getStoryWithArticlesById(storyId).map { swa ->
+            if (swa == null) return@map null
+            TrackedStory(
+                story = swa.story.toStory(),
+                articles = swa.articles.map { it.toDomain() }
+            )
+        }
+    }
+
+    override fun getTrackedStorySummaries(): Flow<List<TrackedStorySummary>> {
+        return storyDao.getTrackedStorySummaries()
     }
 
     override suspend fun followArticle(article: Article): Result<Unit> {
@@ -161,6 +185,14 @@ class TrackingRepositoryImpl @Inject constructor(
 
     override suspend fun getStoryArticleUrls(storyId: String): List<String> {
         return storyDao.getStoryArticleUrls(storyId)
+    }
+
+    override suspend fun updateArticleImage(url: String, imageUrl: String) {
+        articleDao.updateArticleImage(url, imageUrl)
+    }
+
+    override suspend fun updateArticleSourceId(url: String, sourceId: String) {
+        articleDao.updateArticleSourceId(url, sourceId)
     }
 
     private fun bytesToFloatArray(bytes: ByteArray): FloatArray {

@@ -111,7 +111,35 @@ hs_err_pid*.log
 replay_pid*.log
 
 # Automated session logs
-.agent/sessions/
+.agent/
 **/sync-upload.md
-.agent/rules/
 .agents/workflows/
+
+# Antigravity session state
+.antigravity_session/
+
+# Node modules
+node_modules/
+**/node_modules/
+package-lock.json
+
+# Gradle and build artifacts
+.gradle/
+.gradle-home/
+build/
+bin/
+gen/
+out/
+app/build/
+worker/build/
+
+# IDE specific
+.idea/
+*.iml
+.vscode/
+
+# Final sweep
+output/
+STORE_LISTING_DRAFT.md
+bd_list.json
+google_news.html
