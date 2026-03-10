@@ -57,16 +57,30 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
 ) {
     companion object {
         private const val NOVELTY_THRESHOLD = 0.85f
-        private const val MATCHING_WINDOW_MS = 24 * 60 * 60 * 1000L // 24 hours
+        private const val FULL_MATCHING_WINDOW_MS = 24 * 60 * 60 * 1000L // 24 hours
+        private const val FAST_MATCHING_WINDOW_MS = 6 * 60 * 60 * 1000L // 6 hours
+        private const val FAST_CANDIDATE_LIMIT = 120
         private const val TAG = "StoryMatching"
     }
 
-    suspend operator fun invoke(): List<StoryMatchResult> = withContext(Dispatchers.Default) {
+    suspend operator fun invoke(
+        mode: StoryRefreshMode = StoryRefreshMode.FULL
+    ): List<StoryMatchResult> = withContext(Dispatchers.Default) {
         val stories = trackingRepository.getTrackedStories().first()
         if (stories.isEmpty()) return@withContext emptyList()
 
-        val since = System.currentTimeMillis() - MATCHING_WINDOW_MS
-        val candidateArticles = cachedArticleDao.getRecentCandidateArticles(since)
+        val since = System.currentTimeMillis() - when (mode) {
+            StoryRefreshMode.FULL -> FULL_MATCHING_WINDOW_MS
+            StoryRefreshMode.FAST -> FAST_MATCHING_WINDOW_MS
+        }
+
+        val candidateArticles = when (mode) {
+            StoryRefreshMode.FULL -> cachedArticleDao.getRecentCandidateArticles(since)
+            StoryRefreshMode.FAST -> cachedArticleDao.getRecentCandidateArticles(
+                since = since,
+                limit = FAST_CANDIDATE_LIMIT
+            )
+        }
         if (candidateArticles.isEmpty()) return@withContext emptyList()
 
         // Build canonical source lookup maps once, then use them for all matching logic.
@@ -104,7 +118,7 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
         val candidateEmbeddingsMap = embeddingDao.getByArticleUrls(candidateUrls)
             .associate { it.articleUrl to it.embedding.toFloatArray() }
 
-        if (candidateEmbeddingsMap.size < candidateUrls.size) {
+        if (mode == StoryRefreshMode.FULL && candidateEmbeddingsMap.size < candidateUrls.size) {
             val missing = canonicalizedCandidates.filter { candidateEmbeddingsMap[it.url] == null }
             if (missing.isNotEmpty()) {
                 android.util.Log.d(TAG, "Parallel generating ${missing.size} embeddings...")

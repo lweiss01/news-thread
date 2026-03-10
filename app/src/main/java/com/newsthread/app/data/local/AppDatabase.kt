@@ -38,7 +38,7 @@ import com.newsthread.app.data.local.entity.StoryEntity
         StoryEntity::class,
         com.newsthread.app.data.local.entity.StoryArticleCrossRef::class // NEW
     ],
-    version = 14, // Phase 17: publishedAt TEXT → INTEGER migration
+    version = 15, // Phase 18: normalize legacy publishedAt values
     exportSchema = true
 )
 @androidx.room.TypeConverters(AppDatabase.Converters::class)
@@ -367,6 +367,35 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration from version 14 to 15.
+         * Phase 18: Normalize legacy publishedAt values.
+         */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Convert epoch seconds to epoch millis.
+                db.execSQL("""
+                    UPDATE cached_articles
+                    SET publishedAt = publishedAt * 1000
+                    WHERE publishedAt BETWEEN 1000000000 AND 9999999999
+                """.trimIndent())
+
+                // Replace invalid timestamps with fetchedAt.
+                db.execSQL("""
+                    UPDATE cached_articles
+                    SET publishedAt = fetchedAt
+                    WHERE publishedAt <= 0
+                """.trimIndent())
+
+                // Replace implausibly old timestamps (pre-2000-01-01 UTC) with fetchedAt.
+                db.execSQL("""
+                    UPDATE cached_articles
+                    SET publishedAt = fetchedAt
+                    WHERE publishedAt < 946684800000
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -387,7 +416,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_10_11, 
                         MIGRATION_11_12,
                         MIGRATION_12_13,
-                        MIGRATION_13_14
+                        MIGRATION_13_14,
+                        MIGRATION_14_15
                     )
                     .build()
 
