@@ -41,13 +41,6 @@ class EntityExtractor @Inject constructor() {
         return extractEntitiesSet(text, excludedText).toList()
     }
 
-    companion object {
-        private val PUNCTUATION_REGEX = Regex("[-_]")
-        private val WHITESPACE_REGEX = Regex("\\s+")
-        private val ALPHANUMERIC_REGEX = Regex("[^a-zA-Z0-9&.]")
-        private val ALPHANUMERIC_SPACE_REGEX = Regex("[^a-z0-9&.\\s]")
-    }
-
     /**
      * Optimized version of extractEntities that returns a Set for faster intersection.
      */
