@@ -1,6 +1,7 @@
 package com.newsthread.app.data.repository
 
 import android.util.Log
+import com.newsthread.app.BuildConfig
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.FeedCacheDao
 import com.newsthread.app.data.local.dao.SourceRatingDao
@@ -45,8 +46,6 @@ class RssNewsRepository @Inject constructor(
         private const val TAG = "RssNewsRepository"
         private const val FEED_KEY_TOP = "top_headlines_rss"
         private const val MAX_ARTICLES = 100
-        // TODO: Move to a config or BuildConfig
-        private const val WORKER_URL = "https://newsthread-api.newsthread.workers.dev" 
     }
 
     override fun getTopHeadlines(
@@ -85,7 +84,7 @@ class RssNewsRepository @Inject constructor(
         }
 
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
-        Log.d(TAG, "Fetching from Worker: $WORKER_URL/v1/feeds/top-stories?num=100")
+        Log.d(TAG, "Fetching from Worker: ${BuildConfig.WORKER_URL}/v1/feeds/top-stories?num=100")
         val result = runCatching {
             val json = fetchWorker("/v1/feeds/top-stories?num=100")
                 ?: throw IOException("Failed to fetch top stories from Cloudflare Worker")
@@ -208,9 +207,9 @@ class RssNewsRepository @Inject constructor(
     private fun fetchWorker(endpoint: String): String? {
         return try {
             val request = Request.Builder()
-                .url(WORKER_URL + endpoint)
+                .url(BuildConfig.WORKER_URL + endpoint)
                 // Use the shared key. In a real app, this would be in BuildConfig or encrypted.
-                .header("X-API-Key", "newsthread-v1-key") 
+                .header("X-API-Key", BuildConfig.WORKER_API_KEY)
                 .header("User-Agent", "NewsThread/1.0")
                 .header("Cache-Control", "no-cache")
                 .build()
