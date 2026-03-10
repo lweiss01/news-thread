@@ -305,8 +305,13 @@ async function tryBatchExecute(url: string): Promise<ResolveAttemptResult> {
             const end = text.indexOf(footer, urlStart);
             if (end !== -1) {
                 let result = text.substring(urlStart, end);
-                // Handle double escaping
-                result = result.replace(/\\/g, '');
+                // Handle double escaping securely via JSON.parse
+                try {
+                    result = JSON.parse('"' + result + '"');
+                } catch (e) {
+                    console.warn(`[Resolve] Failed to parse URL from BatchExecute: ${e}`);
+                    return { resolved: null, failureReason: 'rpc_fail' };
+                }
                 if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
             }
         }
