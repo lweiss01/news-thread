@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,12 +48,17 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 
 @Composable
 fun StoryDetailScreen(
-    storyId: String,
     viewModel: StoryDetailViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onArticleClick: (String) -> Unit
 ) {
     val trackedStory by viewModel.trackedStory.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.markStoryViewed()
+        }
+    }
 
     // Hoist scroll state for Scaffold FAB access
     val listState = rememberLazyListState()
@@ -68,7 +74,10 @@ fun StoryDetailScreen(
             NewsTopAppBar(
                 title = "Story Analysis",
                 actions = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        viewModel.markStoryViewed()
+                        onBackClick()
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -176,13 +185,13 @@ fun StoryDetailScreen(
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
                              TextButton(
-                                 onClick = {
-                                     // Use the first article's URL as proxy for "original"
-                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
-                                     if (originalUrl != null) onArticleClick(originalUrl)
-                                 },
-                                 modifier = Modifier.padding(vertical = ProjectTheme.spacing.xs),
-                                 contentPadding = PaddingValues(0.dp)
+                                onClick = {
+                                    // Use the first article's URL as proxy for "original"
+                                    val originalUrl = articles.minByOrNull { it.publishedAt }?.url
+                                    if (originalUrl != null) onArticleClick(originalUrl)
+                                },
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.padding(vertical = ProjectTheme.spacing.xs)
                              ) {
                                  Text(
                                      text = "Read original story".uppercase(),
@@ -253,10 +262,13 @@ fun StoryDetailScreen(
                                 )
                             }
                             items(sectionArticles) { article ->
+                                val refTime = viewModel.referenceViewTime.collectAsStateWithLifecycle().value ?: currentStory.story.lastViewedAt
+                                val isNew = article.publishedAt > refTime
                                 MatchedArticleCard(
                                     article = article,
                                     rating = article.sourceRating,
                                     accentColor = color,
+                                    isNew = isNew,
                                     onReadMoreClick = { onArticleClick(article.url) }
                                 )
                             }

@@ -21,16 +21,16 @@ interface CachedArticleDao {
     @Query("SELECT * FROM cached_articles WHERE url IN (:urls)")
     suspend fun getByUrls(urls: List<String>): List<CachedArticleEntity>
 
-    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 100")
+    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 200")
     suspend fun getAll(): List<CachedArticleEntity>
 
-    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 100")
+    @Query("SELECT * FROM cached_articles ORDER BY publishedAt DESC LIMIT 200")
     fun getAllFlow(): Flow<List<CachedArticleEntity>>
 
-    @Query("SELECT * FROM cached_articles WHERE sourceFeed = :feedKey ORDER BY publishedAt DESC LIMIT 100")
+    @Query("SELECT * FROM cached_articles WHERE sourceFeed = :feedKey ORDER BY publishedAt DESC LIMIT 200")
     suspend fun getByFeed(feedKey: String): List<CachedArticleEntity>
 
-    @Query("SELECT * FROM cached_articles WHERE sourceFeed = :feedKey ORDER BY publishedAt DESC LIMIT 100")
+    @Query("SELECT * FROM cached_articles WHERE sourceFeed = :feedKey ORDER BY publishedAt DESC LIMIT 200")
     fun getByFeedFlow(feedKey: String): Flow<List<CachedArticleEntity>>
 
     @Query("SELECT * FROM cached_articles WHERE sourceId = :sourceId ORDER BY publishedAt DESC")
@@ -152,6 +152,14 @@ interface CachedArticleDao {
     """)
     suspend fun getRecentCandidateArticles(since: Long): List<CachedArticleEntity>
 
+    @Query("""
+        SELECT * FROM cached_articles
+        WHERE fetchedAt > :since
+        ORDER BY fetchedAt DESC
+        LIMIT :limit
+    """)
+    suspend fun getRecentCandidateArticles(since: Long, limit: Int): List<CachedArticleEntity>
+
     /**
      * Assign article to a story (updates storyId, isTracked, isNovel, and hasNewPerspective).
      */
@@ -163,6 +171,9 @@ interface CachedArticleDao {
 
     @Query("DELETE FROM cached_articles WHERE isTracked = 0")
     suspend fun deleteUntracked()
+
+    @Query("UPDATE cached_articles SET sourceFeed = NULL WHERE sourceFeed = :feedKey")
+    suspend fun detachByFeed(feedKey: String)
 
     @Query("DELETE FROM cached_articles WHERE sourceFeed = :feedKey AND isTracked = 0")
     suspend fun deleteByFeed(feedKey: String)

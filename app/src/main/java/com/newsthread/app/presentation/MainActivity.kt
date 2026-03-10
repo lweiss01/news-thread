@@ -221,7 +221,6 @@ fun NewsThreadApp(
                 val storyId = backStackEntry.arguments?.getString("storyId")
                 if (storyId != null) {
                     com.newsthread.app.presentation.story.StoryDetailScreen(
-                        storyId = storyId,
                         onBackClick = { navController.popBackStack() },
                         onArticleClick = { url ->
                             val encodedUrl = URLEncoder.encode(url, "UTF-8")

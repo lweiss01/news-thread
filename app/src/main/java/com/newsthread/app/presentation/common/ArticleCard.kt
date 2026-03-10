@@ -33,11 +33,16 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
+private const val FEED_CARD_OG_TIMEOUT_MS = 5000L
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArticleCard(
     article: Article,
     ogImageResolver: OgImageResolver? = null,
+    enableOgImageLookup: Boolean = true,
+    showSourceFallbackLogo: Boolean = true,
+    onResolvedImage: (articleUrl: String, imageUrl: String) -> Unit = { _, _ -> },
     isTracked: Boolean = false,
     isNew: Boolean = false,
     onBookmarkClick: () -> Unit = {},
@@ -173,7 +178,8 @@ fun ArticleCard(
                 var resolvedImageUrl by remember(article.url, article.urlToImage) {
                     mutableStateOf(article.urlToImage?.takeUnless { isFaviconImageUrl(it) })
                 }
-                val fallbackImageUrl = remember(article.url, article.sourceRating?.domain, article.source.name) {
+                val fallbackImageUrl = remember(article.url, article.sourceRating?.domain, article.source.name, showSourceFallbackLogo) {
+                    if (!showSourceFallbackLogo) return@remember null
                     sourceFallbackImageUrl(article)
                 }
 
@@ -186,11 +192,12 @@ fun ArticleCard(
                 }
 
                 // Lazy-fetch OG image if no real image from RSS/worker.
-                if (resolvedImageUrl == null && ogImageResolver != null) {
+                if (enableOgImageLookup && resolvedImageUrl == null && ogImageResolver != null) {
                     LaunchedEffect(article.url) {
-                        val ogImage = ogImageResolver.resolve(article.url)
+                        val ogImage = ogImageResolver.resolve(article.url, timeoutMs = FEED_CARD_OG_TIMEOUT_MS)
                         if (!ogImage.isNullOrEmpty() && !isFaviconImageUrl(ogImage)) {
                             resolvedImageUrl = ogImage
+                            onResolvedImage(article.url, ogImage)
                         }
                     }
                 }

@@ -296,9 +296,9 @@ private fun ComparisonContent(
                                     }
                                 }
                             },
+                            contentPadding = PaddingValues(0.dp),
                             modifier = Modifier
-                                .padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs),
-                            contentPadding = PaddingValues(0.dp)
+                                .padding(start = ProjectTheme.spacing.m, top = ProjectTheme.spacing.xs, bottom = ProjectTheme.spacing.xs)
                         ) {
                             Text(
                                 text = "+ ${comparison.unratedPerspective.size} additional source${if (comparison.unratedPerspective.size != 1) "s" else ""}",

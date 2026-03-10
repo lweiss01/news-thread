@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,13 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.FloatingActionButtonDefaults
-import com.newsthread.app.presentation.common.glassBackground
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.newsthread.app.presentation.feed.components.SourceBadge
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import java.net.URLEncoder
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -46,7 +43,13 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private const val FEED_OG_LOOKAHEAD_ITEMS = 60
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +59,7 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val isBackgroundSyncing by viewModel.isBackgroundSyncing.collectAsStateWithLifecycle()
     val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -64,6 +68,12 @@ fun FeedScreen(
     val showJumpToTop by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 5
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.transientMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -146,15 +156,50 @@ fun FeedScreen(
                             }
                         }
                     } else {
+                        val ogLookupIndexThreshold by remember {
+                            derivedStateOf { listState.firstVisibleItemIndex + FEED_OG_LOOKAHEAD_ITEMS }
+                        }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(articles) { article ->
+                            state.lastUpdatedAt?.let { updatedAt ->
+                                item(key = "last-updated-indicator") {
+                                    Text(
+                                        text = "Updated ${formatLastUpdatedTime(updatedAt)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp
+                                        )
+                                    )
+                                }
+                            }
+                            if (isBackgroundSyncing) {
+                                item(key = "background-sync-indicator") {
+                                    Text(
+                                        text = "Updating feed...",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 2.dp
+                                        )
+                                    )
+                                }
+                            }
+                            itemsIndexed(
+                                items = articles,
+                                key = { _, article -> article.url }
+                            ) { index, article ->
                                 ArticleCard(
                                     article = article,
                                     isTracked = trackedStoriesMap.containsKey(article.url),
                                     ogImageResolver = viewModel.ogImageResolver,
+                                    enableOgImageLookup = index <= ogLookupIndexThreshold,
+                                    showSourceFallbackLogo = false,
+                                    onResolvedImage = viewModel::cacheResolvedImage,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
                                         val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
@@ -201,5 +246,15 @@ fun FeedScreen(
                 state = pullRefreshState,
             )
         }
+    }
+}
+
+private fun formatLastUpdatedTime(epochMillis: Long): String {
+    val now = System.currentTimeMillis()
+    val deltaMs = now - epochMillis
+    return when {
+        deltaMs < 60_000L -> "just now"
+        deltaMs < 3_600_000L -> "${deltaMs / 60_000L}m ago"
+        else -> SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epochMillis))
     }
 }
