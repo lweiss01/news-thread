@@ -4,6 +4,10 @@ const NEGATIVE_CACHE_SENTINEL = '__resolve_negative__';
 const POSITIVE_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const NEGATIVE_CACHE_TTL_SECONDS = 10 * 60;
 
+// Cache decoded strings for V3 URL format to avoid re-allocation on every request
+const V3_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
+const V3_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
+
 export type ResolveUrlDiagnostics = {
     fromCache: boolean;
     negativeCacheHit: boolean;
@@ -129,20 +133,17 @@ function tryBase64Decode(url: string): ResolveAttemptResult {
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
-        const prefix = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
-        if (decodedStr.startsWith(prefix)) {
-            decodedStr = decodedStr.substring(prefix.length);
+        if (decodedStr.startsWith(V3_PREFIX)) {
+            decodedStr = decodedStr.substring(V3_PREFIX.length);
         }
 
         // Suffix stripping (\xd2\x01\x00)
-        const suffix = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
-        if (decodedStr.endsWith(suffix)) {
-            decodedStr = decodedStr.substring(0, decodedStr.length - suffix.length);
+        if (decodedStr.endsWith(V3_SUFFIX)) {
+            decodedStr = decodedStr.substring(0, decodedStr.length - V3_SUFFIX.length);
         }
 
         // Length byte logic
-        const bytesArray = Buffer.from(decodedStr, 'latin1');
-        const length = bytesArray[0];
+        const length = decodedStr.charCodeAt(0);
 
         if (length >= 0x80) {
             // Varint-like offset for longer payloads
