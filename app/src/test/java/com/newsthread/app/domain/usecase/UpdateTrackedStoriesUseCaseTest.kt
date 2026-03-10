@@ -24,7 +24,10 @@ import org.junit.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -43,6 +46,8 @@ class UpdateTrackedStoriesUseCaseTest {
     @Mock
     private lateinit var sourceRatingDao: SourceRatingDao
 
+    private lateinit var embeddingRepository: com.newsthread.app.data.repository.EmbeddingRepository
+
     private lateinit var similarityMatcher: SimilarityMatcher
     private lateinit var entityExtractor: EntityExtractor
     private lateinit var useCase: UpdateTrackedStoriesUseCase
@@ -50,6 +55,7 @@ class UpdateTrackedStoriesUseCaseTest {
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
+        embeddingRepository = mock()
         similarityMatcher = SimilarityMatcher() // Real implementation
         entityExtractor = EntityExtractor() // Real implementation
         useCase = UpdateTrackedStoriesUseCase(
@@ -58,7 +64,7 @@ class UpdateTrackedStoriesUseCaseTest {
             embeddingDao,
             sourceRatingDao,
             similarityMatcher,
-            mock(), // embeddingRepository
+            embeddingRepository,
             entityExtractor
         )
         
@@ -93,6 +99,41 @@ class UpdateTrackedStoriesUseCaseTest {
 
         // Then
         assertTrue(matchResults.isEmpty())
+    }
+
+    @Test
+    fun `fast mode uses bounded candidate query`() {
+        runBlocking {
+            val story = createTrackedStory("story1", "Test Story")
+            whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
+            whenever(cachedArticleDao.getRecentCandidateArticles(any(), any())).thenReturn(emptyList())
+
+            val matchResults = useCase(StoryRefreshMode.FAST)
+
+            assertTrue(matchResults.isEmpty())
+            verify(cachedArticleDao).getRecentCandidateArticles(any(), eq(120))
+        }
+    }
+
+    @Test
+    fun `fast mode does not generate missing embeddings`() {
+        runBlocking {
+            val story = createTrackedStory("story1", "Test Story", listOf("article1"))
+            whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(listOf(story)))
+
+            val candidate = createCachedArticle("candidate1", "Candidate")
+            whenever(cachedArticleDao.getRecentCandidateArticles(any(), any())).thenReturn(listOf(candidate))
+
+            // Candidate has no embedding and fast mode should skip expensive generation.
+            whenever(embeddingDao.getByArticleUrls(any())).thenReturn(
+                listOf(createEmbeddingEntity("article1", floatArrayOf(1f, 0f, 0f)))
+            )
+
+            val matchResults = useCase(StoryRefreshMode.FAST)
+
+            assertTrue(matchResults.isEmpty())
+            verifyNoInteractions(embeddingRepository)
+        }
     }
 
     @Test

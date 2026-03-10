@@ -26,6 +26,7 @@ class StoryDetailViewModel @Inject constructor(
 
     private val _referenceViewTime = MutableStateFlow<Long?>(null)
     val referenceViewTime: StateFlow<Long?> = _referenceViewTime.asStateFlow()
+    private var didMarkViewed = false
 
     val trackedStory: StateFlow<TrackedStory?> = getTrackedStoryUseCase(storyId)
         .stateIn(
@@ -37,10 +38,9 @@ class StoryDetailViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             // Capture the initial lastViewedAt BEFORE updating the timestamp
-            // This prevents "NEW" labels from instantly disappearing in the UI
+            // so "NEW" badges remain visible while the user is on this screen.
             val initialStory = trackedStory.filterNotNull().first()
             _referenceViewTime.value = initialStory.story.lastViewedAt
-            markStoryViewed()
             resolveMissingImages(initialStory.articles)
         }
     }
@@ -56,7 +56,9 @@ class StoryDetailViewModel @Inject constructor(
         }
     }
 
-    private fun markStoryViewed() {
+    fun markStoryViewed() {
+        if (didMarkViewed) return
+        didMarkViewed = true
         viewModelScope.launch {
             trackingRepository.markStoryViewed(storyId)
         }

@@ -74,23 +74,25 @@ class FilterArticlesUseCase @Inject constructor(
      * @param allRatings List of all available source ratings.
      * @param onlyRated If true, strictly only allows rated sources (no fallback).
      * @param minReliability Minimum reliability score (1-5) required for rated sources. Default is 1.
+     * @param allowReputableFallbackWhenUnrated If true, allows unrated sources on the reputable list.
+     * @param allowUnknownUnrated If true, allows unrated sources not found in the reputable list.
      */
     operator fun invoke(
         articles: List<Article>,
         allRatings: List<SourceRating>,
         onlyRated: Boolean = false,
-        minReliability: Int = 1
+        minReliability: Int = 1,
+        allowReputableFallbackWhenUnrated: Boolean = false,
+        allowUnknownUnrated: Boolean = true
     ): List<Article> {
         return articles.mapNotNull { article ->
             val urlLower = article.url.lowercase()
 
-            // 1. GLOBAL BLOCKLIST (Ironclad)
             if (BLOCKLIST_DOMAINS.any { domain -> urlLower.contains(domain) }) {
                 Log.d("FeedFilter", "Blocked (Blacklist): ${article.source.name}")
                 return@mapNotNull null
             }
 
-            // 2. Find and Attach Rating using robust UseCase
             val rating = findSourceRatingUseCase(article, allRatings)
             if (rating == null) {
                 Log.d("FeedFilter", "No rating found for: ${article.source.name} (ID: ${article.source.id})")
@@ -99,9 +101,7 @@ class FilterArticlesUseCase @Inject constructor(
             }
             val enrichedArticle = article.copy(sourceRating = rating)
 
-            // 3. Evaluation
             if (rating != null) {
-                // Check against dynamic reliability threshold
                 if (rating.finalReliabilityScore >= minReliability) {
                     return@mapNotNull enrichedArticle
                 } else {
@@ -110,21 +110,24 @@ class FilterArticlesUseCase @Inject constructor(
                 }
             }
 
-            // 4. Strict Mode Enforcement
             val extractedDomain = extractDomain(article.url)
-            if (onlyRated) {
-                Log.d("FeedFilter", "Filtered (Unknown - Feed): ${article.source.name} ($extractedDomain)")
-                return@mapNotNull null
-            }
+            val isReputable = REPUTABLE_DOMAINS.any { isDomainMatch(extractedDomain, it) }
 
-            // 5. REPUTABLE DOMAIN FALLBACK (Discovery mode only)
-            // Not used in strict mode — unrated articles would show gray shields
-            if (REPUTABLE_DOMAINS.any { isDomainMatch(extractedDomain, it) }) {
+            if (allowReputableFallbackWhenUnrated && isReputable) {
                 Log.d("FeedFilter", "Accepted (Reputable Fallback): ${article.source.name}")
                 return@mapNotNull enrichedArticle
             }
 
-            // 6. Discovery Mode — unknown source, let through
+            if (onlyRated || !allowUnknownUnrated) {
+                Log.d("FeedFilter", "Filtered (Unknown - Feed): ${article.source.name} ($extractedDomain)")
+                return@mapNotNull null
+            }
+
+            if (isReputable) {
+                Log.d("FeedFilter", "Accepted (Reputable Fallback): ${article.source.name}")
+                return@mapNotNull enrichedArticle
+            }
+
             enrichedArticle
         }
     }
@@ -145,3 +148,4 @@ class FilterArticlesUseCase @Inject constructor(
         }
     }
 }
+

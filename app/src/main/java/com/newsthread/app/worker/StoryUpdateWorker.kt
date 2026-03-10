@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.newsthread.app.domain.similarity.MatchStrength
+import com.newsthread.app.domain.usecase.StoryRefreshMode
 import com.newsthread.app.domain.usecase.UpdateTrackedStoriesUseCase
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.util.NotificationHelper
@@ -31,10 +33,11 @@ class StoryUpdateWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "Starting story update sync")
+        val refreshMode = parseRefreshMode()
+        Log.d(TAG, "Starting story update sync mode=$refreshMode")
 
         return try {
-            val results = updateTrackedStoriesUseCase()
+            val results = updateTrackedStoriesUseCase(refreshMode)
             
             val strongMatches = results.count { it.strength == MatchStrength.STRONG }
             val weakMatches = results.count { it.strength == MatchStrength.WEAK }
@@ -78,7 +81,11 @@ class StoryUpdateWorker @AssistedInject constructor(
             if (runAttemptCount < 3) {
                 Result.retry()
             } else {
-                Result.failure()
+                Result.failure(
+                    workDataOf(
+                        OUTPUT_KEY_ERROR_MESSAGE to (e.message ?: "Story update failed")
+                    )
+                )
             }
         } finally {
              // Update all stories "last checked" timestamp
@@ -87,8 +94,27 @@ class StoryUpdateWorker @AssistedInject constructor(
         }
     }
 
+    private fun parseRefreshMode(): StoryRefreshMode {
+        val requestedMode = runCatching {
+            inputData.getString(INPUT_KEY_REFRESH_MODE)
+        }.getOrNull()
+
+        return parseRefreshMode(requestedMode)
+    }
+
     companion object {
         const val TAG = "StoryUpdateWorker"
         const val WORK_NAME = "story_update_sync"
+        const val INPUT_KEY_REFRESH_MODE = "refresh_mode"
+        const val OUTPUT_KEY_ERROR_MESSAGE = "error_message"
+        const val REFRESH_MODE_FAST = "fast"
+        const val REFRESH_MODE_FULL = "full"
+
+        internal fun parseRefreshMode(value: String?): StoryRefreshMode {
+            return when (value) {
+                REFRESH_MODE_FAST -> StoryRefreshMode.FAST
+                else -> StoryRefreshMode.FULL
+            }
+        }
     }
 }
