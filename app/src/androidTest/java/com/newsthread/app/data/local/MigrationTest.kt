@@ -58,4 +58,53 @@ class MigrationTest {
 
         cursor.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate14To15() {
+        val dbName = "${TEST_DB}-14to15"
+        var db = helper.createDatabase(dbName, 14)
+
+        db.execSQL(
+            "INSERT INTO cached_articles " +
+            "(url, title, description, urlToImage, publishedAt, sourceName, content, fetchedAt, expiresAt) " +
+            "VALUES " +
+            "('http://test.com/sec', 'Title Sec', 'Desc', NULL, 1700000000, 'Source', NULL, 1700000100000, 1700100000000)"
+        )
+        db.execSQL(
+            "INSERT INTO cached_articles " +
+            "(url, title, description, urlToImage, publishedAt, sourceName, content, fetchedAt, expiresAt) " +
+            "VALUES " +
+            "('http://test.com/zero', 'Title Zero', 'Desc', NULL, 0, 'Source', NULL, 1700000200000, 1700100000000)"
+        )
+        db.execSQL(
+            "INSERT INTO cached_articles " +
+            "(url, title, description, urlToImage, publishedAt, sourceName, content, fetchedAt, expiresAt) " +
+            "VALUES " +
+            "('http://test.com/valid', 'Title Valid', 'Desc', NULL, 1700000300000, 'Source', NULL, 1700000300000, 1700100000000)"
+        )
+
+        db.close()
+
+        db = helper.runMigrationsAndValidate(dbName, 15, true, AppDatabase.MIGRATION_14_15)
+
+        val cursor = db.query("SELECT url, publishedAt, fetchedAt FROM cached_articles ORDER BY url ASC")
+
+        assert(cursor.moveToFirst())
+        assertEquals("http://test.com/sec", cursor.getString(0))
+        assertEquals(1700000000000L, cursor.getLong(1))
+        assertEquals(1700000100000L, cursor.getLong(2))
+
+        assert(cursor.moveToNext())
+        assertEquals("http://test.com/valid", cursor.getString(0))
+        assertEquals(1700000300000L, cursor.getLong(1))
+        assertEquals(1700000300000L, cursor.getLong(2))
+
+        assert(cursor.moveToNext())
+        assertEquals("http://test.com/zero", cursor.getString(0))
+        assertEquals(1700000200000L, cursor.getLong(1))
+        assertEquals(1700000200000L, cursor.getLong(2))
+
+        cursor.close()
+    }
 }
