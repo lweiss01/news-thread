@@ -11,11 +11,11 @@
 
 ## Tasks
 
-- [ ] **T01: Refactor FeedViewModel to use domain UseCases** `est:30min`
+- [x] **T01: Refactor FeedViewModel to use domain UseCases** `est:30min`
   - Extract `NewsRepository` usage into `GetFeedUseCase` (or similar). Remove direct `NewsRepository` and `TrackingRepository` dependencies. Keep `OgImageResolver` (presentation concern). Run existing tests.
-- [ ] **T02: Verify and close already-fixed beads** `est:10min`
+- [x] **T02: Verify and close already-fixed beads** `est:10min`
   - Verify 4zp (HTML entities), 1bb/snr (original story dot), btg (bottom nav), 507 (deep links), 3v0/doz/ka7/trv (unused params) are fixed. Close confirmed beads.
-- [ ] **T03: Minor code cleanup** `est:10min`
+- [x] **T03: Minor code cleanup** `est:10min`
   - Fix duplicate `PaddingValues` import in BiasHeatmap.kt. Remove any remaining dead code flagged during verification.
 
 ## Files Likely Touched

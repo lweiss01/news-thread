@@ -50,8 +50,8 @@ Purpose: Phase 1 Truth 3 requires "App detects NewsAPI 429 responses and shows u
   > After this: Store icon, feature graphic, 6 framed screenshots, and listing copy ready for Play Console upload
 - [x] **S20: Fix Non Ui Code Review Findings Architecture Concurrency Data Model** `risk:medium` `depends:[S18]`
   > After this: Apply low-risk, independent quick fixes identified in the code review audit.
-- [ ] **S21: Fix Ui Related Code Review Findings And Polish** `risk:medium` `depends:[S20]`
-  > After this: unit tests prove fix-ui-related-code-review-findings-and-polish works
+- [x] **S21: Fix Ui Related Code Review Findings And Polish** `risk:medium` `depends:[S20]`
+  > After this: FeedViewModel uses only UseCases; 10 UI beads verified and closed; build compiles clean
 - [x] **S22: Hygiene Performance Stability** `risk:medium` `depends:[S20]`
   > After this: unit tests prove hygiene-performance-stability works
 - [ ] **S23: Release Infrastructure** `risk:medium` `depends:[S19,S21,S22]`
