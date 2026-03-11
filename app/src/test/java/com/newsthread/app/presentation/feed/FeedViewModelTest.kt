@@ -5,9 +5,9 @@ import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.repository.FeedEmission
 import com.newsthread.app.domain.repository.FeedEmissionSource
-import com.newsthread.app.domain.repository.NewsRepository
-import com.newsthread.app.domain.repository.TrackingRepository
-import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
+import com.newsthread.app.domain.usecase.CacheArticleImageUseCase
+import com.newsthread.app.domain.usecase.GetFeedUseCase
+import com.newsthread.app.domain.usecase.GetTrackedStoriesUseCase
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
 import com.newsthread.app.util.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,40 +40,30 @@ class FeedViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var newsRepository: NewsRepository
+    private lateinit var getFeedUseCase: GetFeedUseCase
     private lateinit var toggleFollowUseCase: ToggleFollowUseCase
-    private lateinit var trackingRepository: TrackingRepository
-    private lateinit var clusterArticlesUseCase: ClusterArticlesUseCase
+    private lateinit var getTrackedStoriesUseCase: GetTrackedStoriesUseCase
+    private lateinit var cacheArticleImageUseCase: CacheArticleImageUseCase
     private lateinit var ogImageResolver: OgImageResolver
 
     private lateinit var viewModel: FeedViewModel
 
     @Before
     fun setup() {
-        newsRepository = mock()
+        getFeedUseCase = mock()
         toggleFollowUseCase = mock()
-        trackingRepository = mock()
-        clusterArticlesUseCase = mock()
+        getTrackedStoriesUseCase = mock()
+        cacheArticleImageUseCase = mock()
         ogImageResolver = mock()
 
-        whenever(trackingRepository.getTrackedStories()).thenReturn(MutableStateFlow(emptyList()))
-        whenever(
-            newsRepository.searchArticles(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        ).thenReturn(flowOf(Result.success(emptyList())))
+        whenever(getTrackedStoriesUseCase.invoke()).thenReturn(MutableStateFlow(emptyList()))
     }
 
     @Test
     fun `successful headline load sets state to Success`() = runTest {
         val older = article("https://example.com/1", "Older", 1_000L)
         val newer = article("https://example.com/2", "Newer", 2_000L)
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(listOf(older, newer), FeedEmissionSource.NETWORK, fetchedAt = 2_000L)))
         )
 
@@ -92,10 +82,10 @@ class FeedViewModelTest {
         val updatedArticle = article("https://example.com/new", "Updated", 2_000L)
         val now = System.currentTimeMillis()
 
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(listOf(baseArticle), FeedEmissionSource.NETWORK, fetchedAt = now)))
         )
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(true), any())).thenReturn(
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flow {
                 emit(Result.success(emission(listOf(baseArticle), FeedEmissionSource.CACHE, fetchedAt = now)))
                 delay(5_000L)
@@ -127,10 +117,10 @@ class FeedViewModelTest {
         val refreshedArticle = article("https://example.com/fresh", "Fresh", 3_000L)
         val staleFetchedAt = System.currentTimeMillis() - (11 * 60 * 1000L)
 
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(listOf(staleArticle), FeedEmissionSource.NETWORK, fetchedAt = staleFetchedAt)))
         )
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(true), any())).thenReturn(
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flow {
                 delay(2_500L)
                 emit(Result.success(emission(listOf(refreshedArticle), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
@@ -162,10 +152,10 @@ class FeedViewModelTest {
         val fromSecondRefresh = article("https://example.com/second", "Second Refresh", 3_000L)
         var refreshCalls = 0
 
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(listOf(initial), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(true), any())).thenAnswer {
+        whenever(getFeedUseCase(eq(true), any())).thenAnswer {
             refreshCalls += 1
             if (refreshCalls == 1) {
                 flow {
@@ -198,10 +188,10 @@ class FeedViewModelTest {
         val baseArticle = article("https://example.com/base", "Base", 1_000L)
         val now = System.currentTimeMillis()
 
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(listOf(baseArticle), FeedEmissionSource.NETWORK, fetchedAt = now)))
         )
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(true), any())).thenReturn(
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flow {
                 emit(Result.success(emission(listOf(baseArticle), FeedEmissionSource.CACHE, fetchedAt = now)))
                 delay(500L)
@@ -228,7 +218,7 @@ class FeedViewModelTest {
 
     @Test
     fun `cacheResolvedImage persists only once for duplicate callbacks`() = runTest {
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
 
@@ -243,15 +233,15 @@ class FeedViewModelTest {
         Thread.sleep(150L)
         runCurrent()
 
-        verify(trackingRepository, times(1)).updateArticleImage(url, image)
+        verify(cacheArticleImageUseCase, times(1)).invoke(url, image)
     }
 
     @Test
     fun `refresh flow does not trigger discovery search`() = runTest {
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(false), any())).thenReturn(
             flowOf(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
-        whenever(newsRepository.getTopHeadlinesDetailed(eq(true), any())).thenReturn(
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flowOf(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
 
@@ -260,22 +250,16 @@ class FeedViewModelTest {
         viewModel.refresh()
         runCurrent()
 
-        verify(newsRepository, never()).searchArticles(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()
-        )
+        // Verify only getFeedUseCase was called, no additional search/discovery
+        verify(getFeedUseCase, times(2)).invoke(any(), any())
     }
 
     private fun createViewModel(): FeedViewModel {
         return FeedViewModel(
-            newsRepository,
+            getFeedUseCase,
             toggleFollowUseCase,
-            trackingRepository,
-            clusterArticlesUseCase,
+            getTrackedStoriesUseCase,
+            cacheArticleImageUseCase,
             ogImageResolver
         )
     }

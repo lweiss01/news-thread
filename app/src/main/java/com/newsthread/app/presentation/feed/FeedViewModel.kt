@@ -7,9 +7,9 @@ import com.newsthread.app.data.remote.OgImageResolver
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.repository.FeedEmission
 import com.newsthread.app.domain.repository.FeedEmissionSource
-import com.newsthread.app.domain.repository.NewsRepository
-import com.newsthread.app.domain.repository.TrackingRepository
-import com.newsthread.app.domain.usecase.ClusterArticlesUseCase
+import com.newsthread.app.domain.usecase.CacheArticleImageUseCase
+import com.newsthread.app.domain.usecase.GetFeedUseCase
+import com.newsthread.app.domain.usecase.GetTrackedStoriesUseCase
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.concurrent.atomic.AtomicInteger
@@ -42,10 +42,10 @@ sealed interface FeedUiState {
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
-    private val newsRepository: NewsRepository,
+    private val getFeedUseCase: GetFeedUseCase,
     private val toggleFollowUseCase: ToggleFollowUseCase,
-    private val trackingRepository: TrackingRepository,
-    private val clusterArticlesUseCase: ClusterArticlesUseCase,
+    private val getTrackedStoriesUseCase: GetTrackedStoriesUseCase,
+    private val cacheArticleImageUseCase: CacheArticleImageUseCase,
     val ogImageResolver: OgImageResolver
 ) : ViewModel() {
     companion object {
@@ -110,7 +110,7 @@ class FeedViewModel @Inject constructor(
     private suspend fun fetchHeadlinesDetailed(forceRefresh: Boolean, forPullRefresh: Boolean) {
         val requestStartedAt = System.currentTimeMillis()
         var emissionCount = 0
-        newsRepository.getTopHeadlinesDetailed(forceRefresh = forceRefresh, minReliability = 2).collect { result ->
+        getFeedUseCase(forceRefresh = forceRefresh, minReliability = 2).collect { result ->
             result.fold(
                 onSuccess = { emission ->
                     emissionCount += 1
@@ -158,7 +158,7 @@ class FeedViewModel @Inject constructor(
 
         try {
             var emissionCount = 0
-            newsRepository.getTopHeadlinesDetailed(forceRefresh = true, minReliability = 2).collect { result ->
+            getFeedUseCase(forceRefresh = true, minReliability = 2).collect { result ->
                 result.fold(
                     onSuccess = { emission ->
                         emissionCount += 1
@@ -280,7 +280,7 @@ class FeedViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                trackingRepository.updateArticleImage(articleUrl, imageUrl)
+                cacheArticleImageUseCase(articleUrl, imageUrl)
                 synchronized(imageSetLock) {
                     persistedImageUrls.add(articleUrl)
                 }
@@ -449,7 +449,7 @@ class FeedViewModel @Inject constructor(
 
     private fun loadTrackedStories() {
         viewModelScope.launch {
-            trackingRepository.getTrackedStories().collect { stories: List<com.newsthread.app.domain.model.TrackedStory> ->
+            getTrackedStoriesUseCase().collect { stories ->
                 withContext(Dispatchers.Default) {
                     val map = mutableMapOf<String, String>()
                     for (trackedStory in stories) {
