@@ -8,6 +8,12 @@ const NEGATIVE_CACHE_TTL_SECONDS = 10 * 60;
 const V3_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
 const V3_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
 
+const DASH_REGEX = /-/g;
+const UNDERSCORE_REGEX = /_/g;
+const URL_MATCH_REGEX = /https?:\/\/[^\s"]+/;
+const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href="([^"]+)"/g;
+const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\s"']+/g;
+
 export type ResolveUrlDiagnostics = {
     fromCache: boolean;
     negativeCacheHit: boolean;
