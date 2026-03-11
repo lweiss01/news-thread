@@ -270,25 +270,25 @@ screenshots_config = [
         "output": "screenshot_01_feed_badges.png"
     },
     {
-        "file": "compare_perspectives_bias_spectrum_1.png",
+        "file": "compare_perspectives_updated.png",
         "caption": "Compare Perspectives",
         "subtitle": "See every side of the story on the bias spectrum",
         "output": "screenshot_02_bias_spectrum.png"
     },
     {
-        "file": "Tracking_Screen_New_Updates_Bias_Distribution.png",
+        "file": "tracking_updated.png",
         "caption": "Track Developing Stories",
         "subtitle": "Get notified as news evolves across sources",
         "output": "screenshot_03_tracking.png"
     },
     {
-        "file": "tracked_story_coverage_analysis.png",
+        "file": "story_analysis_updated.png",
         "caption": "Story Analysis",
         "subtitle": "Coverage bias breakdown with Left, Center, Right views",
         "output": "screenshot_04_story_analysis.png"
     },
     {
-        "file": "newsthread_feed.png",
+        "file": "feed_updated.png",
         "caption": "Clean, Fast Feed",
         "subtitle": "Rich article cards with images and source reliability",
         "output": "screenshot_05_feed_clean.png"
