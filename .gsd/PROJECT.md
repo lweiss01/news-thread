@@ -12,12 +12,7 @@ When a user reads an article, they can instantly see how the same story is cover
 
 **Goal:** Prepare the NewsThread app for its initial release on the Google Play Store, including polishing the app, fixing bugs, and generating necessary store assets.
 
-**Target features:**
-- Final Bug Fixes and UI Polish
-- Privacy Policy and Terms of Service creation
-- App Store Assets (Screenshots, Feature Graphic, Description)
-- Release Build Configuration (ProGuard rules, keystore setup)
-- Internal Testing / Closed Alpha rollout
+**Status:** 22 of 24 slices complete. Store assets finalized, all UI bugs closed, FeedViewModel refactored to UseCases. Remaining: S23 (release infrastructure — signing, ProGuard, privacy policy) and S24 (quality & onboarding — first-launch UX, regression).
 
 ### Requirements
 
@@ -65,7 +60,10 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Fixed domain boundary data leakage (Parcelable domain models) — Phase 17
 - ✓ Fixed concurrency anti-patterns (SharedFlow without delays, Combine errors) — Phase 17
 - ✓ Normalized ISO 8601 string dates directly to primitives (Epoch Millis Long) across all architectures — Phase 17
-- [ ] Prepare app store assets
+- ✓ Store assets finalized (icon, feature graphic, 6 screenshots, listing copy) — S19
+- ✓ FeedViewModel refactored to domain UseCases, 10 UI beads closed, build errors fixed — S21
+- [ ] Release infrastructure (signing, ProGuard, privacy policy) — S23
+- [ ] Quality & onboarding (first-launch UX, regression) — S24
 
 
 ### Backlog (Future)
@@ -125,4 +123,4 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
-*Last updated: 2026-03-03 after Phase 17 (Non-UI Code Audit Fixes)*
+*Last updated: 2026-03-11 after S21 (UI Code Fixes & Polish)*
