@@ -13,7 +13,7 @@ A native Android news reader that shows how different media sources cover the sa
 
 ### Bias-Aware News Reading ⚖️
 - **Integrated bias ratings** on every article from three respected organizations
-- Visual indicators showing Left (◄◄), Center-Left (◄), Center (●), Center-Right (►), Right (►►)
+- **Bias heatmap bar** with colored dots showing where each source falls on the spectrum
 - Reliability ratings (1–5 stars) from trusted fact-checking organizations
 - **150+ major news sources** rated and categorized
 
@@ -126,11 +126,11 @@ Dozens of handpicked outlets are polled directly via RSS. NewsThread's ratings d
 
 | Bias | Examples |
 |------|----------|
-| ◄◄ Left | MSNBC, The Guardian, The Atlantic, Vox, Slate, HuffPost |
-| ◄ Lean Left | CNN, NYT, NPR, Washington Post, NBC, ABC, CBS, Politico |
-| ● Center | AP, Reuters, BBC, The Hill, PBS NewsHour, AllSides |
-| ► Lean Right | WSJ, Fox News, Washington Examiner, National Review |
-| ►► Right | Breitbart, The Daily Wire, The Federalist, Newsmax, OAN |
+| Left | MSNBC, The Guardian, The Atlantic, Vox, Slate, HuffPost |
+| Lean Left | CNN, NYT, NPR, Washington Post, NBC, ABC, CBS, Politico |
+| Center | AP, Reuters, BBC, The Hill, PBS NewsHour, AllSides |
+| Lean Right | WSJ, Fox News, Washington Examiner, National Review |
+| Right | Breitbart, The Daily Wire, The Federalist, Newsmax, OAN |
 
 The Worker resolves Google News redirect links server-side, caches via Cloudflare KV, and standardizes feed parsing. It is fully stateless — no concept of users, no personal data, same cached response for everyone. Reading history, tracked stories, and preferences never leave the device.
 
@@ -239,12 +239,12 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 ### Bias Scale
 | Score | Label | Examples |
 |-------|-------|----------|
-| -2 (◄◄) | Left | CNN, MSNBC, HuffPost |
-| -1 (◄) | Center-Left | NPR, Washington Post, Politico |
-| 0 (●) | Center | Reuters, AP, BBC, The Hill |
-| +1 (►) | Center-Right | WSJ (news), The Economist |
-| +2 (►►) | Right | Fox News, Breitbart, Newsmax |
-| ? | Unrated | Sources not yet rated appear with a question mark |
+| -2 | Left | CNN, MSNBC, HuffPost |
+| -1 | Center-Left | NPR, Washington Post, Politico |
+| 0 | Center | Reuters, AP, BBC, The Hill |
+| +1 | Center-Right | WSJ (news), The Economist |
+| +2 | Right | Fox News, Breitbart, Newsmax |
+| ? | Unrated | Sources not yet rated — shown without a bias position |
 
 ### Reliability Scale (1–5 stars)
 | Rating | Level | Examples |
