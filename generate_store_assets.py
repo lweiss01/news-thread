@@ -264,31 +264,31 @@ print("\n=== Generating Framed Screenshots ===")
 
 screenshots_config = [
     {
-        "file": "NewsThread_Feed_Page_with_Story_Source_Bias_Rating.png",
+        "file": "feed_top_fresh.png",
         "caption": "Your News Feed",
         "subtitle": "Bias ratings and source badges at a glance",
         "output": "screenshot_01_feed_badges.png"
     },
     {
-        "file": "compare_perspectives_updated.png",
+        "file": "compare_perspectives_fresh.png",
         "caption": "Compare Perspectives",
         "subtitle": "See every side of the story on the bias spectrum",
         "output": "screenshot_02_bias_spectrum.png"
     },
     {
-        "file": "tracking_updated.png",
+        "file": "tracking_fresh.png",
         "caption": "Track Developing Stories",
         "subtitle": "Get notified as news evolves across sources",
         "output": "screenshot_03_tracking.png"
     },
     {
-        "file": "story_analysis_updated.png",
+        "file": "story_analysis_fresh.png",
         "caption": "Story Analysis",
         "subtitle": "Coverage bias breakdown with Left, Center, Right views",
         "output": "screenshot_04_story_analysis.png"
     },
     {
-        "file": "feed_updated.png",
+        "file": "feed_top_fresh.png",
         "caption": "Clean, Fast Feed",
         "subtitle": "Rich article cards with images and source reliability",
         "output": "screenshot_05_feed_clean.png"
