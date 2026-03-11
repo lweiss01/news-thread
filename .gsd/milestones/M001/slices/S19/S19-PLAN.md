@@ -16,7 +16,7 @@
   - Replace the current rounded "N" path with the new high-thickness, squared-off "N" path. Generate 512x512 store icon PNG.
 - [x] **T02: Generate feature graphic and framed screenshots** `est:30min`
   - Create 1024x500 feature graphic. Capture and frame 6 app screenshots for store listing.
-- [ ] **T03: Finalize store listing copy** `est:15min`
+- [x] **T03: Finalize store listing copy** `est:15min`
   - Write title, short description, and long description optimized for Play Store discovery.
 
 ## Files Likely Touched

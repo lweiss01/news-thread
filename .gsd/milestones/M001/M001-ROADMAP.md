@@ -46,8 +46,8 @@ Purpose: Phase 1 Truth 3 requires "App detects NewsAPI 429 responses and shows u
   > After this: unit tests prove cloudflare-backend works
 - [x] **S18: Feed Volume & Discovery** `risk:medium` `depends:[S17]`
   > After this: unit tests prove Feed Volume & Discovery works
-- [ ] **S19: Identity Store Assets** `risk:medium` `depends:[S18]`
-  > After this: unit tests prove identity-store-assets works
+- [x] **S19: Identity Store Assets** `risk:medium` `depends:[S18]`
+  > After this: Store icon, feature graphic, 6 framed screenshots, and listing copy ready for Play Console upload
 - [x] **S20: Fix Non Ui Code Review Findings Architecture Concurrency Data Model** `risk:medium` `depends:[S18]`
   > After this: Apply low-risk, independent quick fixes identified in the code review audit.
 - [ ] **S21: Fix Ui Related Code Review Findings And Polish** `risk:medium` `depends:[S20]`
