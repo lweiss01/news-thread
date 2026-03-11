@@ -90,11 +90,14 @@ class BackgroundWorkScheduler @Inject constructor(
     }
 
     /**
-     * Phase 9: Schedule periodic story update worker
-     * Runs every 2 hours to match new articles to tracked stories.
+     * Phase 9 / S21 fix: Schedule periodic story update worker.
+     * Runs every 2 hours to refresh the feed cache and match new articles to tracked stories.
+     * Requires network (the worker pre-warms the feed before matching).
+     * Uses UPDATE policy so constraint changes apply on re-registration.
      */
     private fun scheduleStoryUpdates() {
         val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
             .setRequiresBatteryNotLow(true)
             .build()
 
@@ -106,7 +109,7 @@ class BackgroundWorkScheduler @Inject constructor(
 
         workManager.enqueueUniquePeriodicWork(
             StoryUpdateWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             request
         )
     }
