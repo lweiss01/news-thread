@@ -1,0 +1,36 @@
+---
+id: T02
+parent: S10
+milestone: M001
+provides: []
+requires: []
+affects: []
+key_files: []
+key_decisions: []
+patterns_established: []
+observability_surfaces: []
+drill_down_paths: []
+duration: 
+verification_result: passed
+completed_at: 
+blocker_discovered: false
+---
+# T02: Plan 02
+
+**# Summary: Feed Quality & UI Cleanup**
+
+## What Happened
+
+# Summary: Feed Quality & UI Cleanup
+
+**Plan:** 09.5-02
+**Status:** Complete
+
+## Changes
+1.  **Source Quality Filter**: Verified `NewsRepository` filters out sources with low reliability scores (`finalReliabilityScore <= 1`) from the main feed.
+2.  **Top Headlines & Limit**: Confirmed `getTopHeadlines` is used with a `take(20)` limit to conserve quota, fetching a larger buffer (80) only when filtering is active.
+3.  **UI Badges**: Verified `ArticleCard` logic correctly looks up and displays `ReliabilityBadge` using both domain and source ID matching.
+
+## Verification
+- Code review confirms filtering and badge logic are present in `NewsRepository.kt` and `ArticleCard.kt`.
+- Manual verification of feed quality (checking for spam removal) will be performed in the Verification phase.
