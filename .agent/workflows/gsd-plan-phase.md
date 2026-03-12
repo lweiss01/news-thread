@@ -192,16 +192,6 @@ IMPORTANT: If context exists below, it contains USER DECISIONS from /gsd:discuss
 
 **Research:** {research_content}
 **Gap Closure (if --gaps):** {verification_content} {uat_content}
-
-**Validation Requirements:**
-Every plan MUST include a **Validation** section for each major task. 
-You must select one of these 3 validation types:
-1. **User-facing:** Specific UI behavior (e.g., "Toggle airplane mode, see offline banner")
-2. **Code inspection:** Specific file/method signatures (e.g., "Check `PaywallDetector.kt` contains `PAYWALL_REGEX`")
-3. **Debug/Logs:** Specific logcat pattern or debug output (e.g., "Run with `--debug`, grep for `ArticleFetcher: 404`")
-
-❌ REJECT: "Verify it works"
-✅ ACCEPT: "Verify by running `adb logcat | grep 'Recall'` and checking for >0 matches"
 </planning_context>
 
 <downstream_consumer>
@@ -219,7 +209,6 @@ Output consumed by /gsd:execute-phase. Plans need:
 - [ ] Dependencies correctly identified
 - [ ] Waves assigned for parallel execution
 - [ ] must_haves derived from phase goal
-- [ ] Validation steps are specific (HOW to test, not just WHAT)
 </quality_gate>
 ```
 
@@ -270,10 +259,6 @@ IMPORTANT: Plans MUST honor user decisions. Flag as issue if plans contradict.
 - **Deferred Ideas** = Out of scope — plans must NOT include
 
 {context_content}
-
-**CRITICAL CHECK:**
-Scan all validation steps. If any step is generic (e.g., "Ensure correct behavior", "Test the logic", "Verify it works"), **FAIL THE PLAN**.
-Requires: specific log tags, specific UI elements, or specific code symbols.
 </verification_context>
 
 <expected_output>

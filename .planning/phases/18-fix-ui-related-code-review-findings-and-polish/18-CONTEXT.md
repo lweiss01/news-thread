@@ -20,5 +20,22 @@ Deliver a production-ready, polished UI/UX experience and a first-launch onboard
 ### Design System (Google Elite Approach)
 - **Strictness**: **Forced Default**. Use the tokens (`IconSize`, `Spacing`) for 100% of the UI. If a "special case" layout is needed, it must be documented as a deliberate exception rather than a magic number. This prevents design debt and ensures the "Gold Standard" look.
 
+### Refinement & Cleanup (Beads Issues)
+- **Architecture**: [Address Android Code Review Findings](file:///c:/Users/lweis/Documents/newsthread/.planning/todos/pending/2026-02-17-address-android-code-review-findings.md)
+  - Refactor `FeedViewModel` to use only UseCases (remove direct Repo dependencies).
+- **[newsthread-j4f]** Fix: Story card images not displaying
+  - *Scan Result*: Image fixes focused on `ArticleCard` (Feed).
+  - *Design Note*: `MatchedArticleCard` confirmed to be text-only by design. Not an issue.
+- **[newsthread-4zp]** Fix: HTML entity leakage in Feed story cards
+  - *Scan Result*: `HtmlUtils` present; ensure it's called on all visible text fields.
+- **[newsthread-1bb/snr]** Bias Spectrum: Original story dot missing
+  - *Scan Result*: Logic exists in `ComparisonScreen`, but needs data verification.
+- **[newsthread-btg]** Navigation: Feed Bottom Bar click doesn't return to Feed
+  - *Scan Result*: Standard navigation used; check backstack/popUpTo behavior.
+- **[newsthread-507]** Deep links unresponsive on Story Analysis page
+  - *Scan Result*: Interactivity might be blocked by `pulseEffect` or `clickable` layering.
+- **~~[newsthread-3v0/doz/ka7/trv]~~** Unused parameters/callbacks cleanup
+  - *Scan Result*: **LIKELY RESOLVED**. Parameters are gone from `StoryDetailScreen`, `StoryContent`, and `MatchedArticleCard`.
+
 ## Deferred Ideas
 - None — discussion stayed within phase scope.
