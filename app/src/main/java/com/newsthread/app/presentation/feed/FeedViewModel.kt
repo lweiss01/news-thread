@@ -371,8 +371,9 @@ class FeedViewModel @Inject constructor(
             } else article
         }
         if (mutated) {
+            val flushStart = System.currentTimeMillis()
             _uiState.value = state.copy(articles = updatedArticles)
-            Log.d(TAG, "Flushed ${batch.size} OG image updates to UI")
+            Log.d(TAG, "Flushed ${batch.size} OG image updates to UI (${System.currentTimeMillis() - flushStart}ms)")
         }
     }
 

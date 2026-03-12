@@ -49,8 +49,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val FEED_OG_LOOKAHEAD_ITEMS = 60
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
@@ -158,9 +156,6 @@ fun FeedScreen(
                             }
                         }
                     } else {
-                        val ogLookupIndexThreshold by remember {
-                            derivedStateOf { listState.firstVisibleItemIndex + FEED_OG_LOOKAHEAD_ITEMS }
-                        }
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
@@ -194,14 +189,11 @@ fun FeedScreen(
                             itemsIndexed(
                                 items = articles,
                                 key = { _, article -> article.url }
-                            ) { index, article ->
+                            ) { _, article ->
                                 ArticleCard(
                                     article = article,
                                     isTracked = trackedStoriesMap.containsKey(article.url),
-                                    ogImageResolver = viewModel.ogImageResolver,
-                                    enableOgImageLookup = index <= ogLookupIndexThreshold,
                                     showSourceFallbackLogo = false,
-                                    onResolvedImage = viewModel::cacheResolvedImage,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
                                         val encodedUrl = URLEncoder.encode(article.url, "UTF-8")

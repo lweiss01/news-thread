@@ -170,3 +170,5 @@ coverage/
 .cache/
 tmp/
 .bg-shell/
+*.html
+init_todos.json
