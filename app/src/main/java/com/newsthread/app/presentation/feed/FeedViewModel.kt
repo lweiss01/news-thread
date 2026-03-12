@@ -641,14 +641,18 @@ class FeedViewModel @Inject constructor(
                             map[article.url] = trackedStory.story.id
                         }
                     }
+                    val prevSize = _trackedStoriesMap.value.size
                     _trackedStoriesMap.value = map
+                    Log.d(TAG, "trackedStoriesMap updated: ${prevSize}->${map.size} stories=${stories.size} urls=${map.keys.take(3)}")
                 }
         }
     }
 
     fun toggleFollow(article: Article) {
         viewModelScope.launch {
-            toggleFollowUseCase(article, _trackedStoriesMap.value)
+            val mapSnapshot = _trackedStoriesMap.value
+            Log.d(TAG, "toggleFollow: url=${article.url} currentlyTracked=${mapSnapshot.containsKey(article.url)} mapSize=${mapSnapshot.size}")
+            toggleFollowUseCase(article, mapSnapshot)
         }
     }
 }
