@@ -12,6 +12,7 @@ import com.newsthread.app.domain.usecase.GetFeedUseCase
 import com.newsthread.app.domain.usecase.GetTrackedStoriesUseCase
 import com.newsthread.app.domain.usecase.ToggleFollowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -58,6 +59,8 @@ class FeedViewModel @Inject constructor(
         /** Max time spinner shows when warm cache exists (network continues in background). */
         private const val REFRESH_SPINNER_HARD_CAP_MS = 8000L
         private const val BACKGROUND_SYNC_SOFT_BUDGET_MS = 12000L
+        /** How often pending OG image updates are flushed to the UI state. */
+        private const val IMAGE_FLUSH_INTERVAL_MS = 500L
     }
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -74,12 +77,19 @@ class FeedViewModel @Inject constructor(
 
     private var refreshJob: Job? = null
     private var headlinesJob: Job? = null
+    private var imageFlushJob: Job? = null
 
     private val persistedImageUrls = mutableSetOf<String>()
     private val inFlightImageWrites = mutableSetOf<String>()
     private val inFlightImageResolves = mutableSetOf<String>()
     private val lastResolveAttemptAt = mutableMapOf<String, Long>()
     private val imageSetLock = Any()
+
+    /**
+     * Resolved OG images waiting to be flushed into [_uiState].
+     * Written from IO coroutines, drained by [ensureImageFlushLoop].
+     */
+    private val pendingImageUpdates = ConcurrentHashMap<String, String>()
 
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
@@ -287,31 +297,15 @@ class FeedViewModel @Inject constructor(
         }
         if (!shouldPersist) return
 
+        // Queue for batched UI update instead of per-image main-thread recomposition.
+        pendingImageUpdates[articleUrl] = imageUrl
+        ensureImageFlushLoop()
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 cacheArticleImageUseCase(articleUrl, imageUrl)
                 synchronized(imageSetLock) {
                     persistedImageUrls.add(articleUrl)
-                }
-                withContext(Dispatchers.Main) {
-                    val state = _uiState.value
-                    if (state is FeedUiState.Success) {
-                        var mutated = false
-                        val updatedArticles = state.articles.map { article ->
-                            val currentImage = article.urlToImage
-                            val missingOrPlaceholder = currentImage.isNullOrBlank()
-                                || currentImage.contains("google.com/s2/favicons", ignoreCase = true)
-                            if (article.url == articleUrl && missingOrPlaceholder) {
-                                mutated = true
-                                article.copy(urlToImage = imageUrl)
-                            } else {
-                                article
-                            }
-                        }
-                        if (mutated) {
-                            _uiState.value = state.copy(articles = updatedArticles)
-                        }
-                    }
                 }
                 Log.d(TAG, "Persisted OG image for $articleUrl")
             } catch (e: Exception) {
@@ -321,6 +315,64 @@ class FeedViewModel @Inject constructor(
                     inFlightImageWrites.remove(articleUrl)
                 }
             }
+        }
+    }
+
+    /**
+     * Starts a single coroutine that periodically drains [pendingImageUpdates]
+     * into [_uiState] in one batch — avoiding per-image main-thread recomposition
+     * storms that cause ANR.
+     */
+    private fun ensureImageFlushLoop() {
+        if (imageFlushJob?.isActive == true) return
+        imageFlushJob = viewModelScope.launch(Dispatchers.Default) {
+            while (true) {
+                delay(IMAGE_FLUSH_INTERVAL_MS)
+                if (pendingImageUpdates.isEmpty()) {
+                    // No pending updates — exit the loop. Next cacheResolvedImage
+                    // call will restart it.
+                    break
+                }
+                flushPendingImages()
+            }
+        }
+    }
+
+    /**
+     * Applies all queued OG image URLs to the current article list in a single
+     * state update.  Runs list-mapping on [Dispatchers.Default] so main thread
+     * only sees the final pointer swap.
+     */
+    private suspend fun flushPendingImages() {
+        // Snapshot and clear the pending map atomically.
+        val batch = mutableMapOf<String, String>()
+        val iter = pendingImageUpdates.entries.iterator()
+        while (iter.hasNext()) {
+            val entry = iter.next()
+            batch[entry.key] = entry.value
+            iter.remove()
+        }
+        if (batch.isEmpty()) return
+
+        val state = _uiState.value
+        if (state !is FeedUiState.Success) return
+
+        var mutated = false
+        val updatedArticles = state.articles.map { article ->
+            val newImage = batch[article.url]
+            if (newImage != null) {
+                val currentImage = article.urlToImage
+                val missingOrPlaceholder = currentImage.isNullOrBlank()
+                    || currentImage.contains("google.com/s2/favicons", ignoreCase = true)
+                if (missingOrPlaceholder) {
+                    mutated = true
+                    article.copy(urlToImage = newImage)
+                } else article
+            } else article
+        }
+        if (mutated) {
+            _uiState.value = state.copy(articles = updatedArticles)
+            Log.d(TAG, "Flushed ${batch.size} OG image updates to UI")
         }
     }
 
