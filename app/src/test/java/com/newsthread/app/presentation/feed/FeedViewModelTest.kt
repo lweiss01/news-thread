@@ -77,7 +77,7 @@ class FeedViewModelTest {
     }
 
     @Test
-    fun `warm cache refresh ends spinner early and keeps background syncing until network finishes`() = runTest {
+    fun `warm cache refresh keeps spinner until network emission`() = runTest {
         val baseArticle = article("https://example.com/base", "Base", 1_000L)
         val updatedArticle = article("https://example.com/new", "Updated", 2_000L)
         val now = System.currentTimeMillis()
@@ -98,13 +98,19 @@ class FeedViewModelTest {
 
         viewModel.refresh()
         runCurrent()
+        Thread.sleep(100)
+        runCurrent()
 
-        assertFalse(viewModel.isRefreshing.value)
-        assertTrue(viewModel.isBackgroundSyncing.value)
+        // Spinner stays visible during cache emission — user pulled for *fresh* data
+        assertTrue(viewModel.isRefreshing.value)
+        assertFalse(viewModel.isBackgroundSyncing.value)
 
         advanceTimeBy(5_000L)
         runCurrent()
+        Thread.sleep(100)
+        runCurrent()
 
+        // Network emission dismisses everything
         assertFalse(viewModel.isRefreshing.value)
         assertFalse(viewModel.isBackgroundSyncing.value)
         val state = viewModel.uiState.value as FeedUiState.Success
@@ -140,6 +146,9 @@ class FeedViewModelTest {
         assertTrue(viewModel.isRefreshing.value)
 
         advanceTimeBy(2_000L)
+        runCurrent()
+        // Allow Dispatchers.Default continuations (withContext in applyHeadlineEmission) to complete
+        Thread.sleep(100)
         runCurrent()
         assertFalse(viewModel.isRefreshing.value)
         assertFalse(viewModel.isBackgroundSyncing.value)
@@ -230,10 +239,11 @@ class FeedViewModelTest {
         viewModel.cacheResolvedImage(url, image)
         viewModel.cacheResolvedImage(url, image)
 
-        Thread.sleep(150L)
+        // DB writes are batched on a 3s timer running on Dispatchers.IO
+        Thread.sleep(4_000L)
         runCurrent()
 
-        verify(cacheArticleImageUseCase, times(1)).invoke(url, image)
+        verify(cacheArticleImageUseCase, times(1)).batch(mapOf(url to image))
     }
 
     @Test

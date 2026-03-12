@@ -20,12 +20,15 @@ class GetTrackedStoriesUseCase @Inject constructor(
         val storiesFlow = repository.getTrackedStories()
 
         // 3. Combine and Enrich articles with source ratings
+        //    Build index once per emission (O(M) for M ratings) then O(1) per article
+        //    instead of O(N×M) linear scan that was blocking the main thread.
         return combine(storiesFlow, ratingsFlow) { stories: List<TrackedStory>, allRatings ->
+            val ratingIndex = findSourceRatingUseCase.buildIndex(allRatings)
             stories.map { trackedStory ->
                 trackedStory.copy(
                     articles = trackedStory.articles.map { article ->
                         article.copy(
-                            sourceRating = findSourceRatingUseCase(article, allRatings)
+                            sourceRating = findSourceRatingUseCase.findRating(article, ratingIndex)
                         )
                     }
                 )

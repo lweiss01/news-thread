@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -59,8 +61,10 @@ class FeedViewModel @Inject constructor(
         /** Max time spinner shows when warm cache exists (network continues in background). */
         private const val REFRESH_SPINNER_HARD_CAP_MS = 8000L
         private const val BACKGROUND_SYNC_SOFT_BUDGET_MS = 12000L
-        /** How often pending OG image updates are flushed to the UI state. */
+        /** How often pending OG image updates are flushed to the UI state and DB. */
         private const val IMAGE_FLUSH_INTERVAL_MS = 500L
+        /** How often resolved OG images are persisted to DB in a single batch. */
+        private const val IMAGE_DB_FLUSH_INTERVAL_MS = 3000L
     }
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -80,7 +84,6 @@ class FeedViewModel @Inject constructor(
     private var imageFlushJob: Job? = null
 
     private val persistedImageUrls = mutableSetOf<String>()
-    private val inFlightImageWrites = mutableSetOf<String>()
     private val inFlightImageResolves = mutableSetOf<String>()
     private val lastResolveAttemptAt = mutableMapOf<String, Long>()
     private val imageSetLock = Any()
@@ -90,6 +93,14 @@ class FeedViewModel @Inject constructor(
      * Written from IO coroutines, drained by [ensureImageFlushLoop].
      */
     private val pendingImageUpdates = ConcurrentHashMap<String, String>()
+
+    /**
+     * Resolved OG images waiting to be persisted to the DB in a single batch.
+     * Batching avoids per-image Room invalidations that cascade into the
+     * tracked-stories Flow and block the main thread.
+     */
+    private val pendingDbImageWrites = ConcurrentHashMap<String, String>()
+    private var dbFlushJob: Job? = null
 
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
@@ -287,35 +298,19 @@ class FeedViewModel @Inject constructor(
         if (imageUrl.contains("google.com/s2/favicons", ignoreCase = true)) return
         if (!imageUrl.startsWith("http")) return
 
-        val shouldPersist = synchronized(imageSetLock) {
-            if (persistedImageUrls.contains(articleUrl) || inFlightImageWrites.contains(articleUrl)) {
-                false
-            } else {
-                inFlightImageWrites.add(articleUrl)
-                true
-            }
+        val alreadyKnown = synchronized(imageSetLock) {
+            persistedImageUrls.contains(articleUrl)
         }
-        if (!shouldPersist) return
+        if (alreadyKnown) return
 
-        // Queue for batched UI update instead of per-image main-thread recomposition.
+        // Queue for batched UI update (500ms cycle).
         pendingImageUpdates[articleUrl] = imageUrl
         ensureImageFlushLoop()
 
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                cacheArticleImageUseCase(articleUrl, imageUrl)
-                synchronized(imageSetLock) {
-                    persistedImageUrls.add(articleUrl)
-                }
-                Log.d(TAG, "Persisted OG image for $articleUrl")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to persist OG image for $articleUrl: ${e.message}")
-            } finally {
-                synchronized(imageSetLock) {
-                    inFlightImageWrites.remove(articleUrl)
-                }
-            }
-        }
+        // Queue for batched DB write (3s cycle) — avoids per-image Room
+        // invalidation that cascades into the tracked-stories Flow.
+        pendingDbImageWrites[articleUrl] = imageUrl
+        ensureDbFlushLoop()
     }
 
     /**
@@ -374,6 +369,42 @@ class FeedViewModel @Inject constructor(
             val flushStart = System.currentTimeMillis()
             _uiState.value = state.copy(articles = updatedArticles)
             Log.d(TAG, "Flushed ${batch.size} OG image updates to UI (${System.currentTimeMillis() - flushStart}ms)")
+        }
+    }
+
+    /**
+     * Starts a single coroutine that periodically drains [pendingDbImageWrites]
+     * to the database in one batch — producing a single Room invalidation instead
+     * of one per image.
+     */
+    private fun ensureDbFlushLoop() {
+        if (dbFlushJob?.isActive == true) return
+        dbFlushJob = viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                delay(IMAGE_DB_FLUSH_INTERVAL_MS)
+                if (pendingDbImageWrites.isEmpty()) break
+                flushPendingDbImages()
+            }
+        }
+    }
+
+    private suspend fun flushPendingDbImages() {
+        val batch = mutableMapOf<String, String>()
+        val iter = pendingDbImageWrites.entries.iterator()
+        while (iter.hasNext()) {
+            val entry = iter.next()
+            batch[entry.key] = entry.value
+            iter.remove()
+        }
+        if (batch.isEmpty()) return
+
+        try {
+            // Single transaction → single Room invalidation for all images.
+            cacheArticleImageUseCase.batch(batch)
+            synchronized(imageSetLock) { persistedImageUrls.addAll(batch.keys) }
+            Log.d(TAG, "DB image flush: persisted=${batch.size} in single transaction")
+        } catch (e: Exception) {
+            Log.e(TAG, "DB image batch flush failed: ${e.message}")
         }
     }
 
@@ -509,10 +540,13 @@ class FeedViewModel @Inject constructor(
         Log.d(TAG, "Feed ordering[$label]: size=${articles.size} first10sig=$firstTenSignature")
     }
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
     private fun loadTrackedStories() {
         viewModelScope.launch {
-            getTrackedStoriesUseCase().collect { stories ->
-                withContext(Dispatchers.Default) {
+            getTrackedStoriesUseCase()
+                .debounce(1000L)           // Collapse rapid Room invalidations
+                .flowOn(Dispatchers.Default) // Re-query + combine transform off main
+                .collect { stories ->
                     val map = mutableMapOf<String, String>()
                     for (trackedStory in stories) {
                         for (article in trackedStory.articles) {
@@ -521,7 +555,6 @@ class FeedViewModel @Inject constructor(
                     }
                     _trackedStoriesMap.value = map
                 }
-            }
         }
     }
 
