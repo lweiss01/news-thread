@@ -250,23 +250,24 @@ class FeedViewModelTest {
     fun `onScreenResumed triggers silent background refresh after cache load`() = runTest {
         val cached = article("https://example.com/cached", "Cached", 1_000L)
         val fresh = article("https://example.com/fresh", "Fresh", 2_000L)
-        val now = System.currentTimeMillis()
+        val staleFetchedAt = System.currentTimeMillis() - (20 * 60 * 1000L) // 20 min ago
 
-        // init load returns cached data
+        // init load returns cached data with stale timestamp
         whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = now)))
+            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = staleFetchedAt)))
         )
         // background refresh returns fresh data
         whenever(getFeedUseCase(eq(true), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(fresh), FeedEmissionSource.NETWORK, fetchedAt = now + 5_000L)))
+            flowOf(Result.success(emission(listOf(fresh), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
 
         viewModel = createViewModel()
         runCurrent()
 
-        // init shows cached data
+        // init shows cached data with stale timestamp
         val initialState = viewModel.uiState.value as FeedUiState.Success
         assertEquals("Cached", initialState.articles.first().title)
+        assertEquals(staleFetchedAt, initialState.lastUpdatedAt)
 
         // init's delayed onScreenResumed fires after 300ms
         advanceTimeBy(400L)

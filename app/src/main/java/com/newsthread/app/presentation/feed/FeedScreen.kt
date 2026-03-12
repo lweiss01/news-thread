@@ -178,19 +178,6 @@ fun FeedScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            state.lastUpdatedAt?.let { updatedAt ->
-                                item(key = "last-updated-indicator") {
-                                    Text(
-                                        text = "Updated ${formatLastUpdatedTime(updatedAt)}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(
-                                            horizontal = 16.dp,
-                                            vertical = 8.dp
-                                        )
-                                    )
-                                }
-                            }
                             if (isRefreshing || isBackgroundSyncing) {
                                 item(key = "background-sync-indicator") {
                                     Text(
@@ -199,9 +186,23 @@ fun FeedScreen(
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(
                                             horizontal = 16.dp,
-                                            vertical = 2.dp
+                                            vertical = 8.dp
                                         )
                                     )
+                                }
+                            } else {
+                                state.lastUpdatedAt?.let { updatedAt ->
+                                    item(key = "last-updated-indicator") {
+                                        Text(
+                                            text = "Updated ${formatLastUpdatedTime(updatedAt)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.outline,
+                                            modifier = Modifier.padding(
+                                                horizontal = 16.dp,
+                                                vertical = 8.dp
+                                            )
+                                        )
+                                    }
                                 }
                             }
                             itemsIndexed(
