@@ -108,16 +108,18 @@ fun FeedScreen(
         // M3 Pull-to-Refresh
         val pullRefreshState = rememberPullToRefreshState()
 
+        // When user pulls past threshold, trigger refresh exactly once.
         if (pullRefreshState.isRefreshing) {
             LaunchedEffect(true) {
                 viewModel.refresh()
             }
         }
 
+        // Sync ViewModel refreshing state → pull indicator.
+        // Only call endRefresh when the ViewModel signals done;
+        // never call startRefresh here — the gesture already started it.
         LaunchedEffect(isRefreshing) {
-            if (isRefreshing) {
-                pullRefreshState.startRefresh()
-            } else {
+            if (!isRefreshing) {
                 pullRefreshState.endRefresh()
             }
         }
@@ -176,7 +178,7 @@ fun FeedScreen(
                                     )
                                 }
                             }
-                            if (isBackgroundSyncing) {
+                            if (isRefreshing || isBackgroundSyncing) {
                                 item(key = "background-sync-indicator") {
                                     Text(
                                         text = "Updating feed...",

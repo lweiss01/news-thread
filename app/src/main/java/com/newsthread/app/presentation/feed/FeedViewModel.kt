@@ -55,8 +55,9 @@ class FeedViewModel @Inject constructor(
         private const val PREFETCH_TIMEOUT_MS = 6000L
         private const val RESOLVE_RETRY_MS = 2 * 60 * 1000L
         private const val WARM_CACHE_WINDOW_MS = 10 * 60 * 1000L
-        private const val REFRESH_SPINNER_HARD_CAP_MS = 1500L
-        private const val BACKGROUND_SYNC_SOFT_BUDGET_MS = 6000L
+        /** Max time spinner shows when warm cache exists (network continues in background). */
+        private const val REFRESH_SPINNER_HARD_CAP_MS = 8000L
+        private const val BACKGROUND_SYNC_SOFT_BUDGET_MS = 12000L
     }
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -171,10 +172,10 @@ class FeedViewModel @Inject constructor(
 
                         when (emission.source) {
                             FeedEmissionSource.CACHE -> {
-                                if (warmCache && _isRefreshing.value) {
-                                    _isRefreshing.value = false
-                                    _isBackgroundSyncing.value = true
-                                }
+                                // Cache hit during pull-refresh: keep spinner visible.
+                                // The user pulled to get *fresh* data — don't dismiss
+                                // the spinner until the network response arrives or
+                                // the hard cap fires.
                             }
 
                             FeedEmissionSource.NETWORK -> {
