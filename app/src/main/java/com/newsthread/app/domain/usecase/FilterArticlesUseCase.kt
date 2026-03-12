@@ -11,13 +11,15 @@ import javax.inject.Inject
  * Strict Allowlist: Only sources with Score > 1 (Mixed, High, Very High).
  * Matches by source ID, display name, or domain (tri-match).
  *
- * Extracted from NewsRepository to Domain layer (Phase 12).
+ * Uses indexed rating lookups for O(1) per-article matching instead of O(N) linear scan.
  */
 class FilterArticlesUseCase @Inject constructor(
     private val findSourceRatingUseCase: FindSourceRatingUseCase
 ) {
 
     companion object {
+        private const val TAG = "FeedFilter"
+
         private val REPUTABLE_DOMAINS = setOf(
             "reuters.com", "apnews.com", "nytimes.com", "bloomberg.com",
             "wsj.com", "bbc.com", "axios.com", "cnbc.com", "fortune.com",
@@ -27,29 +29,24 @@ class FilterArticlesUseCase @Inject constructor(
             "cbsnews.com", "nbcnews.com", "cnn.com", "foxnews.com", "latimes.com",
             "euronews.com", "reuters.tv", "thestar.com.my", "japantimes.co.jp", 
             "lequipe.fr", "skysports.com", "thesun.co.uk", "dailymail.co.uk",
-            // International & Regional Leaders
             "straitstimes.com", "scmp.com", "nikkei.com", "asahi.com", "lemonde.fr",
             "spiegel.de", "elpais.com", "corriere.it", "theglobeandmail.com", "thestar.com",
             "smh.com.au", "theage.com.au", "nzherald.co.nz", "timesofindia.indiatimes.com",
             "hindustantimes.com", "thehindu.com", "scnews.com", "dailysabah.com",
-            "haaretz.com", "jpost.com", "al-monitor.com", "france24.com",
-            // Tech & Science
+            "haaretz.com", "jpost.com", "al-monitor.com",
             "theverge.com", "techcrunch.com", "wired.com", "arstechnica.com", "engadget.com",
             "cnet.com", "zdnet.com", "venturebeat.com", "gizmodo.com", "mashable.com",
             "nature.com", "sciencemag.org", "scientificamerican.com", "newscientist.com", "nationalgeographic.com",
             "space.com", "phys.org", "smithsonianmag.com", "popularmechanics.com", "quantamagazine.org",
             "technologyreview.com", "nextbigfuture.com", "universetoday.com", "sciencedaily.com",
             "eurekalert.org", "livescience.com", "spaceflightnow.com", "planetary.org",
-            // Global & News
             "time.com", "newsweek.com", "foreignpolicy.com", "foreignaffairs.com", "thecrimson.com", "chicagotribune.com",
             "bostonglobe.com", "seattletimes.com", "sfchronicle.com", "denverpost.com", "dallasnews.com",
             "thehill.com", "rollcall.com", "defenseone.com", "stripes.com", "kyivindependent.com",
             "vox.com", "slate.com", "aljazeera.net", "bbc.co.uk",
-            // Finance & Business
             "ft.com", "marketwatch.com", "businessinsider.com", "forbes.com", "kiplinger.com",
             "investopedia.com", "barrons.com", "fastcompany.com", "inc.com", "hbr.org", 
             "quartz.com", "qz.com", "pymnts.com", "finextra.com",
-            // Sports & Entertainment
             "espn.com", "theathletic.com", "si.com", "bleacherreport.com", "nfl.com", "mlb.com", "nba.com",
             "variety.com", "hollywoodreporter.com", "deadline.com", "rollingstone.com", "billboard.com", "pitchfork.com"
         )
@@ -58,10 +55,7 @@ class FilterArticlesUseCase @Inject constructor(
             "facebook.com", "twitter.com", "x.com", "instagram.com", "reddit.com",
             "youtube.com", "tiktok.com", "pinterest.com", "linkedin.com", "ebay.com",
             "amazon.com", "craigslist.org", "etsy.com",
-            // Government / military — newsworthy items will be covered by journalists
-            // Design Decision: blocked per Lisa (2026-02-27). Revisit when user topic prefs are added.
             ".gov", ".mil",
-            // Content farms & low-quality aggregators
             "patch.com", "examiner.com", "inquisitr.com",
             "newsbreak.com", "msn.com"
         )
@@ -69,13 +63,7 @@ class FilterArticlesUseCase @Inject constructor(
 
     /**
      * Filters articles against an allowlist of rated sources.
-     *
-     * @param articles List of articles to filter.
-     * @param allRatings List of all available source ratings.
-     * @param onlyRated If true, strictly only allows rated sources (no fallback).
-     * @param minReliability Minimum reliability score (1-5) required for rated sources. Default is 1.
-     * @param allowReputableFallbackWhenUnrated If true, allows unrated sources on the reputable list.
-     * @param allowUnknownUnrated If true, allows unrated sources not found in the reputable list.
+     * Uses indexed rating lookups for batch performance.
      */
     operator fun invoke(
         articles: List<Article>,
@@ -85,27 +73,33 @@ class FilterArticlesUseCase @Inject constructor(
         allowReputableFallbackWhenUnrated: Boolean = false,
         allowUnknownUnrated: Boolean = true
     ): List<Article> {
-        return articles.mapNotNull { article ->
+        // Build index once for the entire batch — O(M) where M = ratings count
+        val ratingIndex = findSourceRatingUseCase.buildIndex(allRatings)
+
+        var blocked = 0
+        var rated = 0
+        var reputableFallback = 0
+        var filteredUnknown = 0
+        var passedUnrated = 0
+
+        val result = articles.mapNotNull { article ->
             val urlLower = article.url.lowercase()
 
             if (BLOCKLIST_DOMAINS.any { domain -> urlLower.contains(domain) }) {
-                Log.d("FeedFilter", "Blocked (Blacklist): ${article.source.name}")
+                blocked++
                 return@mapNotNull null
             }
 
-            val rating = findSourceRatingUseCase(article, allRatings)
-            if (rating == null) {
-                Log.d("FeedFilter", "No rating found for: ${article.source.name} (ID: ${article.source.id})")
-            } else {
-                Log.v("FeedFilter", "Found rating for ${article.source.name}: ${rating.finalBiasScore}")
-            }
+            // O(1) indexed lookup instead of O(N) linear scan
+            val rating = findSourceRatingUseCase.findRating(article, ratingIndex)
             val enrichedArticle = article.copy(sourceRating = rating)
 
             if (rating != null) {
                 if (rating.finalReliabilityScore >= minReliability) {
+                    rated++
                     return@mapNotNull enrichedArticle
                 } else {
-                    Log.d("FeedFilter", "Blocked (Reliability < $minReliability): ${article.source.name}")
+                    blocked++
                     return@mapNotNull null
                 }
             }
@@ -114,22 +108,32 @@ class FilterArticlesUseCase @Inject constructor(
             val isReputable = REPUTABLE_DOMAINS.any { isDomainMatch(extractedDomain, it) }
 
             if (allowReputableFallbackWhenUnrated && isReputable) {
-                Log.d("FeedFilter", "Accepted (Reputable Fallback): ${article.source.name}")
+                reputableFallback++
                 return@mapNotNull enrichedArticle
             }
 
             if (onlyRated || !allowUnknownUnrated) {
-                Log.d("FeedFilter", "Filtered (Unknown - Feed): ${article.source.name} ($extractedDomain)")
+                filteredUnknown++
                 return@mapNotNull null
             }
 
             if (isReputable) {
-                Log.d("FeedFilter", "Accepted (Reputable Fallback): ${article.source.name}")
+                reputableFallback++
                 return@mapNotNull enrichedArticle
             }
 
+            passedUnrated++
             enrichedArticle
         }
+
+        // Single summary log instead of per-article logging
+        Log.d(
+            TAG,
+            "Filtered ${articles.size} articles: rated=$rated reputable=$reputableFallback " +
+                "unrated=$passedUnrated blocked=$blocked filteredUnknown=$filteredUnknown -> ${result.size} passed"
+        )
+
+        return result
     }
 
     private fun isDomainMatch(extractedDomain: String, targetDomain: String): Boolean {
@@ -148,4 +152,3 @@ class FilterArticlesUseCase @Inject constructor(
         }
     }
 }
-

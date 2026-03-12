@@ -25,13 +25,20 @@ class OgImageResolver @Inject constructor(
     )
 
     companion object {
+        private const val TAG = "OgImageResolver"
         private const val FAILURE_RETRY_MS = 2 * 60 * 1000L
         private const val DEFAULT_RESOLVE_TIMEOUT_MS = 8000L
         private const val HTML_SNIFF_BYTES = 65535L
+        /** After a 429 from Google, back off for this duration before retrying any Google URL. */
+        private const val GOOGLE_BACKOFF_MS = 5 * 60 * 1000L
     }
 
     // LRU cache: URL -> success value or transient failure timestamp
     private val cache = LruCache<String, CacheEntry>(100)
+
+    /** Timestamp of last Google 429 response. Volatile for cross-coroutine visibility. */
+    @Volatile
+    private var googleBackoffUntil: Long = 0L
 
     // Unified regex handles both attribute orders for og/twitter image tags.
     private val META_IMAGE_REGEX = Regex(
@@ -69,7 +76,14 @@ class OgImageResolver @Inject constructor(
             cache.remove(articleUrl)
         }
 
-        val imageUrl = if (articleUrl.contains("news.google.com") || articleUrl.contains("google.com/rss")) {
+        // Skip Google URLs while rate-limited (429 backoff)
+        val isGoogleUrl = articleUrl.contains("news.google.com") || articleUrl.contains("google.com/rss")
+        if (isGoogleUrl && now < googleBackoffUntil) {
+            cache.put(articleUrl, CacheEntry(imageUrl = null, failedAtMillis = now))
+            return@withContext null
+        }
+
+        val imageUrl = if (isGoogleUrl) {
             val realUrl = extractGoogleNewsRedirectUrl(articleUrl)
             val directImage = if (!realUrl.isNullOrBlank() && realUrl != articleUrl) {
                 resolve(realUrl, timeoutMs)
@@ -116,6 +130,15 @@ class OgImageResolver @Inject constructor(
             val call = okHttpClient.newCall(request)
             call.timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
             call.execute().use { response ->
+                if (response.code == 429) {
+                    // Google rate limit — activate backoff for all Google URLs
+                    val responseUrl = response.request.url.toString()
+                    if (responseUrl.contains("google.com")) {
+                        googleBackoffUntil = System.currentTimeMillis() + GOOGLE_BACKOFF_MS
+                        android.util.Log.w(TAG, "Google 429 rate limit hit, backing off ${GOOGLE_BACKOFF_MS / 1000}s")
+                    }
+                    return@use null
+                }
                 if (!response.isSuccessful && response.code != 206) return@use null
                 response.body?.string()
             }
@@ -177,6 +200,11 @@ class OgImageResolver @Inject constructor(
                 .build()
 
             okHttpClient.newCall(request).execute().use { response ->
+                if (response.code == 429) {
+                    googleBackoffUntil = System.currentTimeMillis() + GOOGLE_BACKOFF_MS
+                    android.util.Log.w(TAG, "Google 429 on batchexecute, backing off ${GOOGLE_BACKOFF_MS / 1000}s")
+                    return@use null
+                }
                 if (!response.isSuccessful) return@use null
 
                 val text = response.body?.string() ?: return@use null
