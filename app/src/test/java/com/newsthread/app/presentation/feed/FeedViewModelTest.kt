@@ -59,32 +59,78 @@ class FeedViewModelTest {
         whenever(getTrackedStoriesUseCase.invoke()).thenReturn(MutableStateFlow(emptyList()))
     }
 
+    // --- Init / app open behavior ---
+
     @Test
-    fun `successful headline load sets state to Success`() = runTest {
-        val older = article("https://example.com/1", "Older", 1_000L)
-        val newer = article("https://example.com/2", "Newer", 2_000L)
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(older, newer), FeedEmissionSource.NETWORK, fetchedAt = 2_000L)))
+    fun `init shows cached articles then swaps in fresh data`() = runTest {
+        val cached = article("https://example.com/cached", "Cached", 1_000L)
+        val fresh = article("https://example.com/fresh", "Fresh", 2_000L)
+        val now = System.currentTimeMillis()
+
+        // init uses forceRefresh=true — repo emits cache first, then network
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
+            flow {
+                emit(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = now - 300_000L)))
+                delay(3_000L)
+                emit(Result.success(emission(listOf(fresh), FeedEmissionSource.NETWORK, fetchedAt = now)))
+            }
         )
 
         viewModel = createViewModel()
         runCurrent()
+        Thread.sleep(100)
+        runCurrent()
 
-        val state = viewModel.uiState.value as FeedUiState.Success
-        assertEquals(2, state.articles.size)
-        assertEquals("Newer", state.articles.first().title)
-        assertEquals(2_000L, state.lastUpdatedAt)
+        // Cache displayed immediately, background syncing active
+        val cacheState = viewModel.uiState.value as FeedUiState.Success
+        assertEquals("Cached", cacheState.articles.first().title)
+        assertTrue(viewModel.isBackgroundSyncing.value)
+        assertFalse(viewModel.isRefreshing.value)
+
+        // Network arrives
+        advanceTimeBy(3_100L)
+        runCurrent()
+        Thread.sleep(100)
+        runCurrent()
+
+        val freshState = viewModel.uiState.value as FeedUiState.Success
+        assertEquals("Fresh", freshState.articles.first().title)
+        assertFalse(viewModel.isBackgroundSyncing.value)
     }
 
     @Test
-    fun `warm cache refresh keeps spinner until network emission`() = runTest {
+    fun `init sets backgroundSyncing true from first frame`() = runTest {
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
+            flow {
+                delay(5_000L)
+                emit(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
+            }
+        )
+
+        viewModel = createViewModel()
+        // Before any coroutine runs
+        assertTrue(viewModel.isBackgroundSyncing.value)
+    }
+
+    // --- Pull-to-refresh behavior ---
+
+    @Test
+    fun `pull refresh shows spinner until network emission`() = runTest {
         val baseArticle = article("https://example.com/base", "Base", 1_000L)
         val updatedArticle = article("https://example.com/new", "Updated", 2_000L)
         val now = System.currentTimeMillis()
 
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
+        // Init completes immediately
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flowOf(Result.success(emission(listOf(baseArticle), FeedEmissionSource.NETWORK, fetchedAt = now)))
         )
+
+        viewModel = createViewModel()
+        runCurrent()
+        Thread.sleep(100)
+        runCurrent()
+
+        // Set up slow pull-to-refresh response
         whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flow {
                 emit(Result.success(emission(listOf(baseArticle), FeedEmissionSource.CACHE, fetchedAt = now)))
@@ -93,17 +139,13 @@ class FeedViewModelTest {
             }
         )
 
-        viewModel = createViewModel()
-        runCurrent()
-
         viewModel.refresh()
         runCurrent()
         Thread.sleep(100)
         runCurrent()
 
-        // Spinner stays visible during cache emission — user pulled for *fresh* data
+        // Spinner stays visible during cache emission
         assertTrue(viewModel.isRefreshing.value)
-        assertFalse(viewModel.isBackgroundSyncing.value)
 
         advanceTimeBy(5_000L)
         runCurrent()
@@ -119,16 +161,12 @@ class FeedViewModelTest {
 
     @Test
     fun `cold cache refresh keeps spinner until network emission`() = runTest {
-        val staleArticle = article("https://example.com/stale", "Stale", 1_000L)
         val refreshedArticle = article("https://example.com/fresh", "Fresh", 3_000L)
-        val staleFetchedAt = System.currentTimeMillis() - (11 * 60 * 1000L)
 
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(staleArticle), FeedEmissionSource.NETWORK, fetchedAt = staleFetchedAt)))
-        )
+        // Init: slow network (no cache)
         whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flow {
-                delay(2_500L)
+                delay(1_000L)
                 emit(Result.success(emission(listOf(refreshedArticle), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
             }
         )
@@ -136,10 +174,18 @@ class FeedViewModelTest {
         viewModel = createViewModel()
         runCurrent()
 
+        // Init's backgroundRefreshJob is active — start a pull-to-refresh
+        // which cancels the background job and starts a spinner refresh
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
+            flow {
+                delay(2_500L)
+                emit(Result.success(emission(listOf(refreshedArticle), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
+            }
+        )
+
         viewModel.refresh()
         runCurrent()
         assertTrue(viewModel.isRefreshing.value)
-        assertFalse(viewModel.isBackgroundSyncing.value)
 
         advanceTimeBy(1_000L)
         runCurrent()
@@ -147,7 +193,6 @@ class FeedViewModelTest {
 
         advanceTimeBy(2_000L)
         runCurrent()
-        // Allow Dispatchers.Default continuations (withContext in applyHeadlineEmission) to complete
         Thread.sleep(100)
         runCurrent()
         assertFalse(viewModel.isRefreshing.value)
@@ -155,30 +200,34 @@ class FeedViewModelTest {
     }
 
     @Test
-    fun `rapid repeated pull refresh cancels previous in-flight refresh and applies latest payload`() = runTest {
+    fun `rapid repeated pull refresh cancels previous and applies latest payload`() = runTest {
         val initial = article("https://example.com/initial", "Initial", 1_000L)
-        val fromFirstRefresh = article("https://example.com/first", "First Refresh", 2_000L)
         val fromSecondRefresh = article("https://example.com/second", "Second Refresh", 3_000L)
-        var refreshCalls = 0
 
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
+        // Init completes immediately
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flowOf(Result.success(emission(listOf(initial), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
+
+        viewModel = createViewModel()
+        runCurrent()
+        Thread.sleep(100)
+        runCurrent()
+
+        // First pull-refresh: slow
+        var refreshCalls = 0
         whenever(getFeedUseCase(eq(true), any())).thenAnswer {
             refreshCalls += 1
             if (refreshCalls == 1) {
                 flow {
                     emit(Result.success(emission(listOf(initial), FeedEmissionSource.CACHE, fetchedAt = System.currentTimeMillis())))
                     delay(10_000L)
-                    emit(Result.success(emission(listOf(fromFirstRefresh), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
+                    emit(Result.success(emission(listOf(initial), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
                 }
             } else {
                 flowOf(Result.success(emission(listOf(fromSecondRefresh), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
             }
         }
-
-        viewModel = createViewModel()
-        runCurrent()
 
         viewModel.refresh()
         runCurrent()
@@ -193,13 +242,21 @@ class FeedViewModelTest {
     }
 
     @Test
-    fun `background refresh failure preserves feed and emits transient message`() = runTest {
+    fun `pull refresh failure preserves feed and emits transient message`() = runTest {
         val baseArticle = article("https://example.com/base", "Base", 1_000L)
         val now = System.currentTimeMillis()
 
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
+        // Init completes immediately
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flowOf(Result.success(emission(listOf(baseArticle), FeedEmissionSource.NETWORK, fetchedAt = now)))
         )
+
+        viewModel = createViewModel()
+        runCurrent()
+        Thread.sleep(100)
+        runCurrent()
+
+        // Pull-refresh fails
         whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flow {
                 emit(Result.success(emission(listOf(baseArticle), FeedEmissionSource.CACHE, fetchedAt = now)))
@@ -207,9 +264,6 @@ class FeedViewModelTest {
                 emit(Result.failure(Exception("Network timeout")))
             }
         )
-
-        viewModel = createViewModel()
-        runCurrent()
 
         val messageDeferred = async { viewModel.transientMessage.first() }
 
@@ -225,9 +279,86 @@ class FeedViewModelTest {
         assertFalse(viewModel.isBackgroundSyncing.value)
     }
 
+    // --- Background refresh (tab return / app foreground) ---
+
+    @Test
+    fun `onScreenResumed is debounced within 2 minutes`() = runTest {
+        // Init completes immediately
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
+            flowOf(Result.success(emission(listOf(article("https://example.com/a", "A", 1_000L)), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
+        )
+
+        viewModel = createViewModel()
+        runCurrent()
+        Thread.sleep(100)
+        runCurrent()
+
+        // Call onScreenResumed immediately — should be debounced (init just completed)
+        viewModel.onScreenResumed()
+        runCurrent()
+
+        // Only 1 forceRefresh call total (the init)
+        verify(getFeedUseCase, times(1)).invoke(eq(true), any())
+    }
+
+    @Test
+    fun `onScreenResumed skipped when pull refresh is active`() = runTest {
+        // Init: slow network so backgroundRefreshJob is still active
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
+            flow {
+                delay(10_000L)
+                emit(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
+            }
+        )
+
+        viewModel = createViewModel()
+        runCurrent()
+
+        // Start a pull-to-refresh (cancels init's background job, starts new one)
+        viewModel.refresh()
+        runCurrent()
+        assertTrue(viewModel.isRefreshing.value)
+
+        // onScreenResumed should skip because refresh is in flight
+        viewModel.onScreenResumed()
+        runCurrent()
+
+        // refresh() re-used the same mock so 2 calls total (init + refresh)
+        verify(getFeedUseCase, times(2)).invoke(eq(true), any())
+    }
+
+    @Test
+    fun `background refresh failure silently preserves existing feed`() = runTest {
+        val cached = article("https://example.com/cached", "Cached", 1_000L)
+        val now = System.currentTimeMillis()
+
+        // Init emits cache then fails on network — background refresh path
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
+            flow {
+                emit(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = now)))
+                delay(500L)
+                emit(Result.failure(Exception("Network unavailable")))
+            }
+        )
+
+        viewModel = createViewModel()
+        advanceTimeBy(600L)
+        runCurrent()
+        Thread.sleep(100)
+        runCurrent()
+
+        // Feed preserved from cache, no error state
+        val state = viewModel.uiState.value as FeedUiState.Success
+        assertEquals("Cached", state.articles.first().title)
+        assertFalse(viewModel.isRefreshing.value)
+        assertFalse(viewModel.isBackgroundSyncing.value)
+    }
+
+    // --- Image caching ---
+
     @Test
     fun `cacheResolvedImage persists only once for duplicate callbacks`() = runTest {
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
+        whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flowOf(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
 
@@ -247,134 +378,7 @@ class FeedViewModelTest {
     }
 
     @Test
-    fun `onScreenResumed triggers silent background refresh after cache load`() = runTest {
-        val cached = article("https://example.com/cached", "Cached", 1_000L)
-        val fresh = article("https://example.com/fresh", "Fresh", 2_000L)
-        val staleFetchedAt = System.currentTimeMillis() - (20 * 60 * 1000L) // 20 min ago
-
-        // init load returns cached data with stale timestamp
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = staleFetchedAt)))
-        )
-        // background refresh returns fresh data
-        whenever(getFeedUseCase(eq(true), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(fresh), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
-        )
-
-        viewModel = createViewModel()
-        runCurrent()
-
-        // init shows cached data with stale timestamp
-        val initialState = viewModel.uiState.value as FeedUiState.Success
-        assertEquals("Cached", initialState.articles.first().title)
-        assertEquals(staleFetchedAt, initialState.lastUpdatedAt)
-
-        // init's delayed onScreenResumed fires after 300ms
-        advanceTimeBy(400L)
-        runCurrent()
-        Thread.sleep(100)
-        runCurrent()
-
-        // Fresh data should now be displayed
-        val updatedState = viewModel.uiState.value as FeedUiState.Success
-        assertEquals("Fresh", updatedState.articles.first().title)
-        // No spinner was shown — only background syncing indicator
-        assertFalse(viewModel.isRefreshing.value)
-        assertFalse(viewModel.isBackgroundSyncing.value)
-    }
-
-    @Test
-    fun `onScreenResumed is debounced within 2 minutes`() = runTest {
-        val cached = article("https://example.com/cached", "Cached", 1_000L)
-        val now = System.currentTimeMillis()
-
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = now)))
-        )
-        whenever(getFeedUseCase(eq(true), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.NETWORK, fetchedAt = now)))
-        )
-
-        viewModel = createViewModel()
-        // Let init's delayed onScreenResumed fire
-        advanceTimeBy(400L)
-        runCurrent()
-        Thread.sleep(100)
-        runCurrent()
-
-        // Call onScreenResumed again immediately — should be debounced
-        viewModel.onScreenResumed()
-        runCurrent()
-
-        // getFeedUseCase(forceRefresh=true) should only have been called once (from init's delayed call)
-        verify(getFeedUseCase, times(1)).invoke(eq(true), any())
-    }
-
-    @Test
-    fun `onScreenResumed skipped when pull refresh is active`() = runTest {
-        val cached = article("https://example.com/cached", "Cached", 1_000L)
-        val now = System.currentTimeMillis()
-
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.CACHE, fetchedAt = now)))
-        )
-        whenever(getFeedUseCase(eq(true), any())).thenReturn(
-            flow {
-                // Simulate slow network
-                delay(10_000L)
-                emit(Result.success(emission(listOf(cached), FeedEmissionSource.NETWORK, fetchedAt = now)))
-            }
-        )
-
-        viewModel = createViewModel()
-        runCurrent()
-
-        // Start a pull-to-refresh
-        viewModel.refresh()
-        runCurrent()
-        assertTrue(viewModel.isRefreshing.value)
-
-        // onScreenResumed should skip because refresh is in flight
-        viewModel.onScreenResumed()
-        runCurrent()
-
-        // Only 1 forceRefresh call: the pull-to-refresh (init's delayed call was overridden by the refresh)
-        verify(getFeedUseCase, times(1)).invoke(eq(true), any())
-    }
-
-    @Test
-    fun `background refresh failure silently preserves existing feed`() = runTest {
-        val cached = article("https://example.com/cached", "Cached", 1_000L)
-        val now = System.currentTimeMillis()
-
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(listOf(cached), FeedEmissionSource.NETWORK, fetchedAt = now)))
-        )
-        whenever(getFeedUseCase(eq(true), any())).thenReturn(
-            flowOf(Result.failure(Exception("Network unavailable")))
-        )
-
-        viewModel = createViewModel()
-        runCurrent()
-
-        // init's delayed onScreenResumed fires
-        advanceTimeBy(400L)
-        runCurrent()
-        Thread.sleep(100)
-        runCurrent()
-
-        // Feed preserved, no error state, no spinner
-        val state = viewModel.uiState.value as FeedUiState.Success
-        assertEquals("Cached", state.articles.first().title)
-        assertFalse(viewModel.isRefreshing.value)
-        assertFalse(viewModel.isBackgroundSyncing.value)
-    }
-
-    @Test
     fun `refresh flow does not trigger discovery search`() = runTest {
-        whenever(getFeedUseCase(eq(false), any())).thenReturn(
-            flowOf(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
-        )
         whenever(getFeedUseCase(eq(true), any())).thenReturn(
             flowOf(Result.success(emission(emptyList(), FeedEmissionSource.NETWORK, fetchedAt = System.currentTimeMillis())))
         )
@@ -384,9 +388,11 @@ class FeedViewModelTest {
         viewModel.refresh()
         runCurrent()
 
-        // Verify only getFeedUseCase was called, no additional search/discovery
+        // Verify only getFeedUseCase was called (init + refresh = 2)
         verify(getFeedUseCase, times(2)).invoke(any(), any())
     }
+
+    // --- Helpers ---
 
     private fun createViewModel(): FeedViewModel {
         return FeedViewModel(

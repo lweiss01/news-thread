@@ -115,14 +115,13 @@ class FeedViewModel @Inject constructor(
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
 
     init {
-        loadHeadlines()
-        loadTrackedStories()
-        // After showing cached data, silently fetch fresh data in the background.
-        // Small delay so the cache emission renders first (smooth perceived launch).
-        viewModelScope.launch {
-            delay(300L)
-            onScreenResumed()
+        // Always fetch fresh data on launch. Shows cached articles instantly
+        // while "Updating feed..." displays until the network response arrives.
+        _isBackgroundSyncing.value = true
+        headlinesJob = viewModelScope.launch {
+            performBackgroundRefresh()
         }
+        loadTrackedStories()
     }
 
     fun refresh() {
@@ -160,11 +159,13 @@ class FeedViewModel @Inject constructor(
             Log.d(TAG, "Background refresh skipped: debounce window (${(now - lastBackgroundRefreshAt) / 1000}s since last)")
             return
         }
-        if (refreshJob?.isActive == true || headlinesJob?.isActive == true) {
-            Log.d(TAG, "Background refresh skipped: refresh or load already in flight")
+        if (refreshJob?.isActive == true || backgroundRefreshJob?.isActive == true) {
+            Log.d(TAG, "Background refresh skipped: refresh already in flight")
             return
         }
 
+        // Set immediately so UI shows "Updating feed..." on the same frame.
+        _isBackgroundSyncing.value = true
         backgroundRefreshJob?.cancel()
         backgroundRefreshJob = viewModelScope.launch {
             performBackgroundRefresh()
