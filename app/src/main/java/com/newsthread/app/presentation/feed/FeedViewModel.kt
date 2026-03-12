@@ -206,26 +206,34 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    private fun applyHeadlineEmission(
+    private suspend fun applyHeadlineEmission(
         emission: FeedEmission,
         emissionCount: Int,
         requestStartedAt: Long,
         forPullRefresh: Boolean
     ) {
-        val sorted = emission.articles.sortedByDescending { it.publishedAt }
+        // Sort and prepare on Default dispatcher to keep main thread free for
+        // spinner animation.  Only the _uiState assignment needs main.
+        val sorted = withContext(Dispatchers.Default) {
+            emission.articles.sortedByDescending { it.publishedAt }
+        }
         val updatedAt = emission.fetchedAt ?: System.currentTimeMillis()
         _uiState.value = FeedUiState.Success(
             articles = sorted,
             lastUpdatedAt = updatedAt
         )
-        Log.d(
-            TAG,
-            "Feed UI updated (emission=$emissionCount source=${emission.source} pull=$forPullRefresh articles=${sorted.size} elapsed=${System.currentTimeMillis() - requestStartedAt}ms)"
-        )
-        logFeedImageState(sorted)
-        logFeedAgeDistribution(sorted, emission.source.name.lowercase())
-        logTop5Timestamps(sorted, emission.source.name.lowercase())
-        prefetchMissingImages(sorted)
+
+        // Fire-and-forget diagnostics + prefetch off main thread
+        viewModelScope.launch(Dispatchers.Default) {
+            Log.d(
+                TAG,
+                "Feed UI updated (emission=$emissionCount source=${emission.source} pull=$forPullRefresh articles=${sorted.size} elapsed=${System.currentTimeMillis() - requestStartedAt}ms)"
+            )
+            logFeedImageState(sorted)
+            logFeedAgeDistribution(sorted, emission.source.name.lowercase())
+            logTop5Timestamps(sorted, emission.source.name.lowercase())
+            prefetchMissingImages(sorted)
+        }
     }
 
     private fun handleHeadlineFailure(error: Throwable, forPullRefresh: Boolean) {
