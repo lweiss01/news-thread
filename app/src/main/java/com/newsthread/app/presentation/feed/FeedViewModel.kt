@@ -65,6 +65,11 @@ class FeedViewModel @Inject constructor(
         private const val IMAGE_FLUSH_INTERVAL_MS = 500L
         /** How often resolved OG images are persisted to DB in a single batch. */
         private const val IMAGE_DB_FLUSH_INTERVAL_MS = 3000L
+        /**
+         * Minimum interval between background refreshes triggered by screen resume.
+         * Prevents redundant network requests when rapidly switching tabs.
+         */
+        private const val BACKGROUND_REFRESH_DEBOUNCE_MS = 2 * 60 * 1000L // 2 minutes
     }
 
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -81,7 +86,11 @@ class FeedViewModel @Inject constructor(
 
     private var refreshJob: Job? = null
     private var headlinesJob: Job? = null
+    private var backgroundRefreshJob: Job? = null
     private var imageFlushJob: Job? = null
+
+    /** Epoch millis of the last background refresh start (for debouncing). */
+    private var lastBackgroundRefreshAt = 0L
 
     private val persistedImageUrls = mutableSetOf<String>()
     private val inFlightImageResolves = mutableSetOf<String>()
@@ -108,6 +117,12 @@ class FeedViewModel @Inject constructor(
     init {
         loadHeadlines()
         loadTrackedStories()
+        // After showing cached data, silently fetch fresh data in the background.
+        // Small delay so the cache emission renders first (smooth perceived launch).
+        viewModelScope.launch {
+            delay(300L)
+            onScreenResumed()
+        }
     }
 
     fun refresh() {
@@ -126,6 +141,78 @@ class FeedViewModel @Inject constructor(
         headlinesJob?.cancel()
         headlinesJob = viewModelScope.launch {
             fetchHeadlinesDetailed(forceRefresh = false, forPullRefresh = false)
+        }
+    }
+
+    /**
+     * Called when the feed screen becomes visible (app foreground, tab switch).
+     *
+     * Standard news-app pattern: show cached data instantly (already in [_uiState]),
+     * then silently fetch fresh data in the background and swap it in.
+     *
+     * - No pull-to-refresh spinner — just the subtle "Updating feed..." indicator.
+     * - Debounced: skips if a background refresh ran within [BACKGROUND_REFRESH_DEBOUNCE_MS].
+     * - Skipped if a pull-to-refresh or initial load is already in flight.
+     */
+    fun onScreenResumed() {
+        val now = System.currentTimeMillis()
+        if (now - lastBackgroundRefreshAt < BACKGROUND_REFRESH_DEBOUNCE_MS) {
+            Log.d(TAG, "Background refresh skipped: debounce window (${(now - lastBackgroundRefreshAt) / 1000}s since last)")
+            return
+        }
+        if (refreshJob?.isActive == true || headlinesJob?.isActive == true) {
+            Log.d(TAG, "Background refresh skipped: refresh or load already in flight")
+            return
+        }
+
+        backgroundRefreshJob?.cancel()
+        backgroundRefreshJob = viewModelScope.launch {
+            performBackgroundRefresh()
+        }
+    }
+
+    /**
+     * Silently fetches fresh data and swaps it into the UI.
+     * Shows the "Updating feed..." text indicator but no spinner.
+     * On failure, the existing cached feed is preserved untouched.
+     */
+    private suspend fun performBackgroundRefresh() {
+        lastBackgroundRefreshAt = System.currentTimeMillis()
+        _isBackgroundSyncing.value = true
+        Log.d(TAG, "Background refresh started")
+
+        try {
+            var emissionCount = 0
+            getFeedUseCase(forceRefresh = true, minReliability = 2).collect { result ->
+                result.fold(
+                    onSuccess = { emission ->
+                        emissionCount += 1
+                        applyHeadlineEmission(
+                            emission = emission,
+                            emissionCount = emissionCount,
+                            requestStartedAt = lastBackgroundRefreshAt,
+                            forPullRefresh = false
+                        )
+
+                        if (emission.source == FeedEmissionSource.NETWORK) {
+                            _isBackgroundSyncing.value = false
+                            Log.d(TAG, "Background refresh complete: network emission applied (${System.currentTimeMillis() - lastBackgroundRefreshAt}ms)")
+                        }
+                        // CACHE emission during background refresh: keep syncing indicator
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "Background refresh failed: ${error.message}")
+                        // Silently preserve existing feed — no error state, no snackbar
+                        _isBackgroundSyncing.value = false
+                    }
+                )
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) {
+            Log.e(TAG, "Background refresh exception: ${e.message}")
+        } finally {
+            _isBackgroundSyncing.value = false
         }
     }
 
