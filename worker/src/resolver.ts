@@ -8,6 +8,12 @@ const NEGATIVE_CACHE_TTL_SECONDS = 10 * 60;
 const V3_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
 const V3_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
 
+const DASH_REGEX = /-/g;
+const UNDERSCORE_REGEX = /_/g;
+const URL_MATCH_REGEX = /https?:\/\/[^\s"']+/;
+const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href=["']([^"']+)["']/g;
+const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\s"']+/g;
+
 export type ResolveUrlDiagnostics = {
     fromCache: boolean;
     negativeCacheHit: boolean;
@@ -156,7 +162,15 @@ function tryBase64Decode(url: string): ResolveAttemptResult {
         const match = decodedStr.match(URL_MATCH_REGEX);
         if (match) {
             const result = match[0];
-            if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
+            try {
+                const parsed = new URL(result);
+                const hostname = parsed.hostname;
+                if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com')) {
+                    return { resolved: result, failureReason: null };
+                }
+            } catch (e) {
+                // Ignore invalid URLs
+            }
         }
         return { resolved: null, failureReason: 'base64_fail' };
     } catch (e) {
@@ -189,8 +203,15 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
                 console.warn(`[Resolve] CAPTCHA detected during HTTP redirect for ${url.substring(0, 50)}...`);
                 return { resolved: null, failureReason: 'redirect_blocked' };
             }
-            if (!location.includes('news.google.com')) {
-                return { resolved: location, failureReason: null };
+            try {
+                // Use a dummy base URL to properly parse relative redirects
+                const parsed = new URL(location, 'https://news.google.com');
+                const hostname = parsed.hostname;
+                if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com')) {
+                    return { resolved: location, failureReason: null };
+                }
+            } catch (e) {
+                // Ignore invalid URLs
             }
         }
 
@@ -203,25 +224,40 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
                 .map(m => m[1]);
 
             for (const link of allLinks) {
-                if (link.startsWith('http') &&
-                    !link.includes('news.google.com') &&
-                    !link.includes('google.com/url') &&
-                    !link.includes('accounts.google.com') &&
-                    !link.includes('support.google.com') &&
-                    !link.includes('gstatic.com')) {
-                    return { resolved: link, failureReason: null };
+                try {
+                    const parsed = new URL(link);
+                    const hostname = parsed.hostname;
+                    if (parsed.protocol.startsWith('http') &&
+                        hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com') &&
+                        hostname !== 'accounts.google.com' && !hostname.endsWith('.accounts.google.com') &&
+                        hostname !== 'support.google.com' && !hostname.endsWith('.support.google.com') &&
+                        hostname !== 'gstatic.com' && !hostname.endsWith('.gstatic.com') &&
+                        !(hostname === 'google.com' && parsed.pathname.startsWith('/url')) &&
+                        !(hostname.endsWith('.google.com') && parsed.pathname.startsWith('/url'))) {
+                        return { resolved: link, failureReason: null };
+                    }
+                } catch (e) {
+                    // Ignore invalid URLs
                 }
             }
 
             // Fallback: Search for any URL-like string in the HTML that isn't Google
             const urlMatch = html.match(URL_FALLBACK_MATCH_REGEX);
             if (urlMatch) {
-                const finalUrl = urlMatch.find(u =>
-                    !u.includes('google.com') &&
-                    !u.includes('gstatic.com') &&
-                    !u.includes('google')
-                );
-                if (finalUrl) return { resolved: finalUrl, failureReason: null };
+                for (const u of urlMatch) {
+                    try {
+                        const parsed = new URL(u);
+                        const hostname = parsed.hostname;
+                        if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com') &&
+                            hostname !== 'gstatic.com' && !hostname.endsWith('.gstatic.com') &&
+                            hostname !== 'google.com' && !hostname.endsWith('.google.com') &&
+                            !hostname.includes('google')) { // maintain original broader fallback filter
+                            return { resolved: u, failureReason: null };
+                        }
+                    } catch (e) {
+                        // Ignore invalid URLs
+                    }
+                }
             }
         }
 
@@ -313,7 +349,15 @@ async function tryBatchExecute(url: string): Promise<ResolveAttemptResult> {
                     console.warn(`[Resolve] Failed to parse URL from BatchExecute: ${e}`);
                     return { resolved: null, failureReason: 'rpc_fail' };
                 }
-                if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
+                try {
+                    const parsed = new URL(result);
+                    const hostname = parsed.hostname;
+                    if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com')) {
+                        return { resolved: result, failureReason: null };
+                    }
+                } catch (e) {
+                    // Ignore invalid URLs
+                }
             }
         }
 
