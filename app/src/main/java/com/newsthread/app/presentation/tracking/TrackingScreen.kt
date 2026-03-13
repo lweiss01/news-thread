@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -239,7 +240,7 @@ fun EnhancedStoryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !isUnfollowPending) { onStoryClick(summary.storyId) }
+            .clickable(enabled = !isUnfollowPending, role = Role.Button) { onStoryClick(summary.storyId) }
     ) {
         val hasNew = summary.unreadArticles > 0
 
