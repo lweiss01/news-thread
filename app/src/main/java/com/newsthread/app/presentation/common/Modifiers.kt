@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.newsthread.app.presentation.theme.ProjectTheme
@@ -47,13 +48,14 @@ fun Modifier.pulseEffect(
     } else {
         ProjectTheme.glow.subtle
     }
-    
+
     this
         .scale(scale)
         .border(borderWidth, borderColor, targetShape)
         .clickable(
             interactionSource = interactionSource,
             indication = null,
+            role = Role.Button,
             onClick = onClick
         )
 }
@@ -67,7 +69,7 @@ fun Modifier.glassBackground(
     alpha: Float = 0.85f
 ): Modifier = composed {
     val targetShape = shape ?: MaterialTheme.shapes.large
-    
+
     this
         .background(
             color = MaterialTheme.colorScheme.surface.copy(alpha = alpha),
@@ -90,11 +92,11 @@ fun Modifier.radialPulseShimmer(): Modifier = composed {
         val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
         // Static amber glow placeholder as requested by user (no pulse)
         val safeRadius = (size.width.coerceAtMost(size.height) / 2).coerceAtLeast(0.01f)
-        
+
         drawCircle(
             brush = androidx.compose.ui.graphics.Brush.radialGradient(
                 colors = listOf(
-                    com.newsthread.app.presentation.theme.Amber500.copy(alpha = 0.2f), 
+                    com.newsthread.app.presentation.theme.Amber500.copy(alpha = 0.2f),
                     androidx.compose.ui.graphics.Color.Transparent
                 ),
                 center = center,
