@@ -78,8 +78,6 @@ class FeedViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    private val _isBackgroundSyncing = MutableStateFlow(false)
-    val isBackgroundSyncing: StateFlow<Boolean> = _isBackgroundSyncing.asStateFlow()
 
     private val _transientMessage = MutableSharedFlow<String>(extraBufferCapacity = 2)
     val transientMessage: SharedFlow<String> = _transientMessage.asSharedFlow()
@@ -115,10 +113,14 @@ class FeedViewModel @Inject constructor(
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
 
     init {
-        // Always fetch fresh data on launch. Shows cached articles instantly
-        // while "Updating feed..." displays until the network response arrives.
-        _isBackgroundSyncing.value = true
+        // Show cached stories instantly, then silently refresh in the background.
+        // Never show a spinner on launch — instant startup is the priority.
         headlinesJob = viewModelScope.launch {
+            // First, load from cache immediately (no network call)
+            fetchHeadlinesDetailed(forceRefresh = false, forPullRefresh = false)
+            
+            // Then silently refresh in the background if cache is stale
+            delay(500) // Small delay to let the cache render first
             performBackgroundRefresh()
         }
         loadTrackedStories()
@@ -149,7 +151,7 @@ class FeedViewModel @Inject constructor(
      * Standard news-app pattern: show cached data instantly (already in [_uiState]),
      * then silently fetch fresh data in the background and swap it in.
      *
-     * - No pull-to-refresh spinner — just the subtle "Updating feed..." indicator.
+     * - No pull-to-refresh spinner — just a silent update.
      * - Debounced: skips if a background refresh ran within [BACKGROUND_REFRESH_DEBOUNCE_MS].
      * - Skipped if a pull-to-refresh or initial load is already in flight.
      */
@@ -164,8 +166,6 @@ class FeedViewModel @Inject constructor(
             return
         }
 
-        // Set immediately so UI shows "Updating feed..." on the same frame.
-        _isBackgroundSyncing.value = true
         backgroundRefreshJob?.cancel()
         backgroundRefreshJob = viewModelScope.launch {
             performBackgroundRefresh()
@@ -174,12 +174,10 @@ class FeedViewModel @Inject constructor(
 
     /**
      * Silently fetches fresh data and swaps it into the UI.
-     * Shows the "Updating feed..." text indicator but no spinner.
      * On failure, the existing cached feed is preserved untouched.
      */
     private suspend fun performBackgroundRefresh() {
         lastBackgroundRefreshAt = System.currentTimeMillis()
-        _isBackgroundSyncing.value = true
         Log.d(TAG, "Background refresh started")
 
         try {
@@ -196,7 +194,6 @@ class FeedViewModel @Inject constructor(
                         )
 
                         if (emission.source == FeedEmissionSource.NETWORK) {
-                            _isBackgroundSyncing.value = false
                             Log.d(TAG, "Background refresh complete: network emission applied (${System.currentTimeMillis() - lastBackgroundRefreshAt}ms)")
                         }
                         // CACHE emission during background refresh: keep syncing indicator
@@ -204,7 +201,6 @@ class FeedViewModel @Inject constructor(
                     onFailure = { error ->
                         Log.e(TAG, "Background refresh failed: ${error.message}")
                         // Silently preserve existing feed — no error state, no snackbar
-                        _isBackgroundSyncing.value = false
                     }
                 )
             }
@@ -213,7 +209,6 @@ class FeedViewModel @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Background refresh exception: ${e.message}")
         } finally {
-            _isBackgroundSyncing.value = false
         }
     }
 
@@ -244,14 +239,12 @@ class FeedViewModel @Inject constructor(
         var networkCompleted = false
 
         _isRefreshing.value = true
-        _isBackgroundSyncing.value = false
 
         val spinnerCapJob = if (warmCache) {
             viewModelScope.launch {
                 delay(REFRESH_SPINNER_HARD_CAP_MS)
                 if (_isRefreshing.value && !networkCompleted) {
                     _isRefreshing.value = false
-                    _isBackgroundSyncing.value = true
                     Log.d(TAG, "Refresh spinner hard-cap reached (${REFRESH_SPINNER_HARD_CAP_MS}ms); continuing in background")
                 }
             }
@@ -261,7 +254,7 @@ class FeedViewModel @Inject constructor(
 
         val backgroundBudgetJob = viewModelScope.launch {
             delay(BACKGROUND_SYNC_SOFT_BUDGET_MS)
-            if (_isBackgroundSyncing.value) {
+            if (_isRefreshing.value) {
                 _transientMessage.tryEmit("Feed is still updating in the background.")
             }
         }
@@ -290,7 +283,6 @@ class FeedViewModel @Inject constructor(
                             FeedEmissionSource.NETWORK -> {
                                 networkCompleted = true
                                 _isRefreshing.value = false
-                                _isBackgroundSyncing.value = false
                             }
                         }
                     },
@@ -306,7 +298,6 @@ class FeedViewModel @Inject constructor(
             backgroundBudgetJob.cancel()
 
             if (!networkCompleted) {
-                _isBackgroundSyncing.value = false
                 _isRefreshing.value = false
             }
 
@@ -351,14 +342,12 @@ class FeedViewModel @Inject constructor(
             Log.e(TAG, "Fetch failed but preserving state: ${error.message}")
             if (forPullRefresh) {
                 _isRefreshing.value = false
-                _isBackgroundSyncing.value = false
                 _transientMessage.tryEmit(buildRefreshFailureMessage(error, currentState.lastUpdatedAt))
             }
             return
         }
 
         _isRefreshing.value = false
-        _isBackgroundSyncing.value = false
         _uiState.value = FeedUiState.Error(error.message ?: "Failed to load articles")
     }
 
@@ -632,7 +621,7 @@ class FeedViewModel @Inject constructor(
     private fun loadTrackedStories() {
         viewModelScope.launch {
             getTrackedStoriesUseCase()
-                .debounce(1000L)           // Collapse rapid Room invalidations
+                .debounce(100L)           // Short debounce to collapse rapid Room invalidations while keeping UI responsive
                 .flowOn(Dispatchers.Default) // Re-query + combine transform off main
                 .collect { stories ->
                     val map = mutableMapOf<String, String>()
