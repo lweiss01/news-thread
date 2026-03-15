@@ -83,7 +83,10 @@ class TrackingViewModel @Inject constructor(
                     summary
                 }
             }
-            ?.sortedByDescending { it.lastUpdate }
+            ?.sortedWith(
+                compareByDescending<TrackedStorySummary> { it.unreadArticles > 0 }
+                    .thenByDescending { it.lastUpdate }
+            )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,

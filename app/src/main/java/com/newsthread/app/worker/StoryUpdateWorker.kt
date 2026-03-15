@@ -13,6 +13,7 @@ import com.newsthread.app.domain.usecase.StoryRefreshMode
 import com.newsthread.app.domain.usecase.UpdateTrackedStoriesUseCase
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.util.NotificationHelper
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.lastOrNull
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -79,17 +80,14 @@ class StoryUpdateWorker @AssistedInject constructor(
             val matchesByStory = interestingMatches.groupBy { it.storyId }
 
             matchesByStory.forEach { (storyId, matches) ->
-                 val isNovel = matches.any { it.isNovel }
-                 val isPerspective = matches.any { it.hasNewPerspective }
-                 
-                 val title = if (isNovel && isPerspective) "New Updates & Perspectives" 
-                             else if (isNovel) "New Updates" 
-                             else "New Perspectives"
+                 val trackedStory = trackingRepository.getTrackedStory(storyId).firstOrNull()
+                 val storyTitle = trackedStory?.story?.title ?: "Tracked Story"
                              
+                 val title = storyTitle
                  val body = if (matches.size == 1) {
-                     "Update on tracked story: ${matches.first().articleTitle}"
+                     "1 new update available"
                  } else {
-                     "${matches.size} new updates on tracked story"
+                     "${matches.size} new updates available"
                  }
                  
                  notificationHelper.showNotification(title, body, storyId)
