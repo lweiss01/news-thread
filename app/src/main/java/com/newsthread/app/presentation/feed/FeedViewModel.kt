@@ -23,11 +23,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -111,6 +114,27 @@ class FeedViewModel @Inject constructor(
 
     private val _trackedStoriesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val trackedStoriesMap: StateFlow<Map<String, String>> = _trackedStoriesMap.asStateFlow()
+
+    // Optimistic UI state: URLs that are pending track/untrack operations
+    private val _optimisticallyTracked = MutableStateFlow<Set<String>>(emptySet())
+    private val _optimisticallyUntracked = MutableStateFlow<Set<String>>(emptySet())
+
+    val effectiveTrackedMap: StateFlow<Map<String, String>> = combine(
+        _trackedStoriesMap,
+        _optimisticallyTracked,
+        _optimisticallyUntracked
+    ) { dbMap, tracked, untracked ->
+        val result = dbMap.toMutableMap()
+        // Add optimistically tracked URLs
+        tracked.forEach { url -> result[url] = "pending" }
+        // Remove optimistically untracked URLs
+        untracked.forEach { url -> result.remove(url) }
+        result
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = emptyMap()
+    )
 
     init {
         // Show cached stories instantly, then silently refresh in the background.
@@ -638,10 +662,24 @@ class FeedViewModel @Inject constructor(
     }
 
     fun toggleFollow(article: Article) {
+        val isCurrentlyTracked = _trackedStoriesMap.value.containsKey(article.url)
+        
+        // Optimistic update for instant UI feedback
+        if (isCurrentlyTracked) {
+            _optimisticallyUntracked.value = _optimisticallyUntracked.value + article.url
+        } else {
+            _optimisticallyTracked.value = _optimisticallyTracked.value + article.url
+        }
+        
         viewModelScope.launch {
             val mapSnapshot = _trackedStoriesMap.value
-            Log.d(TAG, "toggleFollow: url=${article.url} currentlyTracked=${mapSnapshot.containsKey(article.url)} mapSize=${mapSnapshot.size}")
+            Log.d(TAG, "toggleFollow: url=${article.url} currentlyTracked=${isCurrentlyTracked} mapSize=${mapSnapshot.size}")
             toggleFollowUseCase(article, mapSnapshot)
+            
+            // Clear optimistic state after operation completes (DB will have the real state)
+            delay(500) // Give Room time to emit the update
+            _optimisticallyTracked.value = _optimisticallyTracked.value - article.url
+            _optimisticallyUntracked.value = _optimisticallyUntracked.value - article.url
         }
     }
 }

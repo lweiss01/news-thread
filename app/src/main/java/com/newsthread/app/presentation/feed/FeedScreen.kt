@@ -61,7 +61,7 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
+    val trackedStoriesMap by viewModel.effectiveTrackedMap.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
