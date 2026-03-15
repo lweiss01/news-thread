@@ -61,7 +61,6 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val isBackgroundSyncing by viewModel.isBackgroundSyncing.collectAsStateWithLifecycle()
     val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -124,19 +123,19 @@ fun FeedScreen(
         // M3 Pull-to-Refresh
         val pullRefreshState = rememberPullToRefreshState()
 
-        // When user pulls past threshold, trigger refresh exactly once.
-        if (pullRefreshState.isRefreshing) {
-            LaunchedEffect(true) {
-                viewModel.refresh()
+        // Sync ViewModel refreshing state → pull indicator FIRST
+        LaunchedEffect(isRefreshing) {
+            if (isRefreshing) {
+                pullRefreshState.startRefresh()
+            } else {
+                pullRefreshState.endRefresh()
             }
         }
 
-        // Sync ViewModel refreshing state → pull indicator.
-        // Only call endRefresh when the ViewModel signals done;
-        // never call startRefresh here — the gesture already started it.
-        LaunchedEffect(isRefreshing) {
-            if (!isRefreshing) {
-                pullRefreshState.endRefresh()
+        // When user pulls past threshold, trigger refresh exactly once.
+        LaunchedEffect(pullRefreshState.isRefreshing) {
+            if (pullRefreshState.isRefreshing) {
+                viewModel.refresh()
             }
         }
 
@@ -178,31 +177,17 @@ fun FeedScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            if (isRefreshing || isBackgroundSyncing) {
-                                item(key = "background-sync-indicator") {
+                            state.lastUpdatedAt?.let { updatedAt ->
+                                item(key = "last-updated-indicator") {
                                     Text(
-                                        text = "Updating feed...",
+                                        text = "Updated ${formatLastUpdatedTime(updatedAt)}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
+                                        color = MaterialTheme.colorScheme.outline,
                                         modifier = Modifier.padding(
                                             horizontal = 16.dp,
                                             vertical = 8.dp
                                         )
                                     )
-                                }
-                            } else {
-                                state.lastUpdatedAt?.let { updatedAt ->
-                                    item(key = "last-updated-indicator") {
-                                        Text(
-                                            text = "Updated ${formatLastUpdatedTime(updatedAt)}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.outline,
-                                            modifier = Modifier.padding(
-                                                horizontal = 16.dp,
-                                                vertical = 8.dp
-                                            )
-                                        )
-                                    }
                                 }
                             }
                             itemsIndexed(

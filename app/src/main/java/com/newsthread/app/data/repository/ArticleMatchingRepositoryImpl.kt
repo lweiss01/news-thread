@@ -25,6 +25,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import java.net.URI
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -63,8 +67,43 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     private val entityExtractor: EntityExtractor
 ) : ArticleMatchingRepository {
 
+    // In-memory deduplication: if a search is already in progress, reuse it
+    private val activeSearches = mutableMapOf<String, kotlinx.coroutines.Deferred<Result<ArticleComparison>>>()
+
     override suspend fun findSimilarArticles(article: Article): Flow<Result<ArticleComparison>> = flow {
+        // Check if there's already an active search for this article
+        val existingSearch = synchronized(activeSearches) {
+            activeSearches[article.url]
+        }
+
+        if (existingSearch != null) {
+            safeLogD("Deduplicating search request for: ${article.title.take(30)}...")
+            val result = existingSearch.await()
+            emit(result)
+            return@flow
+        }
+
+        // Start a new search and register it
+        val searchDeferred = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).async {
+            performSearch(article)
+        }
+
+        synchronized(activeSearches) {
+            activeSearches[article.url] = searchDeferred
+        }
+
         try {
+            val result = searchDeferred.await()
+            emit(result)
+        } finally {
+            synchronized(activeSearches) {
+                activeSearches.remove(article.url)
+            }
+        }
+    }
+
+    private suspend fun performSearch(article: Article): Result<ArticleComparison> {
+        return try {
             // 1. Check Cache
             val now = System.currentTimeMillis()
             val cachedResult = matchResultDao.getValidByArticleUrl(article.url, now)
@@ -84,8 +123,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
                     if (cachedArticles.isNotEmpty()) {
                         safeLogD("Cache Hit: Found ${cachedArticles.size} matches for ${article.title.take(30)}...")
                         val comparison = categorizeAndSort(article, cachedArticles, cachedResult.matchMethod)
-                        emit(Result.success(comparison))
-                        return@flow
+                        return Result.success(comparison)
                     }
                 }
             }
@@ -161,14 +199,14 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             // 6. Return Result
             val method = if (sourceEmbedding != null) "semantic_similarity_v1" else "keyword_fallback"
             val comparison = categorizeAndSort(article, matchedArticles, method)
-            emit(Result.success(comparison))
+            Result.success(comparison)
 
         } catch (e: Exception) {
             // CRITICAL: Do not catch CancellationException (including AbortFlowException from .first())
             if (e is kotlinx.coroutines.CancellationException) throw e
 
             safeLogE("Error finding similar articles: ${e.message}", e)
-            emit(Result.failure(e))
+            Result.failure(e)
         }
     }
 
