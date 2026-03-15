@@ -261,8 +261,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     ): List<ScoredArticle> {
         try {
             // RSS search via NewsRepository (Google News keyword RSS, ~7-day window)
-            // Phase 16: Use cached results (forceRefresh=false) to prevent network timeouts during background discovery
-            val searchResult = newsRepository.searchArticles(query, forceRefresh = false).last()
+            // Use forceRefresh=true to actually search the network when we need matches
+            val searchResult = newsRepository.searchArticles(query, forceRefresh = true).last()
             val candidates = searchResult.getOrElse { emptyList() }
                 .filter { it.url !in visitedUrls }
                 .distinctBy { it.url }
