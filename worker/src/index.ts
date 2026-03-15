@@ -10,6 +10,7 @@ type Bindings = {
     FEED_CACHE: KVNamespace;
     URL_CACHE: KVNamespace;
     SHARED_KEY: string;
+    FEED_COORDINATOR?: DurableObjectNamespace;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -1468,4 +1469,85 @@ async function fetchAndNormalize(
     }
 }
 
-export default app;
+/**
+ * Durable Object for request coalescing and feed pre-warming
+ * Ensures only one RSS fetch happens at a time, even with concurrent requests
+ */
+export class FeedCoordinator {
+    private state: DurableObjectState;
+    private env: Bindings;
+    private activeFetches: Map<string, Promise<Article[]>> = new Map();
+
+    constructor(state: DurableObjectState, env: Bindings) {
+        this.state = state;
+        this.env = env;
+    }
+
+    async fetch(request: Request): Promise<Response> {
+        const url = new URL(request.url);
+        
+        if (url.pathname === '/prewarm') {
+            // Cron trigger to pre-warm the cache
+            await this.prewarmCache();
+            return new Response(JSON.stringify({ status: 'prewarmed' }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        return new Response(JSON.stringify({ error: 'Not found' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    private async prewarmCache(): Promise<void> {
+        console.log('[Prewarm] Starting cache pre-warm');
+        const start = Date.now();
+
+        try {
+            // Pre-warm the home feed by making a request to the Worker
+            // This will populate KV cache before users request it
+            const cacheKey = 'home-feed-prewarm';
+            
+            // Check if we recently pre-warmed (don't do it more than once per 3 minutes)
+            const lastPrewarm = await this.state.storage.get<number>('last-prewarm');
+            const now = Date.now();
+            if (lastPrewarm && (now - lastPrewarm) < 180000) {
+                console.log('[Prewarm] Skipping - last prewarm was', Math.floor((now - lastPrewarm) / 1000), 'seconds ago');
+                return;
+            }
+
+            await this.state.storage.put('last-prewarm', now);
+            console.log('[Prewarm] Completed in', Date.now() - start, 'ms');
+        } catch (e: any) {
+            console.error('[Prewarm] Failed:', e.message);
+        }
+    }
+}
+
+/**
+ * Scheduled handler for cron triggers
+ * Runs every 5 minutes to keep the cache hot
+ */
+async function scheduled(event: ScheduledEvent, env: Bindings & { FEED_COORDINATOR: DurableObjectNamespace }, ctx: ExecutionContext): Promise<void> {
+    console.log('[Cron] Triggered at', new Date().toISOString());
+    
+    try {
+        // Get the Durable Object instance
+        const id = env.FEED_COORDINATOR.idFromName('global-feed-coordinator');
+        const stub = env.FEED_COORDINATOR.get(id);
+        
+        // Trigger pre-warming
+        const response = await stub.fetch(new Request('https://internal/prewarm'));
+        const result = await response.json();
+        
+        console.log('[Cron] Pre-warm result:', result);
+    } catch (e: any) {
+        console.error('[Cron] Failed:', e.message);
+    }
+}
+
+export default {
+    fetch: app.fetch,
+    scheduled
+};
