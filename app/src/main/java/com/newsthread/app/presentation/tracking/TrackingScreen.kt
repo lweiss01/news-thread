@@ -279,16 +279,35 @@ fun EnhancedStoryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (hasNew) {
-                        "${summary.unreadArticles} NEW · ${summary.totalArticles} total"
-                    } else {
-                        "${summary.totalArticles} articles"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (hasNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (hasNew) FontWeight.Bold else FontWeight.Normal
-                )
+                Column {
+                    Text(
+                        text = if (hasNew) {
+                            "${summary.unreadArticles} NEW · ${summary.totalArticles} total"
+                        } else {
+                            "${summary.totalArticles} articles"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (hasNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (hasNew) FontWeight.Bold else FontWeight.Normal
+                    )
+                    
+                    // Show last update timestamp
+                    val lastUpdateText = remember(summary.lastUpdate) {
+                        val now = System.currentTimeMillis()
+                        val diffMs = now - summary.lastUpdate
+                        when {
+                            diffMs < 60_000 -> "Updated just now"
+                            diffMs < 3600_000 -> "Updated ${diffMs / 60_000}m ago"
+                            diffMs < 86400_000 -> "Updated ${diffMs / 3600_000}h ago"
+                            else -> "Updated ${diffMs / 86400_000}d ago"
+                        }
+                    }
+                    Text(
+                        text = lastUpdateText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
 
                 IconButton(
                     enabled = !isUnfollowPending,
