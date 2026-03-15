@@ -83,17 +83,19 @@ fun TrackingScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
-    if (pullToRefreshState.isRefreshing) {
-        LaunchedEffect(Unit) {
-            viewModel.refresh()
-        }
-    }
-
+    // Sync ViewModel refreshing state → pull indicator FIRST
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
             pullToRefreshState.startRefresh()
         } else {
             pullToRefreshState.endRefresh()
+        }
+    }
+
+    // When user pulls past threshold, trigger refresh exactly once.
+    LaunchedEffect(pullToRefreshState.isRefreshing) {
+        if (pullToRefreshState.isRefreshing) {
+            viewModel.refresh()
         }
     }
 
