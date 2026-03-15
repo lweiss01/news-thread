@@ -29,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import java.net.URI
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -223,11 +224,34 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
 
         if (candidateUrls.isEmpty()) return emptyList()
 
-        // Get embeddings for all candidates
-        val embeddings = embeddingDao.getByArticleUrls(candidateUrls)
+        // Get existing embeddings
+        val existingEmbeddings = embeddingDao.getByArticleUrls(candidateUrls)
+        val existingEmbeddingUrls = existingEmbeddings
+            .filter { it.embeddingStatus == EmbeddingStatus.SUCCESS && it.embedding.isNotEmpty() }
+            .map { it.articleUrl }
+            .toSet()
+
+        // Generate embeddings for candidates that don't have them yet
+        val missingEmbeddingUrls = candidateUrls.filter { it !in existingEmbeddingUrls }
+        if (missingEmbeddingUrls.isNotEmpty()) {
+            safeLogD("Generating ${missingEmbeddingUrls.size} missing embeddings for feed matches...")
+            missingEmbeddingUrls.map { url ->
+                CoroutineScope(Dispatchers.IO).async {
+                    try {
+                        embeddingRepository.getOrGenerateEmbedding(url)
+                    } catch (e: Exception) {
+                        safeLogE("Failed to generate embedding for $url", e)
+                        null
+                    }
+                }
+            }.awaitAll()
+        }
+
+        // Now get all embeddings (including newly generated ones)
+        val allEmbeddings = embeddingDao.getByArticleUrls(candidateUrls)
         val urlToArticle = cachedArticles.associateBy { it.url }
 
-        return embeddings
+        return allEmbeddings
             .filter { it.embeddingStatus == EmbeddingStatus.SUCCESS && it.embedding.isNotEmpty() }
             .mapNotNull { entity ->
                 val candidateEmbedding = byteArrayToFloatArray(entity.embedding)
