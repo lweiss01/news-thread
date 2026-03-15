@@ -78,6 +78,7 @@ class TrackingViewModel @Inject constructor(
             ?.sortedWith(
                 compareByDescending<TrackedStorySummary> { it.unreadArticles > 0 }
                     .thenByDescending { it.lastUpdate }
+                    .thenByDescending { it.unreadArticles }
             )
     }.stateIn(
         scope = viewModelScope,

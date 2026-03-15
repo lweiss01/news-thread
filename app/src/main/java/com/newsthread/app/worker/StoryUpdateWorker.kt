@@ -74,24 +74,12 @@ class StoryUpdateWorker @AssistedInject constructor(
                 - New perspectives: $perspectiveMatches
             """.trimIndent())
 
-            // Phase 10: Trigger Notifications for interesting updates
-            // Group by storyId to avoid duplicate notifications
+            // Phase 10: Mark stories as notified (disabled toast notifications - too noisy)
             val interestingMatches = results.filter { it.isNovel || it.hasNewPerspective }
             val matchesByStory = interestingMatches.groupBy { it.storyId }
 
-            matchesByStory.forEach { (storyId, matches) ->
-                 val trackedStory = trackingRepository.getTrackedStory(storyId).firstOrNull()
-                 val storyTitle = trackedStory?.story?.title ?: "Tracked Story"
-                             
-                 val title = storyTitle
-                 val body = if (matches.size == 1) {
-                     "1 new update available"
-                 } else {
-                     "${matches.size} new updates available"
-                 }
-                 
-                 notificationHelper.showNotification(title, body, storyId)
-                 trackingRepository.markStoryNotified(storyId)
+            matchesByStory.forEach { (storyId, _) ->
+                trackingRepository.markStoryNotified(storyId)
             }
 
             Result.success()

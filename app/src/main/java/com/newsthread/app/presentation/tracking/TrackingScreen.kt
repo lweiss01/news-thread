@@ -291,15 +291,15 @@ fun EnhancedStoryCard(
                         fontWeight = if (hasNew) FontWeight.Bold else FontWeight.Normal
                     )
                     
-                    // Show last update timestamp
+                    // Show when new articles were last matched
                     val lastUpdateText = remember(summary.lastUpdate) {
                         val now = System.currentTimeMillis()
                         val diffMs = now - summary.lastUpdate
                         when {
-                            diffMs < 60_000 -> "Updated just now"
-                            diffMs < 3600_000 -> "Updated ${diffMs / 60_000}m ago"
-                            diffMs < 86400_000 -> "Updated ${diffMs / 3600_000}h ago"
-                            else -> "Updated ${diffMs / 86400_000}d ago"
+                            diffMs < 60_000 -> "New articles just now"
+                            diffMs < 3600_000 -> "New articles ${diffMs / 60_000}m ago"
+                            diffMs < 86400_000 -> "New articles ${diffMs / 3600_000}h ago"
+                            else -> "New articles ${diffMs / 86400_000}d ago"
                         }
                     }
                     Text(
