@@ -656,6 +656,13 @@ class FeedViewModel @Inject constructor(
                     }
                     val prevSize = _trackedStoriesMap.value.size
                     _trackedStoriesMap.value = map
+                    
+                    // Clear optimistic state when database reflects the change
+                    // - If URL is in optimisticallyTracked and now in DB → clear it
+                    // - If URL is in optimisticallyUntracked and NOT in DB → clear it
+                    _optimisticallyTracked.value = _optimisticallyTracked.value.filterNot { url -> map.containsKey(url) }.toSet()
+                    _optimisticallyUntracked.value = _optimisticallyUntracked.value.filterNot { url -> !map.containsKey(url) }.toSet()
+                    
                     Log.d(TAG, "trackedStoriesMap updated: ${prevSize}->${map.size} stories=${stories.size} urls=${map.keys.take(3)}")
                 }
         }
@@ -675,11 +682,6 @@ class FeedViewModel @Inject constructor(
             val mapSnapshot = _trackedStoriesMap.value
             Log.d(TAG, "toggleFollow: url=${article.url} currentlyTracked=${isCurrentlyTracked} mapSize=${mapSnapshot.size}")
             toggleFollowUseCase(article, mapSnapshot)
-            
-            // Clear optimistic state after operation completes (DB will have the real state)
-            delay(500) // Give Room time to emit the update
-            _optimisticallyTracked.value = _optimisticallyTracked.value - article.url
-            _optimisticallyUntracked.value = _optimisticallyUntracked.value - article.url
         }
     }
 }
