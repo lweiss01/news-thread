@@ -16,9 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -96,7 +95,7 @@ fun ArticleCard(
                             }
                         }
                     }
-                    
+
                     // Time ago
                     val timeAgo = getRelativeTime(article.publishedAt)
                     if (timeAgo != null) {
@@ -127,20 +126,12 @@ fun ArticleCard(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = androidx.compose.material.ripple.rememberRipple(bounded = false),
+                                    role = Role.Button,
                                     onClick = {
                                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                         onBookmarkClick()
                                     }
-                                )
-                                .pointerInput(Unit) {
-                                    // Consume all pointer events to prevent parent card click
-                                    awaitPointerEventScope {
-                                        while (true) {
-                                            val event = awaitPointerEvent()
-                                            event.changes.forEach { it.consume() }
-                                        }
-                                    }
-                                },
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -366,8 +357,3 @@ private fun getRelativeTime(epochMillis: Long): String? {
         else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(epochMillis))
     }
 }
-
-
-
-
-
