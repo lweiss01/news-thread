@@ -8,6 +8,8 @@ const NEGATIVE_CACHE_TTL_SECONDS = 10 * 60;
 const V3_PREFIX = Buffer.from([0x08, 0x13, 0x22]).toString('latin1');
 const V3_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
 
+const URL_MATCH_REGEX = /https?:\/\/[^\x00-\x1F\x7F-\x9F"'<>\s]+/g;
+
 export type ResolveUrlDiagnostics = {
     fromCache: boolean;
     negativeCacheHit: boolean;
@@ -124,12 +126,16 @@ function isStrictGoogleNewsUrl(url: string): boolean {
 
 function tryBase64Decode(url: string): ResolveAttemptResult {
     try {
-        const parts = url.split('/');
-        const encoded = parts[parts.length - 1].split('?')[0];
+        const lastSlash = url.lastIndexOf('/');
+        const queryParam = url.indexOf('?', lastSlash);
+        const encoded = queryParam !== -1
+            ? url.substring(lastSlash + 1, queryParam)
+            : url.substring(lastSlash + 1);
+
         if (!encoded) return { resolved: null, failureReason: 'base64_fail' };
 
         // Base64url decode
-        const buffer = Buffer.from(encoded.replace(DASH_REGEX, '+').replace(UNDERSCORE_REGEX, '/'), 'base64');
+        const buffer = Buffer.from(encoded, 'base64url');
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
@@ -156,7 +162,7 @@ function tryBase64Decode(url: string): ResolveAttemptResult {
         const match = decodedStr.match(URL_MATCH_REGEX);
         if (match) {
             const result = match[0];
-            if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
+            if (!isStrictGoogleNewsUrl(result)) return { resolved: result, failureReason: null };
         }
         return { resolved: null, failureReason: 'base64_fail' };
     } catch (e) {
@@ -189,7 +195,7 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
                 console.warn(`[Resolve] CAPTCHA detected during HTTP redirect for ${url.substring(0, 50)}...`);
                 return { resolved: null, failureReason: 'redirect_blocked' };
             }
-            if (!location.includes('news.google.com')) {
+            if (!isStrictGoogleNewsUrl(location)) {
                 return { resolved: location, failureReason: null };
             }
         }
@@ -198,13 +204,16 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
         if (response.status === 200) {
             const html = await response.text();
 
+            const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href="([^"]+)"/g;
+            const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\x00-\x1F\x7F-\x9F"'<>\s]+/g;
+
             // Find all links and pick the first one that isn't Google
             const allLinks = Array.from(html.matchAll(HTTP_REDIRECT_LINKS_REGEX))
                 .map(m => m[1]);
 
             for (const link of allLinks) {
                 if (link.startsWith('http') &&
-                    !link.includes('news.google.com') &&
+                    !isStrictGoogleNewsUrl(link) &&
                     !link.includes('google.com/url') &&
                     !link.includes('accounts.google.com') &&
                     !link.includes('support.google.com') &&
@@ -313,7 +322,7 @@ async function tryBatchExecute(url: string): Promise<ResolveAttemptResult> {
                     console.warn(`[Resolve] Failed to parse URL from BatchExecute: ${e}`);
                     return { resolved: null, failureReason: 'rpc_fail' };
                 }
-                if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
+                if (!isStrictGoogleNewsUrl(result)) return { resolved: result, failureReason: null };
             }
         }
 
