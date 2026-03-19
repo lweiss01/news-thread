@@ -38,6 +38,9 @@ android {
         ksp {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
+
+        buildConfigField("String", "WORKER_URL", "\"https://newsthread-api.newsthread.workers.dev\"")
+        buildConfigField("String", "WORKER_API_KEY", "\"newsthread-v1-key\"")
     }
 
     buildTypes {

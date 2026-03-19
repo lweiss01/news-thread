@@ -172,3 +172,4 @@ tmp/
 .bg-shell/
 *.html
 init_todos.json
+cloudflare-worker/

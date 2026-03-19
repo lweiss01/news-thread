@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material3.*
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,10 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.data.remote.OgImageResolver
 import com.newsthread.app.presentation.comparison.ReliabilityBadge
 import com.newsthread.app.presentation.theme.Amber600
 import com.newsthread.app.presentation.theme.NewsLinkDark
 import com.newsthread.app.presentation.theme.ProjectTheme
+import com.newsthread.app.util.TimeUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -38,6 +42,9 @@ import java.util.*
 @Composable
 fun ArticleCard(
     article: Article,
+    sourceRatings: Map<String, SourceRating>,
+    isTracked: Boolean = false,
+    ogImageResolver: OgImageResolver? = null,
     showSourceFallbackLogo: Boolean = true,
     isTracked: Boolean = false,
     isNew: Boolean = false,
@@ -72,6 +79,18 @@ fun ArticleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Text(
+                        text = article.source.name.uppercase(), // Mockup shows all caps
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = sourceColor,
+                        letterSpacing = 1.sp
+                    )
+
+                    // Time ago
+                    val timeAgo = TimeUtils.getRelativeTimeFromString(article.publishedAt)
+                    if (timeAgo != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = article.source.name.uppercase(),
@@ -106,6 +125,7 @@ fun ArticleCard(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Spacer(modifier = Modifier.width(ProjectTheme.spacing.xs))
                         Text(
                             text = timeAgo,
@@ -116,6 +136,15 @@ fun ArticleCard(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.xs)
+                    ) {
+                        ReliabilityBadge(rating = article.sourceRating, size = 18.dp)
+
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                onBookmarkClick()
+                            }
                         horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.s)
                     ) {
                         ReliabilityBadge(rating = article.sourceRating, size = ProjectTheme.icon.small)
@@ -139,6 +168,7 @@ fun ArticleCard(
                                 imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = if (isTracked) "Unfollow" else "Follow",
                                 tint = if (isTracked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp)
                                 modifier = Modifier.size(ProjectTheme.icon.small)
                             )
                         }
@@ -170,6 +200,29 @@ fun ArticleCard(
                     )
                 }
 
+                // Image — progressive OG resolution for articles missing images
+                var resolvedImageUrl by remember(article.url) {
+                    mutableStateOf(article.urlToImage)
+                }
+
+                // Lazy-fetch OG image if no image from RSS/worker
+                if (resolvedImageUrl == null && ogImageResolver != null) {
+                    LaunchedEffect(article.url) {
+                        resolvedImageUrl = ogImageResolver.resolve(article.url)
+                    }
+                }
+
+                resolvedImageUrl?.let { imageUrl ->
+                    Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(MaterialTheme.shapes.small),
+                        contentScale = ContentScale.Crop
+                    )
                 // Image display — OG resolution is handled by FeedViewModel's
                 // prefetchMissingImages which batches updates into _uiState.
                 // The card just renders whatever image the article currently has.
@@ -249,6 +302,7 @@ fun ArticleCard(
                     Column(
                         modifier = Modifier
                             .weight(1f)
+                            .padding(end = 16.dp)
                             .padding(end = ProjectTheme.spacing.m)
                             .semantics(mergeDescendants = true) {
                                 contentDescription = "Bias rating: ${article.sourceRating?.getBiasDescription() ?: "Unknown"}"
@@ -256,6 +310,19 @@ fun ArticleCard(
                     ) {
                         Text(
                             text = "BIAS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
+
+                        // Spectrum Bar with Dot
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(12.dp),
                             style = ProjectTheme.typography.labelSmallProminent,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -276,6 +343,7 @@ fun ArticleCard(
                                     .background(ProjectTheme.bias.gradient)
                             )
 
+                            // Dot Indicator
                             // Breathing Dot Indicator
                             val biasScore = article.sourceRating?.finalBiasScore
                             if (biasScore != null) {
@@ -292,6 +360,12 @@ fun ArticleCard(
                                             .fillMaxWidth(biasRatio)
                                             .align(Alignment.CenterStart)
                                     ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(dotColor)
+                                                .align(Alignment.CenterEnd)
                                         BreathingGlow(
                                             color = dotColor,
                                             modifier = Modifier.align(Alignment.CenterEnd)
@@ -307,6 +381,7 @@ fun ArticleCard(
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
                             onBookmarkClick()
                         },
+                        modifier = Modifier.widthIn(min = 80.dp),
                         modifier = Modifier
                             .minimumInteractiveComponentSize()
                             .widthIn(min = 80.dp),
@@ -317,6 +392,15 @@ fun ArticleCard(
                     ) {
                         Text(
                             text = if (isTracked) "TRACKING" else "+ Track",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
                             style = ProjectTheme.typography.labelSmallProminent,
                             color = if (isTracked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                         )
