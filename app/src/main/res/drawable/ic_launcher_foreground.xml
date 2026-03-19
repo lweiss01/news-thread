@@ -6,52 +6,42 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- More conservative scale for circular adaptive-icon masks -->
     <group
         android:pivotX="54"
         android:pivotY="54"
-        android:scaleX="0.66"
-        android:scaleY="0.66"
-        android:translateY="0">
-
-        <!-- Gold "N" -->
+        android:scaleX="1.05"
+        android:scaleY="1.05">
+        <!-- True glyph outline for capital N (from SVG fallback stack metrics), scaled for mask-safe proportions -->
         <path
-            android:pathData="M 26,76 V 20 H 42 L 76,66 V 20 H 90 V 76 H 74 L 40,30 V 76 Z">
+            android:pathData="M43.046875,39.09375 L49.65625,39.09375 58.28125,51.7666015625 58.28125,39.09375 64.953125,39.09375 64.953125,62 58.28125,62 49.703125,49.4228515625 49.703125,62 43.046875,62 Z">
             <aapt:attr name="android:fillColor">
                 <gradient
                     android:type="linear"
                     android:startX="54"
-                    android:startY="20"
+                    android:startY="39.09375"
                     android:endX="54"
-                    android:endY="76">
-                    <item android:offset="0" android:color="#F6C85C"/>
-                    <item android:offset="1" android:color="#D97A17"/>
+                    android:endY="62">
+                    <item android:offset="0" android:color="#FCD34D"/>
+                    <item android:offset="1" android:color="#D97706"/>
                 </gradient>
             </aapt:attr>
         </path>
 
-        <!-- Spectrum pill: lifted up slightly + slightly shorter vertical footprint -->
+        <!-- Same bar size, lifted slightly for circular-mask clearance -->
         <path
-            android:pathData="M 24,74
-                              H 84
-                              C 90,74 94,78 94,81
-                              C 94,85 90,88 84,88
-                              H 24
-                              C 18,88 14,85 14,81
-                              C 14,78 18,74 24,74 Z">
+            android:pathData="M38,67.5 H70 A2.5,2.5 0 0 1 72.5,70 A2.5,2.5 0 0 1 70,72.5 H38 A2.5,2.5 0 0 1 35.5,70 A2.5,2.5 0 0 1 38,67.5 Z">
             <aapt:attr name="android:fillColor">
                 <gradient
                     android:type="linear"
-                    android:startX="14"
-                    android:startY="81"
-                    android:endX="94"
-                    android:endY="81">
+                    android:startX="35.5"
+                    android:startY="70"
+                    android:endX="72.5"
+                    android:endY="70">
                     <item android:offset="0" android:color="#60A5FA"/>
                     <item android:offset="0.50" android:color="#A78BFA"/>
                     <item android:offset="1" android:color="#F87171"/>
                 </gradient>
             </aapt:attr>
         </path>
-
     </group>
 </vector>

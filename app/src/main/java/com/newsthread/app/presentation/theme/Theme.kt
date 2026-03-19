@@ -13,6 +13,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
 // ---------------------------------------------------------------------------
@@ -158,6 +161,16 @@ fun NewsThreadTheme(
     CompositionLocalProvider(
         LocalSpacing provides NewsSpacing(),
         LocalElevations provides NewsElevations(),
+        LocalIconSizes provides NewsIconSizes(),
+        LocalNewsTypography provides NewsTypography(
+            labelSmallProminent = TextStyle(
+                fontFamily = InterFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                letterSpacing = 1.sp
+            )
+        ),
         LocalGlow    provides glow,
         LocalBias    provides bias
     ) {
@@ -172,13 +185,13 @@ fun NewsThreadTheme(
 
 
 // ---------------------------------------------------------------------------
-// ProjectTheme Accessor
-// Usage example:
-//   val bias = ProjectTheme.bias
-//   Text("Left Perspective", color = bias.leftLabel)
-//   val linkColor = if (darkTheme) Amber300 else Amber600
-// ---------------------------------------------------------------------------
 object ProjectTheme {
+    val icon: NewsIconSizes
+        @Composable get() = LocalIconSizes.current
+
+    val typography: NewsTypography
+        @Composable get() = LocalNewsTypography.current
+
     val spacing: NewsSpacing
         @Composable get() = LocalSpacing.current
 

@@ -59,7 +59,7 @@ class FilterArticlesUseCaseTest {
             title = "Test Story",
             description = "Test Description",
             urlToImage = null,
-            publishedAt = "2024-01-01T00:00:00Z",
+            publishedAt = 1672531200000L,
             content = null,
             author = null
         )
@@ -75,7 +75,7 @@ class FilterArticlesUseCaseTest {
             title = "Test Story",
             description = "Test Description",
             urlToImage = null,
-            publishedAt = "2024-01-01T00:00:00Z",
+            publishedAt = 1672531200000L,
             content = null,
             author = null
         )
@@ -97,12 +97,58 @@ class FilterArticlesUseCaseTest {
             title = "Test Story",
             description = "Test Description",
             urlToImage = null,
-            publishedAt = "2024-01-01T00:00:00Z",
+            publishedAt = 1672531200000L,
             content = null,
             author = null
         )
 
         val filtered = filterArticlesUseCase(listOf(article), allRatings, onlyRated = true)
         assertEquals(1, filtered.size)
+    }
+
+    @Test
+    fun `unrated reputable source is allowed when reputable fallback flag is enabled`() {
+        val article = Article(
+            source = Source(id = null, name = "CNN", description = null, url = null, category = null, language = null, country = null),
+            url = "https://www.cnn.com/story",
+            title = "Test Story",
+            description = "Test Description",
+            urlToImage = null,
+            publishedAt = 1672531200000L,
+            content = null,
+            author = null
+        )
+
+        val filtered = filterArticlesUseCase(
+            listOf(article),
+            allRatings,
+            onlyRated = true,
+            allowReputableFallbackWhenUnrated = true,
+            allowUnknownUnrated = false
+        )
+        assertEquals(1, filtered.size)
+    }
+
+    @Test
+    fun `unknown unrated source is blocked when unknown fallback disabled`() {
+        val article = Article(
+            source = Source(id = null, name = "Unknown", description = null, url = null, category = null, language = null, country = null),
+            url = "https://unknown-example-domain.test/story",
+            title = "Test Story",
+            description = "Test Description",
+            urlToImage = null,
+            publishedAt = 1672531200000L,
+            content = null,
+            author = null
+        )
+
+        val filtered = filterArticlesUseCase(
+            listOf(article),
+            allRatings,
+            onlyRated = false,
+            allowReputableFallbackWhenUnrated = false,
+            allowUnknownUnrated = false
+        )
+        assertEquals(0, filtered.size)
     }
 }

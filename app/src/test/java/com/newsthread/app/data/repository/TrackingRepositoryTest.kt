@@ -29,6 +29,9 @@ class TrackingRepositoryTest {
     private lateinit var articleDao: CachedArticleDao
 
     @Mock
+    private lateinit var db: com.newsthread.app.data.local.AppDatabase
+
+    @Mock
     private lateinit var embeddingDao: ArticleEmbeddingDao
 
     private lateinit var repository: TrackingRepositoryImpl
@@ -36,7 +39,7 @@ class TrackingRepositoryTest {
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        repository = TrackingRepositoryImpl(context, storyDao, articleDao, embeddingDao)
+        repository = TrackingRepositoryImpl(context, db, storyDao, articleDao, embeddingDao)
     }
 
     @Test
@@ -47,7 +50,7 @@ class TrackingRepositoryTest {
             url = "http://test.com",
             title = "Test Article",
             source = Source("id", "name", null, null, null, null, null),
-            publishedAt = "2023-01-01",
+            publishedAt = 1672531200000L,
             author = null,
             description = null,
             urlToImage = null,
@@ -60,7 +63,7 @@ class TrackingRepositoryTest {
         // Then
         assertTrue(result.isSuccess)
         verify(storyDao).insertStory(any())
-        verify(articleDao).updateTrackingStatus(any(), any(), any())
+        verify(articleDao).assignArticleToStory(any(), any(), any(), any(), any())
     }
 
     @Test
@@ -71,7 +74,7 @@ class TrackingRepositoryTest {
             url = "http://test.com",
             title = "Test Article",
             source = Source("id", "name", null, null, null, null, null),
-            publishedAt = "2023-01-01",
+            publishedAt = 1672531200000L,
             author = null,
             description = null,
             urlToImage = null,

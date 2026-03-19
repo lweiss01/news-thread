@@ -11,6 +11,7 @@ import com.newsthread.app.domain.usecase.FindSourceRatingUseCase
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.data.repository.UserPreferencesRepository
 import com.newsthread.app.util.NetworkMonitor
+import com.newsthread.app.domain.repository.NewsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +35,8 @@ class ComparisonViewModel @Inject constructor(
     private val findSourceRatingUseCase: FindSourceRatingUseCase,
     private val sourceRatingRepository: SourceRatingRepository,
     private val networkMonitor: NetworkMonitor,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val newsRepository: NewsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ComparisonUiState>(ComparisonUiState.Loading)
@@ -42,9 +44,18 @@ class ComparisonViewModel @Inject constructor(
 
     // No longer needed, ratings are attached to articles
 
-    fun findSimilarArticles(article: Article) {
+    fun loadAndFindSimilarArticles(articleUrl: String) {
         viewModelScope.launch {
             _uiState.value = ComparisonUiState.Loading
+
+            val article = newsRepository.getArticleByUrl(articleUrl)
+            if (article == null) {
+                _uiState.value = ComparisonUiState.Error("Article not found. Please try opening it again from the feed.")
+                return@launch
+            }
+
+            // Pre-fetch source ratings once, before emission loop
+            val allRatings = sourceRatingRepository.getAllSources()
 
             getSimilarArticlesUseCase(article).collect { result ->
                 result.fold(
@@ -65,8 +76,6 @@ class ComparisonViewModel @Inject constructor(
                                 }
                             } else null
 
-                            val allRatings = sourceRatingRepository.getAllSources()
-                            
                             // Enrich all articles in the comparison
                             val enrichedComparison = comparison.copy(
                                 originalArticle = comparison.originalArticle.copy(

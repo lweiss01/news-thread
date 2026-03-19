@@ -102,6 +102,17 @@ open class UserPreferencesRepository @Inject constructor(
 
 
 
+    val isOnboardingCompleted: Flow<Boolean> = dataStore.data
+        .map { prefs ->
+            prefs[ONBOARDING_COMPLETED_KEY] ?: false
+        }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETED_KEY] = completed
+        }
+    }
+
     companion object {
         val ARTICLE_FETCH_PREF_KEY = intPreferencesKey("article_fetch_preference")
         val EMBEDDING_MODEL_VERSION_KEY = intPreferencesKey("embedding_model_version")
@@ -110,5 +121,8 @@ open class UserPreferencesRepository @Inject constructor(
         val BACKGROUND_SYNC_ENABLED_KEY = booleanPreferencesKey("background_sync_enabled")
         val SYNC_STRATEGY_KEY = stringPreferencesKey("sync_strategy")
         val METERED_SYNC_ALLOWED_KEY = booleanPreferencesKey("metered_sync_allowed")
+
+        // Phase 18: Onboarding
+        val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
     }
 }

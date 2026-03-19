@@ -26,7 +26,7 @@ class GetSimilarArticlesUseCaseTest {
         description = "Description",
         url = "https://cnn.com/test",
         urlToImage = null,
-        publishedAt = "2026-02-06T12:00:00Z",
+        publishedAt = 1672531200000L,
         content = "Content"
     )
 
