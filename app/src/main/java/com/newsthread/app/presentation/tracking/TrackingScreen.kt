@@ -257,6 +257,10 @@ fun EnhancedStoryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(
+                enabled = !isUnfollowPending,
+                role = Role.Button
+            ) { onStoryClick(summary.storyId) }
             .clickable(enabled = !isUnfollowPending, role = Role.Button) { onStoryClick(summary.storyId) }
     ) {
         val hasNew = summary.unreadArticles > 0

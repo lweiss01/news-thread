@@ -205,6 +205,7 @@ fun ArticleTimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
+            .clickable(onClick = onClick, role = Role.Button)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp), // Increased padding for touch target
         verticalAlignment = Alignment.Top
