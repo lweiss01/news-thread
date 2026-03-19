@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.newsthread.app.domain.model.Article
-import com.newsthread.app.data.remote.OgImageResolver
 import com.newsthread.app.presentation.comparison.ReliabilityBadge
 import com.newsthread.app.presentation.theme.Amber600
 import com.newsthread.app.presentation.theme.NewsLinkDark
@@ -33,16 +33,11 @@ import com.newsthread.app.presentation.theme.ProjectTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
-private const val FEED_CARD_OG_TIMEOUT_MS = 5000L
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArticleCard(
     article: Article,
-    ogImageResolver: OgImageResolver? = null,
-    enableOgImageLookup: Boolean = true,
     showSourceFallbackLogo: Boolean = true,
-    onResolvedImage: (articleUrl: String, imageUrl: String) -> Unit = { _, _ -> },
     isTracked: Boolean = false,
     isNew: Boolean = false,
     onBookmarkClick: () -> Unit = {},
@@ -100,7 +95,7 @@ fun ArticleCard(
                             }
                         }
                     }
-                    
+
                     // Time ago
                     val timeAgo = getRelativeTime(article.publishedAt)
                     if (timeAgo != null) {
@@ -131,6 +126,7 @@ fun ArticleCard(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = androidx.compose.material.ripple.rememberRipple(bounded = false),
+                                    role = Role.Button,
                                     onClick = {
                                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                         onBookmarkClick()
@@ -173,36 +169,16 @@ fun ArticleCard(
                     )
                 }
 
-                // Image - progressive OG resolution for articles missing images.
-                // Treat favicon/logo URLs as placeholders (not full-bleed article images).
-                var resolvedImageUrl by remember(article.url, article.urlToImage) {
-                    mutableStateOf(article.urlToImage?.takeUnless { isFaviconImageUrl(it) })
+                // Image display — OG resolution is handled by FeedViewModel's
+                // prefetchMissingImages which batches updates into _uiState.
+                // The card just renders whatever image the article currently has.
+                val heroImageUrl = remember(article.url, article.urlToImage) {
+                    article.urlToImage?.takeUnless { isFaviconImageUrl(it) }
                 }
                 val fallbackImageUrl = remember(article.url, article.sourceRating?.domain, article.source.name, showSourceFallbackLogo) {
                     if (!showSourceFallbackLogo) return@remember null
                     sourceFallbackImageUrl(article)
                 }
-
-                // If a fresher DB/model image arrives later, adopt it immediately.
-                LaunchedEffect(article.urlToImage) {
-                    val freshImage = article.urlToImage?.takeUnless { isFaviconImageUrl(it) }
-                    if (!freshImage.isNullOrEmpty()) {
-                        resolvedImageUrl = freshImage
-                    }
-                }
-
-                // Lazy-fetch OG image if no real image from RSS/worker.
-                if (enableOgImageLookup && resolvedImageUrl == null && ogImageResolver != null) {
-                    LaunchedEffect(article.url) {
-                        val ogImage = ogImageResolver.resolve(article.url, timeoutMs = FEED_CARD_OG_TIMEOUT_MS)
-                        if (!ogImage.isNullOrEmpty() && !isFaviconImageUrl(ogImage)) {
-                            resolvedImageUrl = ogImage
-                            onResolvedImage(article.url, ogImage)
-                        }
-                    }
-                }
-
-                val heroImageUrl = resolvedImageUrl
                 val logoImageUrl = if (heroImageUrl.isNullOrEmpty()) fallbackImageUrl else null
 
                 Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
@@ -381,8 +357,3 @@ private fun getRelativeTime(epochMillis: Long): String? {
         else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(epochMillis))
     }
 }
-
-
-
-
-

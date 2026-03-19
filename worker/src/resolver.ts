@@ -10,8 +10,8 @@ const V3_SUFFIX = Buffer.from([0xd2, 0x01, 0x00]).toString('latin1');
 
 const DASH_REGEX = /-/g;
 const UNDERSCORE_REGEX = /_/g;
-const URL_MATCH_REGEX = /https?:\/\/[^\s"]+/;
-const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href="([^"]+)"/g;
+const URL_MATCH_REGEX = /https?:\/\/[^\s"']+/;
+const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href=["']([^"']+)["']/g;
 const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\s"']+/g;
 
 export type ResolveUrlDiagnostics = {
@@ -119,22 +119,26 @@ export async function resolveUrl(
 
 function isStrictGoogleNewsUrl(url: string): boolean {
     try {
-        const parsed = new URL(url);
-        const protocol = parsed.protocol.toLowerCase();
-        if (protocol !== 'https:' && protocol !== 'http:') return false;
-        return parsed.hostname.toLowerCase() === 'news.google.com';
-    } catch {
-        return false;
-    }
+        const lastSlash = url.lastIndexOf('/');
+        if (lastSlash === -1) return null;
+
+function extractIdFromUrl(url: string): string | undefined {
+    let end = url.indexOf('?');
+    if (end === -1) end = url.length;
+    const start = url.lastIndexOf('/', end - 1);
+    if (start === -1) return undefined;
+    return url.substring(start + 1, end);
 }
 
 function tryBase64Decode(url: string): ResolveAttemptResult {
     try {
-        const parts = url.split('/');
-        const encoded = parts[parts.length - 1].split('?')[0];
+        const encoded = extractIdFromUrl(url);
         if (!encoded) return { resolved: null, failureReason: 'base64_fail' };
 
-        // Base64url decode
+        // Base64url decode (native)
+        // Note: Buffer.from(..., 'base64url') might not be supported in some older versions of
+        // the environment, but it's supported in Node >= 14 and modern Cloudflare Workers.
+        // The original code manually replaces '-' and '_' before using 'base64'.
         const buffer = Buffer.from(encoded.replace(DASH_REGEX, '+').replace(UNDERSCORE_REGEX, '/'), 'base64');
         let decodedStr = buffer.toString('latin1');
 
@@ -162,7 +166,15 @@ function tryBase64Decode(url: string): ResolveAttemptResult {
         const match = decodedStr.match(URL_MATCH_REGEX);
         if (match) {
             const result = match[0];
-            if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
+            try {
+                const parsed = new URL(result);
+                const hostname = parsed.hostname;
+                if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com')) {
+                    return { resolved: result, failureReason: null };
+                }
+            } catch (e) {
+                // Ignore invalid URLs
+            }
         }
         return { resolved: null, failureReason: 'base64_fail' };
     } catch (e) {
@@ -195,8 +207,15 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
                 console.warn(`[Resolve] CAPTCHA detected during HTTP redirect for ${url.substring(0, 50)}...`);
                 return { resolved: null, failureReason: 'redirect_blocked' };
             }
-            if (!location.includes('news.google.com')) {
-                return { resolved: location, failureReason: null };
+            try {
+                // Use a dummy base URL to properly parse relative redirects
+                const parsed = new URL(location, 'https://news.google.com');
+                const hostname = parsed.hostname;
+                if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com')) {
+                    return { resolved: location, failureReason: null };
+                }
+            } catch (e) {
+                // Ignore invalid URLs
             }
         }
 
@@ -204,30 +223,48 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
         if (response.status === 200) {
             const html = await response.text();
 
+            const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href="([^"]+)"/g;
+            const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\x00-\x1F\x7F-\x9F"'<>\s]+/g;
+
             // Find all links and pick the first one that isn't Google
             const allLinks = Array.from(html.matchAll(HTTP_REDIRECT_LINKS_REGEX))
                 .map(m => m[1]);
 
             for (const link of allLinks) {
-                if (link.startsWith('http') &&
-                    !link.includes('news.google.com') &&
-                    !link.includes('google.com/url') &&
-                    !link.includes('accounts.google.com') &&
-                    !link.includes('support.google.com') &&
-                    !link.includes('gstatic.com')) {
-                    return { resolved: link, failureReason: null };
+                try {
+                    const parsed = new URL(link);
+                    const hostname = parsed.hostname;
+                    if (parsed.protocol.startsWith('http') &&
+                        hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com') &&
+                        hostname !== 'accounts.google.com' && !hostname.endsWith('.accounts.google.com') &&
+                        hostname !== 'support.google.com' && !hostname.endsWith('.support.google.com') &&
+                        hostname !== 'gstatic.com' && !hostname.endsWith('.gstatic.com') &&
+                        !(hostname === 'google.com' && parsed.pathname.startsWith('/url')) &&
+                        !(hostname.endsWith('.google.com') && parsed.pathname.startsWith('/url'))) {
+                        return { resolved: link, failureReason: null };
+                    }
+                } catch (e) {
+                    // Ignore invalid URLs
                 }
             }
 
             // Fallback: Search for any URL-like string in the HTML that isn't Google
             const urlMatch = html.match(URL_FALLBACK_MATCH_REGEX);
             if (urlMatch) {
-                const finalUrl = urlMatch.find(u =>
-                    !u.includes('google.com') &&
-                    !u.includes('gstatic.com') &&
-                    !u.includes('google')
-                );
-                if (finalUrl) return { resolved: finalUrl, failureReason: null };
+                for (const u of urlMatch) {
+                    try {
+                        const parsed = new URL(u);
+                        const hostname = parsed.hostname;
+                        if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com') &&
+                            hostname !== 'gstatic.com' && !hostname.endsWith('.gstatic.com') &&
+                            hostname !== 'google.com' && !hostname.endsWith('.google.com') &&
+                            !hostname.includes('google')) { // maintain original broader fallback filter
+                            return { resolved: u, failureReason: null };
+                        }
+                    } catch (e) {
+                        // Ignore invalid URLs
+                    }
+                }
             }
         }
 
@@ -239,7 +276,7 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
 
 async function tryBatchExecute(url: string): Promise<ResolveAttemptResult> {
     try {
-        const id = url.split('/').pop()?.split('?')[0];
+        const id = extractIdFromUrl(url);
         if (!id) return { resolved: null, failureReason: 'rpc_fail' };
 
         // Fetch the main page to get ts and sg (though the RPC might work without it if we use the right format)
@@ -319,7 +356,15 @@ async function tryBatchExecute(url: string): Promise<ResolveAttemptResult> {
                     console.warn(`[Resolve] Failed to parse URL from BatchExecute: ${e}`);
                     return { resolved: null, failureReason: 'rpc_fail' };
                 }
-                if (!result.includes('news.google.com')) return { resolved: result, failureReason: null };
+                try {
+                    const parsed = new URL(result);
+                    const hostname = parsed.hostname;
+                    if (hostname !== 'news.google.com' && !hostname.endsWith('.news.google.com')) {
+                        return { resolved: result, failureReason: null };
+                    }
+                } catch (e) {
+                    // Ignore invalid URLs
+                }
             }
         }
 

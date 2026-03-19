@@ -381,11 +381,9 @@ class RssNewsRepository @Inject constructor(
         
         val urlToImage = optStringClean("urlToImage")
         
-        // Debug logging for missing images
+        // Image logging only at verbose level to avoid spam
         if (urlToImage == null) {
-            Log.d(TAG, "Missing image for article: $title ($url)")
-        } else {
-            Log.v(TAG, "Found image: $urlToImage for $url")
+            Log.v(TAG, "Missing image for article: $title")
         }
 
         val rawId = sourceObj.optString("id").takeIf { it != "null" && it.isNotBlank() }

@@ -1,0 +1,93 @@
+# Phase 10.1: UI Polish & Bug Fixes - Research
+
+**Researched:** 2026-02-18
+**Domain:** UI Bug Fixes & User Interactions
+**Confidence:** HIGH
+
+<user_constraints>
+## User Constraints (from CONTEXT.md)
+
+### Locked Decisions
+
+#### Visual Polish (Badges & Paywalls)
+- **Unrated Sources**: Use a **combined "Unrated" icon** that clearly indicates *both* unknown reliability and unknown bias (e.g. gray question mark with shield outline).
+- **Source Badges**: Must fix the regression where these are missing entirely (P1 bug).
+
+#### User Interactions
+- **Track Hint**: Show a **one-time popup** on first launch (or first feed view) explaining that long-press tracks a story.
+- **Untracking**: Add ability to untrack directly from the Story Detail page.
+
+#### Notification Behavior
+- **Foreground State**: If the app is open/focused, **suppress the system notification** and show a **Toast** instead.
+- **Background State**: Continue showing system notifications as implemented in Phase 10.
+
+### Claude's Discretion
+- **Paywall Detection**: Fix the logic failure in `PaywallDetector` (implementation detail).
+
+### Deferred Ideas (OUT OF SCOPE)
+- None — discussion stayed within phase scope.
+</user_constraints>
+
+## Summary
+
+This phase focuses on critical bug fixes and refining user interactions based on user feedback. The primary technical challenges are identifying the root cause of the missing source badges (likely a data binding or repository issue) and implementing foreground detection for notifications using `ProcessLifecycleOwner`. The UI changes (Toasts, One-time Popup) are standard Android patterns.
+
+**Primary recommendation:** Use `ProcessLifecycleOwner` for foreground detection and standard `Toast` for notifications. Fix the badge regression by tracing `SourceRating` flow in `ArticleCard`.
+
+## Standard Stack
+
+### Core
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| `androidx.lifecycle:lifecycle-process` | `2.7.0` | `ProcessLifecycleOwner` | Standard way to detect app foreground state |
+| `androidx.compose.material3` | `1.2.0` | UI Components (Badges, Toasts/Snackbars) | Existing project standard |
+| `androidx.datastore` | `1.0.0` | Preference Storage (One-time hint) | Existing project standard |
+
+### Supporting
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| `Coil` | `2.6.0` | Image Loading (Favicons/Source Icons) | Existing usage |
+
+## Architecture Patterns
+
+### Foreground Detection Pattern
+Use `ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)` within `NotificationHelper` (or injected `LifecycleOwner`) to determine if the app is in the foreground.
+
+```kotlin
+// In NotificationHelper
+fun shouldShowNotification(): Boolean {
+    return !ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+}
+```
+
+### One-Time Hint Pattern
+Use `DataStore` to persist `hasSeenTrackHint` boolean. Check this in `FeedViewModel` and expose a state flow to trigger the UI dialog.
+
+## Common Pitfalls
+
+### Pitfall 1: Notification Context
+**What goes wrong:** Using `Application` context for Toasts when Activity context is preferred (though Application context works for Toasts, Snackbars need View/Activity).
+**How to avoid:** Use `Toast.makeText(context, ...)` with Application context is fine for simple messages. For Snackbars, must have a `ScaffoldState` or `HostState`. The constraint says "Toast", so `Toast` is safer from background services/workers.
+
+### Pitfall 2: Lifecycle Race Conditions
+**What goes wrong:** Checking lifecycle state *after* a long async operation might be inaccurate.
+**How to avoid:** Check state immediately before posting the notification.
+
+## Code Examples
+
+### Foreground Check
+```kotlin
+val isForeground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+if (isForeground) {
+    // Show Toast
+} else {
+    // Show Notification
+}
+```
+
+## Open Questions
+1. **Source Badge Regression Root Cause**: Needs investigation in `ArticleCard` and `SourceRatingRepository`.
+
+## Research Plan
+1.  **Investigate Badges**: Trace `sourceRating` in `ArticleCard.kt`.
+2.  **Investigate Paywall**: Check `PaywallDetector` logic.

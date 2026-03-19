@@ -1,5 +1,40 @@
 # Agent Instructions
 
+## MANDATORY RULES - READ FIRST
+
+**The user is in charge. The agent works FOR the user.**
+
+1. **ASK before changing anything**
+   - Explain what you found
+   - Propose ONE specific fix
+   - WAIT for approval before writing code
+   - Never assume you know what the user wants
+
+2. **Read git history FIRST**
+   - Run `git log --oneline -10` before any fix
+   - Check what was fixed in recent commits
+   - NEVER break something that was already fixed
+   - If you see a similar fix, ask if it's related
+
+3. **Test EVERY change before claiming it works**
+   - Build the code
+   - Install the app
+   - Verify the fix in the running app
+   - NEVER say "this should work" - verify it actually does
+
+4. **ONE change per commit**
+   - Never bundle multiple fixes
+   - Never fix "while you're at it" 
+   - Each commit should do ONE thing
+
+5. **Follow the process even when you think you know better**
+   - These rules exist because you've broken things before
+   - No shortcuts
+   - No assumptions
+   - Ask questions
+
+---
+
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
 ## Quick Reference

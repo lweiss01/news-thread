@@ -1,8 +1,10 @@
 package com.newsthread.app.data.repository
 
 import android.content.Context
+import androidx.room.withTransaction
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.newsthread.app.data.local.AppDatabase
 import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.StoryDao
@@ -25,6 +27,7 @@ import com.newsthread.app.domain.model.TrackedStorySummary
 @Singleton
 class TrackingRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val db: AppDatabase,
     private val storyDao: StoryDao,
     private val articleDao: CachedArticleDao,
     private val embeddingDao: ArticleEmbeddingDao
@@ -189,6 +192,15 @@ class TrackingRepositoryImpl @Inject constructor(
 
     override suspend fun updateArticleImage(url: String, imageUrl: String) {
         articleDao.updateArticleImage(url, imageUrl)
+    }
+
+    override suspend fun updateArticleImagesBatch(images: Map<String, String>) {
+        if (images.isEmpty()) return
+        db.withTransaction {
+            for ((url, imageUrl) in images) {
+                articleDao.updateArticleImage(url, imageUrl)
+            }
+        }
     }
 
     override suspend fun updateArticleSourceId(url: String, sourceId: String) {

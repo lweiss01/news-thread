@@ -202,7 +202,7 @@ Plans:
 
 ### Phase 18: Fix UI-related code review findings and polish
 
-**Goal:** [To be planned]
+**Goal:** Address and verify legacy UI Beads issues (images, entities, navigation), implement "Pulse" visual aesthetic, and complete architectural refactor of ViewModels to UseCases.
 **Depends on:** Phase 17
 **Plans:** 0 plans
 

@@ -29,6 +29,9 @@ class TrackingRepositoryTest {
     private lateinit var articleDao: CachedArticleDao
 
     @Mock
+    private lateinit var db: com.newsthread.app.data.local.AppDatabase
+
+    @Mock
     private lateinit var embeddingDao: ArticleEmbeddingDao
 
     private lateinit var repository: TrackingRepositoryImpl
@@ -36,7 +39,7 @@ class TrackingRepositoryTest {
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
-        repository = TrackingRepositoryImpl(context, storyDao, articleDao, embeddingDao)
+        repository = TrackingRepositoryImpl(context, db, storyDao, articleDao, embeddingDao)
     }
 
     @Test
