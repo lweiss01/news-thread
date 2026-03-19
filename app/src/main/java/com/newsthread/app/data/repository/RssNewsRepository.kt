@@ -49,6 +49,7 @@ class RssNewsRepository @Inject constructor(
     companion object {
         private const val TAG = "RssNewsRepository"
         private const val FEED_KEY_TOP = "top_headlines_rss"
+        private const val MAX_ARTICLES = 100
         private const val MAX_ARTICLES = 150
         private const val HOME_FEED_TARGET = 120
     }
@@ -112,6 +113,7 @@ class RssNewsRepository @Inject constructor(
         }
 
         // 3. Fetch from Worker — delete stale cache only after a successful fetch
+        Log.d(TAG, "Fetching from Worker: ${BuildConfig.WORKER_URL}/v1/feeds/top-stories?num=100")
         val homeEndpoint = if (forceRefresh) {
             "/v1/feeds/home?num=$HOME_FEED_TARGET&refresh=fast"
         } else {
@@ -315,6 +317,9 @@ class RssNewsRepository @Inject constructor(
 
     private fun fetchWorker(endpoint: String, forceRefresh: Boolean): String? {
         return try {
+            val request = Request.Builder()
+                .url(BuildConfig.WORKER_URL + endpoint)
+                // Use the shared key. In a real app, this would be in BuildConfig or encrypted.
             val requestBuilder = Request.Builder()
                 .url(BuildConfig.WORKER_URL + endpoint)
                 .header("X-API-Key", BuildConfig.WORKER_API_KEY)
