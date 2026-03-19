@@ -29,6 +29,8 @@ interface TrackingRepository {
     suspend fun markAllStoriesChecked(timestamp: Long)
     suspend fun removeArticleFromStory(articleUrl: String, storyId: String)
     suspend fun updateArticleImage(url: String, imageUrl: String)
+    /** Persist multiple OG image URLs in a single DB transaction (one Room invalidation). */
+    suspend fun updateArticleImagesBatch(images: Map<String, String>)
     suspend fun updateArticleSourceId(url: String, sourceId: String)
 }
 

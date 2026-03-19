@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,18 +19,19 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import com.newsthread.app.presentation.components.NewsTopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.FloatingActionButtonDefaults
-import com.newsthread.app.presentation.common.glassBackground
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.newsthread.app.presentation.feed.components.SourceBadge
 import com.newsthread.app.presentation.navigation.ArticleDetailRoute
 import java.net.URLEncoder
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -46,7 +47,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +61,7 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val trackedStoriesMap by viewModel.trackedStoriesMap.collectAsStateWithLifecycle()
+    val trackedStoriesMap by viewModel.effectiveTrackedMap.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
@@ -64,6 +69,26 @@ fun FeedScreen(
     val showJumpToTop by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 5
+        }
+    }
+
+    // Background refresh on app foreground / tab return.
+    // ON_RESUME fires when: app comes to foreground, user switches back to feed tab,
+    // or navigates back from article detail.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onScreenResumed()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.transientMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -98,17 +123,19 @@ fun FeedScreen(
         // M3 Pull-to-Refresh
         val pullRefreshState = rememberPullToRefreshState()
 
-        if (pullRefreshState.isRefreshing) {
-            LaunchedEffect(true) {
-                viewModel.refresh()
-            }
-        }
-
+        // Sync ViewModel refreshing state → pull indicator FIRST
         LaunchedEffect(isRefreshing) {
             if (isRefreshing) {
                 pullRefreshState.startRefresh()
             } else {
                 pullRefreshState.endRefresh()
+            }
+        }
+
+        // When user pulls past threshold, trigger refresh exactly once.
+        LaunchedEffect(pullRefreshState.isRefreshing) {
+            if (pullRefreshState.isRefreshing) {
+                viewModel.refresh()
             }
         }
 
@@ -150,11 +177,27 @@ fun FeedScreen(
                             state = listState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(articles) { article ->
+                            state.lastUpdatedAt?.let { updatedAt ->
+                                item(key = "last-updated-indicator") {
+                                    Text(
+                                        text = "Updated ${formatLastUpdatedTime(updatedAt)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.padding(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp
+                                        )
+                                    )
+                                }
+                            }
+                            itemsIndexed(
+                                items = articles,
+                                key = { _, article -> article.url }
+                            ) { _, article ->
                                 ArticleCard(
                                     article = article,
                                     isTracked = trackedStoriesMap.containsKey(article.url),
-                                    ogImageResolver = viewModel.ogImageResolver,
+                                    showSourceFallbackLogo = false,
                                     onBookmarkClick = { viewModel.toggleFollow(article) },
                                     onClick = {
                                         val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
@@ -201,5 +244,15 @@ fun FeedScreen(
                 state = pullRefreshState,
             )
         }
+    }
+}
+
+private fun formatLastUpdatedTime(epochMillis: Long): String {
+    val now = System.currentTimeMillis()
+    val deltaMs = now - epochMillis
+    return when {
+        deltaMs < 60_000L -> "just now"
+        deltaMs < 3_600_000L -> "${deltaMs / 60_000L}m ago"
+        else -> SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epochMillis))
     }
 }

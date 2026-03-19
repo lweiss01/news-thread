@@ -5,6 +5,7 @@ import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.ArticleFetchPreference
 import com.newsthread.app.domain.model.Source
+import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.usecase.FindSourceRatingUseCase
 import com.newsthread.app.domain.usecase.GetSimilarArticlesUseCase
@@ -31,6 +32,7 @@ class ComparisonViewModelTest {
     private lateinit var getSimilarArticlesUseCase: GetSimilarArticlesUseCase
     private lateinit var findSourceRatingUseCase: FindSourceRatingUseCase
     private lateinit var sourceRatingRepository: SourceRatingRepository
+    private lateinit var newsRepository: NewsRepository
     private lateinit var networkMonitor: NetworkMonitor
     private lateinit var userPreferencesRepository: UserPreferencesRepository
     private lateinit var viewModel: ComparisonViewModel
@@ -48,22 +50,26 @@ class ComparisonViewModelTest {
     )
 
     @Before
-    fun setup() {
+    fun setup() = runTest {
         getSimilarArticlesUseCase = mock()
         findSourceRatingUseCase = mock()
         sourceRatingRepository = mock()
+        newsRepository = mock()
         networkMonitor = mock()
         userPreferencesRepository = mock()
+        val newsRepository: com.newsthread.app.domain.repository.NewsRepository = mock()
 
         whenever(userPreferencesRepository.articleFetchPreference).thenReturn(flowOf(ArticleFetchPreference.WIFI_ONLY))
         whenever(networkMonitor.isCurrentlyOnWifi()).thenReturn(true)
+        whenever(newsRepository.getArticleByUrl(any())).thenReturn(stubArticle)
         
         viewModel = ComparisonViewModel(
             getSimilarArticlesUseCase,
             findSourceRatingUseCase,
             sourceRatingRepository,
             networkMonitor,
-            userPreferencesRepository
+            userPreferencesRepository,
+            newsRepository
         )
     }
 
@@ -90,8 +96,9 @@ class ComparisonViewModelTest {
         whenever(getSimilarArticlesUseCase(any())).thenReturn(
             flowOf(Result.success(comparison))
         )
+        whenever(newsRepository.getArticleByUrl(stubArticle.url)).thenReturn(stubArticle)
 
-        viewModel.findSimilarArticles(stubArticle)
+        viewModel.loadAndFindSimilarArticles(stubArticle.url)
         runCurrent()
 
         val state = viewModel.uiState.value

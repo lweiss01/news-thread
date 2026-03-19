@@ -13,8 +13,8 @@ A native Android news reader that shows how different media sources cover the sa
 
 ### Bias-Aware News Reading ⚖️
 - **Integrated bias ratings** on every article from three respected organizations
-- Visual indicators showing Left (◄◄), Center-Left (◄), Center (●), Center-Right (►), Right (►►)
-- Reliability ratings (1-5 stars) from trusted fact-checking organizations
+- **Bias heatmap bar** with colored dots showing where each source falls on the spectrum
+- Reliability ratings (1–5 stars) from trusted fact-checking organizations
 - **150+ major news sources** rated and categorized
 
 ### Perspective Comparison 🔍
@@ -31,94 +31,108 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ---
 
-## Current Status 🚀
+## Screenshots 📸
 
-**Version**: 1.2.0 (Stable RC)
-**Status**: Milestone v1.1 Complete ✅ — Currently in **Phase 16: Identity & Store Assets** 🎨 (Phase 19 Hygiene Finished)
-
-### What's Built
-
-| | Feature | Description |
-|---|---------|-------------|
-| 📰 | **News Feed** | Live headlines with bias ratings and reliability stars — powered by a custom Cloudflare edge worker |
-| 🧠 | **On-Device NLP** | TF Lite sentence embeddings for semantic article matching — no data leaves your device |
-| ⚖️ | **Bias Spectrum** | Articles plotted on a continuous left-to-right political axis with heatmap visualization |
-| 📌 | **Story Tracking** | Follow developing stories — new articles auto-cluster into tracked threads |
-| 🔔 | **Notifications** | Background alerts when tracked stories get new coverage, with deep linking |
-| 🎨 | **Amber Design System** | New visual language, consistent design tokens, and polished UI across all screens |
-| 🔄 | **Discovery Engine** | Background "Continuous Discovery" loop fetches reputable news from major categories (World, Tech, Business, etc.) |
-| 🛡️ | **Authenticated Quality** | Strict filtering ensures 100% of feed content comes from known, rated sources — no "Gray Shields" |
-| 📖 | **Text Extraction** | Full article body parsed from URLs using Readability4J + JSoup |
-
-<details>
-<summary><b>📋 Development History (15+ phases completed)</b></summary>
-
-| Phase | Name | Completed | Highlights |
-|-------|------|-----------|------------|
-| 1 | Foundation | 2026-02-02 | Room caching, rate limiting, offline-first architecture |
-| 2 | Text Extraction | 2026-02-05 | Readability4J article parsing, paywall detection, WiFi-only fetching |
-| 3 | Embedding Engine | 2026-02-06 | TF Lite 2.17.0, all-MiniLM-L6-v2 quantized model, 384-dim embeddings |
-| 4 | Similarity Matching | 2026-02-06 | Cosine similarity, tiered matching, 100% test coverage |
-| 5 | Pipeline Integration | 2026-02-06 | End-to-end matching orchestration, contextual UI hints |
-| 6 | Background Processing | 2026-02-07 | WorkManager pre-computation, sync strategy settings |
-| 7 | UI Implementation | 2026-02-07 | Bias spectrum visualization, reliability badges |
-| 8 | Tracking Foundation | 2026-02-08 | Story tracking database, tracking UI, bookmark controls |
-| 9 | Story Grouping | 2026-02-08 | Auto-clustering, novelty detection, perspective tracking |
-| 9.5 | Quality & Stability | 2026-02-16 | Hybrid matching (embedding + entity overlap), threshold tuning |
-| 10 | Notifications | 2026-02-18 | System notifications, deep linking, article highlighting |
-| 10.1 | UI Polish | 2026-02-19 | Source badges, refresh logic, notification suppression |
-| 11 | UI/UX Refinement | 2026-02-19 | Design tokens, priority bias heatmap, visual consistency |
-| 12 | Architecture Refactor | 2026-02-20 | Domain logic extraction, Hilt DI cleanup, UseCases |
-| 13 | UI Design Refresh | 2026-02-20 | Amber Brand identity, editorial shields, UI softening |
-| 13.1 | App Icon Refresh | 2026-02-21 | Adaptive icon gradients, mirroring and scaling fixes |
-| 13.1.1 | Visual Parity | 2026-02-21 | ArticleCard footer, typography, metrics styling |
-| 13.1.2 | Visual Bug Fixes | 2026-02-21 | Deep-link offsets, sticky headers, layout padding |
-| 14 | RSS Migration | 2026-02-21 | Replaced NewsAPI with a free, unlimited two-layer RSS system (Cloudflare Worker + on-device processing) |
-| 15 | Cloudflare Backend | 2026-02-22 | Serverless edge backend for feed fetching & Google News proxy rendering |
-| 15.1 | Feed Enhancement | 2026-02-26 | Continuous Discovery engine, 70+ story feed volume, chronologically sorted |
-
-Full details in [ROADMAP.md](.planning/ROADMAP.md).
-
-</details>
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <img src="store_assets/screenshot_01_feed_badges.png" width="100%" alt="News feed with source bias badges and reliability ratings">
+      <br><b>News Feed</b><br>
+      Live headlines with bias ratings, reliability stars, and OG images.
+    </td>
+    <td width="33%" align="center">
+      <img src="store_assets/screenshot_02_bias_spectrum.png" width="100%" alt="Bias spectrum showing article positions from left to right">
+      <br><b>Bias Spectrum</b><br>
+      See how sources cover the same story across the political spectrum.
+    </td>
+    <td width="33%" align="center">
+      <img src="store_assets/screenshot_03_tracking.png" width="100%" alt="Story tracking screen with tracked stories and bias distributions">
+      <br><b>Story Tracking</b><br>
+      Follow developing stories with auto-clustered updates and bias heatmaps.
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" align="center">
+      <img src="store_assets/screenshot_04_story_analysis.png" width="100%" alt="Story analysis showing perspectives grouped by political lean">
+      <br><b>Story Analysis</b><br>
+      Full coverage breakdown: Left, Center, and Right perspectives side by side.
+    </td>
+    <td width="33%" align="center">
+      <img src="store_assets/screenshot_05_feed_clean.png" width="100%" alt="Clean feed view with article cards">
+      <br><b>Clean Feed</b><br>
+      Modern dark interface designed for reading. Pull to refresh for the latest.
+    </td>
+    <td width="33%" align="center">
+      <img src="store_assets/screenshot_06_article_updates.png" width="100%" alt="Article updates showing new coverage on tracked stories">
+      <br><b>Live Updates</b><br>
+      Get notified when tracked stories receive new coverage.
+    </td>
+  </tr>
+</table>
 
 ---
 
-## 🚀 The Core Engine Is Complete
+## Current Status 🚀
 
-> NewsThread has officially cut the API cord.
+**Version**: 1.2.0-RC  
+**Milestone**: v1.2 Google Play Release  
+**Progress**: 22 of 24 slices complete — finalizing release infrastructure and onboarding
 
-### Phase 14 & 15: The Cloudflare RSS Engine 🌐 ⚡
+### What's Built
 
-Until now, NewsThread relied on [NewsAPI](https://newsapi.org) — a fantastic service, but one that comes with rate limits, cost at scale, and a single point of dependency. That changed entirely in Phases 14 & 15.
+| | Feature | Status |
+|---|---------|--------|
+| 📰 | **News Feed** — Live headlines with bias ratings and reliability stars | ✅ |
+| 🧠 | **On-Device NLP** — TF Lite sentence embeddings for semantic article matching | ✅ |
+| ⚖️ | **Bias Spectrum** — Articles plotted on a continuous left-to-right political axis | ✅ |
+| 📌 | **Story Tracking** — Follow developing stories with auto-clustered threads | ✅ |
+| 🔔 | **Notifications** — Background alerts when tracked stories get new coverage | ✅ |
+| 🎨 | **Amber Design System** — Consistent design tokens and polished UI | ✅ |
+| 🔄 | **Discovery Engine** — Background loop builds a 70+ story feed across categories | ✅ |
+| 🛡️ | **Authenticated Quality** — Strict filtering ensures 100% rated sources | ✅ |
+| 📖 | **Text Extraction** — Full article body parsed via Readability4J + JSoup | ✅ |
+| 🌐 | **Cloudflare Edge Backend** — Stateless RSS proxy, no user data, no API keys | ✅ |
+| 🖼️ | **Store Assets** — App icon, feature graphic, 6 framed screenshots, listing copy | ✅ |
+| 🧹 | **Code Review Fixes** — FeedViewModel UseCase refactor, 10 UI bugs closed | ✅ |
+| 🔧 | **Release Infrastructure** — Signing, ProGuard, privacy policy | 🔜 Next |
+| 🎓 | **Quality & Onboarding** — First-launch UX, final regression | 🔜 After |
 
-**We replaced NewsAPI with a free, unlimited system powered by a Cloudflare Edge Worker, with 150+ rated sources and dozens of directly polled outlet feeds.**
+### What's Next
 
-**Layer 1 — Google News RSS (Discovery & Volume)**
-Google News aggregates thousands of sources in real time. NewsThread taps their public RSS feeds to discover what's actually trending. In Phase 15.1, we introduced a **Continuous Discovery** loop that background-polls categories like World, Technology, Science, Health, and Business to build a rich, 70+ story feed on every refresh.
+| Slice | Focus | Status |
+|-------|-------|--------|
+| S23 | **Release Infrastructure** — signing config, R8/ProGuard rules, privacy policy | Planning |
+| S24 | **Quality & Onboarding** — first-launch experience, regression testing, release verification | Planned |
 
-**Layer 2 — Direct Outlet Feeds (Depth)**
-Dozens of handpicked outlets are polled directly via RSS at the Worker layer. Separately, NewsThread's ratings dataset covers 150+ sources mapped by bias and reliability, from left to right across the spectrum.
+### Future Milestones (Post-Launch)
 
-| Bias | Outlets |
-|------|---------|
-| ◄◄ Left | MSNBC, The Guardian, The Atlantic, Vox, Slate, HuffPost + more |
-| ◄ Lean Left | CNN, NYT, NPR, Washington Post, NBC, ABC, CBS, Politico + more |
-| ● Center | AP, Reuters, BBC, The Hill, PBS NewsHour, AllSides, Ground News + more |
-| ► Lean Right | WSJ, Fox News, Washington Examiner, National Review, The Dispatch + more |
-| ►► Right | Breitbart, The Daily Wire, The Federalist, Newsmax, OAN + more |
+- ⏳ Timeline visualization — see how a story evolves hour by hour
+- 🔑 Google Sign-In and Google Drive backup
+- 📊 Reading analytics — understand your own media diet
+- ⚠️ Filter bubble warnings when your reading habits skew one-sided
+- 🖱️ Interactive bias spectrum (tap to filter by political lean)
 
-**Edge Computing with Cloudflare Workers**
-The new Worker resolves Google News redirect links server-side, leverages Cloudflare KV caching for fast response times, mitigates bot-challenges, and standardizes feed parsing into a clean interface.
+---
 
-Critically, this is **fully consistent with NewsThread's privacy-first design**. The Worker is a stateless public content proxy — it has no concept of users, stores no personal data, and serves the same cached response to everyone. Your reading history, tracked stories, and preferences never leave your device.
+## The Cloudflare RSS Engine 🌐 ⚡
 
-### Planned (Future Milestones)
+NewsThread runs on a free, unlimited feed system powered by a Cloudflare Edge Worker — no user-provided API keys, no rate limits, no per-user quotas.
 
-- [ ] ⏳ Timeline visualization — see how a story evolves hour by hour
-- [ ] 🔑 Google Sign-In and Google Drive backup for your tracked stories
-- [ ] 📊 Reading analytics — understand your own media diet
-- [ ] ⚠️ Filter bubble warnings when your reading habits skew one-sided
-- [ ] 🖱️ Interactive bias spectrum (tap to filter by political lean)
+**Layer 1 — Google News RSS (Discovery & Volume)**  
+Google News RSS feeds are polled for trending stories. A Continuous Discovery loop background-polls categories like World, Technology, Science, Health, and Business to build a 70+ story feed on every refresh.
+
+**Layer 2 — Direct Outlet Feeds (Depth)**  
+Dozens of handpicked outlets are polled directly via RSS. NewsThread's ratings dataset covers 150+ sources mapped by bias and reliability.
+
+| Bias | Examples |
+|------|----------|
+| Left | MSNBC, The Guardian, The Atlantic, Vox, Slate, HuffPost |
+| Lean Left | CNN, NYT, NPR, Washington Post, NBC, ABC, CBS, Politico |
+| Center | AP, Reuters, BBC, The Hill, PBS NewsHour, AllSides |
+| Lean Right | WSJ, Fox News, Washington Examiner, National Review |
+| Right | Breitbart, The Daily Wire, The Federalist, Newsmax, OAN |
+
+The Worker resolves Google News redirect links server-side, caches via Cloudflare KV, and standardizes feed parsing. It is fully stateless — no concept of users, no personal data, same cached response for everyone. Reading history, tracked stories, and preferences never leave the device.
 
 ---
 
@@ -127,16 +141,14 @@ Critically, this is **fully consistent with NewsThread's privacy-first design**.
 | Decision | Rationale |
 |----------|-----------|
 | 🔒 **On-device NLP only** | Privacy-first — all data stays on your device |
-| 🌐 **Layered RSS Engine** | Google News for discovery + direct outlet feeds for depth — free, unlimited, and no user-provided NewsAPI key |
-| 🛡️ **Authenticated Quality** | Strict filtering ensures only rated sources reach the main feed (No 'Gray Shields') |
-| 🚀 **Discovery Engine** | Background loop builds a 70+ story feed automatically across major news categories |
-| 🤖 **TF Lite with all-MiniLM-L6-v2** | 2.17.0+ quantized model for 16KB alignment |
+| 🌐 **Layered RSS Engine** | Google News for discovery + direct feeds for depth — free and unlimited |
+| 🛡️ **Authenticated Quality** | Only rated sources reach the main feed |
+| 🤖 **TF Lite all-MiniLM-L6-v2** | Quantized 384-dim model, 16KB page alignment for Android 15 |
 | ⚡ **Pre-compute matches** | Results ready before user taps Compare |
-| 🎨 **Bias spectrum UI** | Continuous axis is more nuanced than buckets |
+| 🎨 **Bias spectrum UI** | Continuous axis is more nuanced than Left/Center/Right buckets |
 | ✂️ **Readability4J + JSoup** | Parse article body from URLs with fallback |
 | 📐 **In-memory cosine similarity** | Fast and lightweight for mobile |
-| 📶 **User-controlled fetching** | WiFi-only / always / never setting |
-| 🧱 **16KB Page Alignment** | Android 15 compatibility |
+| 🏗️ **Clean Architecture + UseCases** | Domain layer owns business logic; ViewModels depend only on UseCases |
 
 ---
 
@@ -154,11 +166,12 @@ presentation/         # UI layer (Jetpack Compose)
 ├── components/       # Shared UI components (BiasHeatmap, etc.)
 ├── navigation/       # Bottom nav bar & route definitions
 ├── settings/         # App settings
-└── theme/            # Material 3 theming
+└── theme/            # Material 3 theming (Amber design system)
 
 domain/               # Business logic (pure Kotlin)
 ├── model/            # Domain models (Article, SourceRating, etc.)
-├── usecase/          # Business logic use cases
+├── usecase/          # GetFeedUseCase, ToggleFollowUseCase, etc.
+├── similarity/       # EntityExtractor, embedding comparison
 └── repository/       # Repository interfaces
 
 data/                 # Data layer
@@ -172,28 +185,21 @@ util/                 # Utilities (DatabaseSeeder, etc.)
 
 ### Tech Stack
 
-- **UI**: Jetpack Compose with Material Design 3
-- **Architecture**: MVVM + Clean Architecture
-- **DI**: Hilt (Dagger)
-- **Database**: Room (SQLite) with proper migrations
-- **Networking**: OkHttp with caching
-- **Image Loading**: Coil
-- **Async**: Kotlin Coroutines + Flow
-- **Navigation**: Jetpack Navigation Compose
-- **ML**: TensorFlow Lite with all-MiniLM-L6-v2 for on-device sentence embeddings
-- **Text Extraction**: Readability4J + JSoup
-- **Background**: WorkManager with Hilt integration
- 
-### Tooling & AI-Augmentation 🤖
+| Layer | Technology |
+|-------|-----------|
+| **UI** | Jetpack Compose + Material Design 3 |
+| **Architecture** | MVVM + Clean Architecture |
+| **DI** | Hilt (Dagger) |
+| **Database** | Room (SQLite) with migrations |
+| **Networking** | OkHttp with caching |
+| **Image Loading** | Coil + OG image resolution |
+| **Async** | Kotlin Coroutines + Flow |
+| **Navigation** | Jetpack Navigation Compose |
+| **ML** | TensorFlow Lite — all-MiniLM-L6-v2 (384-dim sentence embeddings) |
+| **Text Extraction** | Readability4J + JSoup |
+| **Background** | WorkManager with Hilt integration |
+| **Edge Backend** | Cloudflare Workers + KV cache |
 
-NewsThread was built using a hybrid AI-augmented workflow, moving from foundational boilerplate to complex architectural engineering.
-
-* **[Android Studio](https://developer.android.com/studio)**: The primary forge for development.
-* **[Antigravity](https://antigravity.google/)**: The agentic partner for complex phases (Orchestration, on-device NLP, and 16KB system fixes).
-* **[Claude Code](https://claude.ai/code)**: The foundational spark used for initial prototyping and Phase 1-2 UI/Repository boilerplate.
-* **[GSD (Getting Shit Done)](https://github.com/gsd-build/get-shit-done)**: The workflow framework providing structured research, planning, and execution cycles.
-* **[Beads](https://github.com/steveyegge/beads)**: Local system management and daemon integration.
- 
 ### Matching Pipeline
 
 ```mermaid
@@ -201,9 +207,19 @@ graph TD
     A[Article Feed] --> B[Text Extraction]
     B -->|Readability4J| C[Embedding Generation]
     C -->|TF Lite| D[Hybrid Matching]
-    D -->|Cosine Sim + NLP| E[Bias Clustering]
+    D -->|Cosine Sim + Entity Overlap| E[Bias Clustering]
     E --> F[Amber Design System Visualization]
 ```
+
+### Tooling & AI-Augmentation 🤖
+
+NewsThread was built using a hybrid AI-augmented workflow:
+
+* **[Android Studio](https://developer.android.com/studio)** — Primary IDE
+* **[Antigravity](https://antigravity.google/)** — Agentic partner for on-device NLP, orchestration, and system fixes
+* **[Claude Code](https://claude.ai/code)** — Foundational prototyping, UI/repository boilerplate, and later-stage refactoring
+* **[GSD](https://github.com/gsd-build/get-shit-done)** — Structured research, planning, and execution workflow
+* **[Beads](https://github.com/steveyegge/beads)** — Local issue tracking and bug management
 
 ---
 
@@ -216,24 +232,28 @@ graph TD
 NewsThread uses a **consensus approach** combining three respected media bias organizations:
 
 ### Rating Sources
-1. **AllSides**: Community-driven bias ratings
-2. **Ad Fontes Media**: Interactive Media Bias Chart
-3. **Media Bias/Fact Check**: Detailed factual reporting analysis
+1. **AllSides** — Community-driven bias ratings
+2. **Ad Fontes Media** — Interactive Media Bias Chart
+3. **Media Bias/Fact Check** — Detailed factual reporting analysis
 
 ### Bias Scale
-- **-2 (◄◄)**: Left — CNN, MSNBC, HuffPost
-- **-1 (◄)**: Center-Left — NPR, Washington Post, Politico
-- **0 (●)**: Center — Reuters, AP, BBC, The Hill
-- **+1 (►)**: Center-Right — WSJ (news), The Economist
-- **+2 (►►)**: Right — Fox News, Breitbart, Newsmax
-- **?**: **Unrated Perspectives** — Sources not yet rated appear with a question mark; they are still matched and clustered, but without a bias position.
+| Score | Label | Examples |
+|-------|-------|----------|
+| -2 | Left | CNN, MSNBC, HuffPost |
+| -1 | Center-Left | NPR, Washington Post, Politico |
+| 0 | Center | Reuters, AP, BBC, The Hill |
+| +1 | Center-Right | WSJ (news), The Economist |
+| +2 | Right | Fox News, Breitbart, Newsmax |
+| ? | Unrated | Sources not yet rated — shown without a bias position |
 
-### Reliability Scale (1-5 stars)
-- **★★★★★**: Very High — Reuters, AP, BBC
-- **★★★★☆**: High — NPR, WSJ, Washington Post
-- **★★★☆☆**: Mostly Factual — CNN, Fox News
-- **★★☆☆☆**: Mixed — Opinion sites, partisan sources
-- **★☆☆☆☆**: Low — Conspiracy sites, misinformation
+### Reliability Scale (1–5 stars)
+| Rating | Level | Examples |
+|--------|-------|----------|
+| ★★★★★ | Very High | Reuters, AP, BBC |
+| ★★★★☆ | High | NPR, WSJ, Washington Post |
+| ★★★☆☆ | Mostly Factual | CNN, Fox News |
+| ★★☆☆☆ | Mixed | Opinion sites, partisan sources |
+| ★☆☆☆☆ | Low | Conspiracy sites, misinformation |
 
 150+ sources rated including CNN, Fox News, MSNBC, Reuters, AP, BBC, NPR, New York Times, Washington Post, Wall Street Journal, The Guardian, Politico, The Hill, Bloomberg, and more.
 
@@ -245,7 +265,6 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 - Android Studio Hedgehog or newer
 - Android SDK 34
 - Kotlin 1.9+
-- ~~NewsAPI key~~ *(Phase 14 removes this requirement — no user-provided NewsAPI key needed)*
 
 ### Setup
 
@@ -255,59 +274,65 @@ NewsThread uses a **consensus approach** combining three respected media bias or
    cd news-thread
    ```
 
-2. **~~Add API key~~** *(Removed in Phase 14 — no user-provided NewsAPI key needed)*
-   ~~Create `secrets.properties` in the project root:~~
-   ```text
-   ~~NEWS_API_KEY=your_key_here~~
-   ```
-   No `secrets.properties` file is required for setup. App-to-worker authentication is internal.
-
-3. **Build and run**
+2. **Build and run**
    ```bash
-   gradlew assembleDebug
+   ./gradlew assembleDebug
    ```
    Or open in Android Studio, sync Gradle, and run on emulator or device.
 
----
+   No API keys or `secrets.properties` file required — the Cloudflare Worker handles feed fetching with internal authentication.
 
-## Screenshots 📸
- 
-<table>
-  <tr>
-    <td width="33%" align="center">
-      <img src="screenshots/Tracking_Screen_New_Updates_Bias_Distribution.png" width="100%" alt="Android app screen showing tracked stories with bias heatmap previews">
-      <br><b>Tracked Stories</b><br>
-      Follow developing stories with auto-clustered updates.
-    </td>
-    <td width="33%" align="center">
-      <img src="screenshots/Article_Page_with_New_Updates_Toast.jpg" width="100%" alt="Android app screen showing the article detail view with a toast notification for new updates">
-      <br><b>Live Updates & Notifications</b><br>
-      Get instantly notified when new perspectives are added to stories you track.
-    </td>
-    <td width="33%" align="center">
-      <img src="screenshots/Compare_Perspectives_Page.png" width="100%" alt="Android app screen displaying the Compare Perspectives view with bias heatmap">
-      <br><b>Compare Perspectives</b><br>
-      Semantic matching along a political bias spectrum.
-    </td>
-  </tr>
-</table>
+3. **Firebase** (optional)  
+   Firebase requires a valid `google-services.json` in `app/` (not committed to git).
 
 ---
 
 ## Configuration
 
-- **Min SDK**: 26 (Android 8.0)
-- **Target SDK**: 34 (Android 14)
-- **Java**: 17
-- **Kotlin**: 1.9.22
+| Setting | Value |
+|---------|-------|
+| Min SDK | 26 (Android 8.0) |
+| Target SDK | 34 (Android 14) |
+| Java | 17 |
+| Kotlin | 1.9.22 |
 
-Firebase requires a valid `google-services.json` in `app/` (not committed to git).
+---
+
+<details>
+<summary><b>📋 Development History (22 slices completed)</b></summary>
+
+| Slice | Name | Highlights |
+|-------|------|------------|
+| S01 | Foundation | Room caching, rate limiting, offline-first architecture |
+| S02 | Text Extraction | Readability4J article parsing, paywall detection, WiFi-only fetching |
+| S03 | Embedding Engine | TF Lite 2.17.0, all-MiniLM-L6-v2 quantized model, 384-dim embeddings |
+| S04 | Similarity Matching | Cosine similarity, tiered matching, 100% test coverage |
+| S05 | Pipeline Integration | End-to-end matching orchestration, contextual UI hints |
+| S06 | Background Processing | WorkManager pre-computation, sync strategy settings |
+| S07 | UI Implementation | Bias spectrum visualization, reliability badges |
+| S08 | Tracking | Story tracking database, tracking UI, bookmark controls |
+| S09 | Story Grouping | Auto-clustering, novelty detection, perspective tracking |
+| S10 | Quality & Stability | Hybrid matching (embedding + entity overlap), threshold tuning |
+| S11 | Notifications | System notifications, deep linking, article highlighting |
+| S12 | UI Polish & Bug Fixes | Source badges, refresh logic, notification suppression |
+| S13 | UI/UX Refinement | Design tokens, priority bias heatmap, visual consistency |
+| S14 | Architecture Refactor | Domain logic extraction, Hilt DI cleanup, UseCases |
+| S15 | UI Design Refresh | Amber brand identity, editorial shields, UI softening |
+| S16 | RSS Migration | Replaced NewsAPI with dual-layer RSS (Cloudflare Worker + on-device) |
+| S17 | Cloudflare Backend | Serverless edge backend for feed fetching & Google News proxy |
+| S18 | Feed Enhancement | Continuous Discovery engine, 70+ story feed volume |
+| S19 | Identity & Store Assets | App icon, feature graphic, 6 framed screenshots, store listing copy |
+| S20 | Non-UI Code Fixes | Architecture audit, concurrency fixes, data model normalization |
+| S21 | UI Code Fixes & Polish | FeedViewModel UseCase refactor, 10 UI bugs closed, build cleanup |
+| S22 | Hygiene & Stability | Performance and stability hardening |
+
+</details>
 
 ---
 
 ## Contributing
 
-Not yet accepting contributions as this is early-stage development. Check back later!
+Not yet accepting contributions — the app is in pre-release. Check back after launch!
 
 ---
 
@@ -322,13 +347,12 @@ Copyright © 2026 Lisa Weiss. All rights reserved. See [LICENSE](LICENSE) for de
 Built by a senior information security data analyst who believes we need better tools to navigate today's complex media landscape. NewsThread helps people read news from diverse perspectives and understand the full story.
 
 **Links:**
-- **Repository**: https://github.com/lweiss01/news-thread
-- **Issues**: https://github.com/lweiss01/news-thread/issues
+- **Website**: [newsthread.io](https://newsthread.io)
+- **Repository**: [github.com/lweiss01/news-thread](https://github.com/lweiss01/news-thread)
+- **Issues**: [github.com/lweiss01/news-thread/issues](https://github.com/lweiss01/news-thread/issues)
 
 ---
 
-**[Join the Waitlist](https://newsthread.io)**: Be the first to know when the app launches.
+**[Join the Waitlist →](https://newsthread.io)**
 
----
-
-**"Follow the thread of every story"**
+*"Follow the thread of every story"*

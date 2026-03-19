@@ -12,6 +12,16 @@ android {
     compileSdk = 34
 
     defaultConfig {
+        // Read WORKER_URL from local.properties (gitignored, keeps secrets out of source)
+        val workerUrl: String = providers.gradleProperty("WORKER_URL").getOrElse(
+            com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers).getProperty("WORKER_URL", "")
+        )
+        val workerApiKey: String = providers.gradleProperty("WORKER_API_KEY").getOrElse(
+            com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir, providers).getProperty("WORKER_API_KEY", "dev_key_fallback")
+        )
+        buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
+        buildConfigField("String", "WORKER_API_KEY", "\"$workerApiKey\"")
+
         applicationId = "com.newsthread.app"
         minSdk = 26
         targetSdk = 34

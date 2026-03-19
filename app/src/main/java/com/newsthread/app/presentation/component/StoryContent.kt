@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -200,7 +201,7 @@ fun ArticleTimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp), // Increased padding for touch target
         verticalAlignment = Alignment.Top
     ) {

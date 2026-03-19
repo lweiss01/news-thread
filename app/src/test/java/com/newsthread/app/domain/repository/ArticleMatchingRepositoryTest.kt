@@ -13,6 +13,8 @@ import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.ArticleComparison
 import com.newsthread.app.domain.model.Source
 import com.newsthread.app.domain.model.SourceRating
+import com.newsthread.app.domain.repository.FeedEmission
+import com.newsthread.app.domain.repository.FeedEmissionSource
 import com.newsthread.app.domain.repository.NewsRepository
 import com.newsthread.app.domain.repository.SourceRatingRepository
 import com.newsthread.app.domain.similarity.SimilarityMatcher
@@ -80,17 +82,17 @@ class ArticleMatchingRepositoryTest {
         val entities = entityExtractor.extractEntities(text)
 
         // At minimum, "Russian" or "US Russian" should be there.
-        val hasRussian = entities.contains("Russian") || entities.contains("US Russian")
-        assertTrue("Should contain Russian or US Russian", hasRussian)
-        // And DEFINITELY NOT "USRussian"
-        assertTrue("Should NOT contain USRussian", !entities.contains("USRussian"))
+        val hasRussian = entities.any { it.contains("russian") }
+        assertTrue("Should contain russian (lowercased)", hasRussian)
+        // And DEFINITELY NOT "usrussian" (concatenated without space)
+        assertTrue("Should NOT contain usrussian", !entities.contains("usrussian"))
     }
 
     @Test
     fun `extractEntities extract proper nouns sequence`() {
         val text = "President John Doe visited."
         val entities = entityExtractor.extractEntities(text)
-        assertTrue(entities.contains("President John Doe"))
+        assertTrue("Should contain 'president john doe'", entities.contains("president john doe"))
     }
 
     @Test
@@ -150,13 +152,13 @@ class ArticleMatchingRepositoryTest {
     @Test
     fun `findSimilarArticles triggers stage 2 when stage 1 has few results`() = runBlocking {
         // Original: "Test Article Title", Desc: "Test Description"
-        // Entities: "Test", "Article", "Title", "Description"
+        // Entities (lowercased): "test", "article", "title", "description"
         val article = createtestArticle("http://test.com/stage2")
 
-        // Stage 1 Query: Top 3 entities -> "Test Article Title"
-        val entityQuery = "Test Article Title"
-        // Stage 2 Query: Top 1 entity ("Test Article Title") + " News"
-        val broadQuery = "Test Article Title News"
+        // Stage 1 Query: Top 3 entities (lowercase) -> "test article title"
+        val entityQuery = "test article title"
+        // Stage 2 Query: Top 1 entity + " News" -> "test article title News"
+        val broadQuery = "test article title News"
 
         // Setup Responses
         // Stage 1: Returns 0 results
@@ -185,8 +187,8 @@ class ArticleMatchingRepositoryTest {
     fun `findSimilarArticles triggers stage 3 when stage 1 and 2 have few results`() = runBlocking {
         val article = createtestArticle("http://test.com/stage3")
 
-        val entityQuery = "Test Article Title" // Stage 1
-        val broadQuery = "Test Article Title News" // Stage 2
+        val entityQuery = "test article title" // Stage 1 (lowercase)
+        val broadQuery = "test article title News" // Stage 2 (lowercase entity + News)
 
         // Setup Responses — Stage 1 and 2 return empty
         fakeNewsRepository.queryResponses[entityQuery] = emptyList()
@@ -245,11 +247,11 @@ class ArticleMatchingRepositoryTest {
         println("Extracted: $entities")
 
         // "Scoop" should be filtered out as noise/editorial
-        assertTrue("Should NOT contain Scoop", !entities.contains("Scoop"))
-        // Should contain "Iran"
-        assertTrue("Should contain Iran", entities.contains("Iran"))
-        // Should contain "US" or "U.S."
-        assertTrue("Should contain US", entities.any { it.contains("US") || it.contains("U.S.")})
+        assertTrue("Should NOT contain scoop", !entities.contains("scoop"))
+        // Should contain "iran"
+        assertTrue("Should contain iran", entities.contains("iran"))
+        // Should contain "u.s." or equivalent
+        assertTrue("Should contain u.s.", entities.any { it.contains("u.s.") || it.contains("us") })
     }
 
     // ========== Helpers ==========
@@ -298,18 +300,27 @@ class FakeNewsRepository : NewsRepository {
     var responseToReturn: List<Article> = emptyList()
     val queryResponses = mutableMapOf<String, List<Article>>()
 
-    override fun getTopHeadlines(
+    override fun getTopHeadlinesDetailed(
         forceRefresh: Boolean,
         minReliability: Int
-    ): Flow<Result<List<Article>>> {
-        return flowOf(Result.success(responseToReturn))
+    ): Flow<Result<FeedEmission>> {
+        return flowOf(
+            Result.success(
+                FeedEmission(
+                    articles = responseToReturn,
+                    source = FeedEmissionSource.NETWORK
+                )
+            )
+        )
     }
 
     override fun searchArticles(
         query: String,
         forceRefresh: Boolean,
         onlyRated: Boolean,
-        minReliability: Int
+        minReliability: Int,
+        allowReputableFallbackWhenUnrated: Boolean,
+        allowUnknownUnrated: Boolean
     ): Flow<Result<List<Article>>> {
         searchCallCount++
         val response = queryResponses[query] ?: responseToReturn
@@ -419,6 +430,13 @@ class FakeCachedArticleDao : CachedArticleDao {
         return savedArticles.values.filter { it.fetchedAt > since }.toList()
     }
 
+    override suspend fun getRecentCandidateArticles(since: Long, limit: Int): List<CachedArticleEntity> {
+        return savedArticles.values
+            .filter { it.fetchedAt > since }
+            .sortedByDescending { it.fetchedAt }
+            .take(limit)
+    }
+
     override suspend fun assignArticleToStory(articleUrl: String, storyId: String, isNovel: Boolean, hasNewPerspective: Boolean, matchedAt: Long) {
         savedArticles[articleUrl]?.let {
             savedArticles[articleUrl] = it.copy(storyId = storyId, isTracked = true)
@@ -438,6 +456,13 @@ class FakeCachedArticleDao : CachedArticleDao {
         savedArticles.values.removeIf { it.sourceFeed == feedKey && !it.isTracked }
     }
 
+    override suspend fun detachByFeed(feedKey: String) {
+        val updates = savedArticles.values
+            .filter { it.sourceFeed == feedKey }
+            .map { it.copy(sourceFeed = null) }
+        updates.forEach { savedArticles[it.url] = it }
+    }
+
     override suspend fun deleteUntrackedByFeedPrefix(prefix: String) {
         savedArticles.values.removeIf { it.sourceFeed?.startsWith(prefix) == true && !it.isTracked }
     }
@@ -448,6 +473,14 @@ class FakeCachedArticleDao : CachedArticleDao {
 
     override fun getByFeedFlow(feedKey: String): Flow<List<CachedArticleEntity>> {
         return flowOf(emptyList())
+    }
+
+    override suspend fun updateArticleImage(url: String, imageUrl: String) {
+        savedArticles[url]?.let { savedArticles[url] = it.copy(urlToImage = imageUrl) }
+    }
+
+    override suspend fun updateArticleSourceId(url: String, sourceId: String) {
+        savedArticles[url]?.let { savedArticles[url] = it.copy(sourceId = sourceId) }
     }
 }
 
