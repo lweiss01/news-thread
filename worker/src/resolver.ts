@@ -115,26 +115,18 @@ export async function resolveUrl(
 
 function isStrictGoogleNewsUrl(url: string): boolean {
     try {
-        const parsed = new URL(url);
-        const protocol = parsed.protocol.toLowerCase();
-        if (protocol !== 'https:' && protocol !== 'http:') return false;
-        return parsed.hostname.toLowerCase() === 'news.google.com';
-    } catch {
-        return false;
-    }
-}
-
-function tryBase64Decode(url: string): ResolveAttemptResult {
-    try {
         const lastSlash = url.lastIndexOf('/');
-        const queryParam = url.indexOf('?', lastSlash);
-        const encoded = queryParam !== -1
-            ? url.substring(lastSlash + 1, queryParam)
-            : url.substring(lastSlash + 1);
+        if (lastSlash === -1) return null;
 
-        if (!encoded) return { resolved: null, failureReason: 'base64_fail' };
+        let encoded = url.substring(lastSlash + 1);
+        const questionMark = encoded.indexOf('?');
+        if (questionMark !== -1) {
+            encoded = encoded.substring(0, questionMark);
+        }
 
-        // Base64url decode
+        if (!encoded) return null;
+
+        // Optimization: Native base64url parsing avoids multi-step string replacements
         const buffer = Buffer.from(encoded, 'base64url');
         let decodedStr = buffer.toString('latin1');
 
