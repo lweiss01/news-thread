@@ -13,7 +13,7 @@ type Bindings = {
     FEED_COORDINATOR?: DurableObjectNamespace;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+export const app = new Hono<{ Bindings: Bindings }>();
 const LAYER2_SOURCE_TIMEOUT_MS = 3000;
 const LAYER1_SOURCE_TIMEOUT_MS = 3500;
 const TOP_STORIES_DEFAULT_TARGET = 120;

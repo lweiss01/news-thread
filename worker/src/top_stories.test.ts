@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import app from './index';
+import { app } from './index';
 
 describe('/v1/feeds/top-stories', () => {
     afterEach(() => {
