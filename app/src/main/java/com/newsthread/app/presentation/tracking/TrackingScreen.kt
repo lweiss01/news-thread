@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -243,6 +244,7 @@ fun EnhancedStoryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = !isUnfollowPending, role = Role.Button) { onStoryClick(summary.storyId) }
+            .semantics(mergeDescendants = true) {}
     ) {
         val hasNew = summary.unreadArticles > 0
 
