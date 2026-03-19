@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-20)
 ## Current Position
  
 - Phase: Phase 16: Identity & Store Assets
-- Plan: 16-01-PLAN.md (Pending)
-- Status: Roadmap consolidated, README aligned; waiting for screenshots
-- Last activity: 2026-02-24 — Documentation consolidated, status reconciled (77% artifact coverage)
+- Plan: Waiting for Screenshots
+- Status: Phase 19 Hygiene & Stability fixes completed. Ready to capture final store assets.
+- Last activity: 2026-03-05 — Finished Phase 19 (Hygiene, Performance, Date/Image Stability)
 
 
 ## Accumulated Context
@@ -98,6 +98,8 @@ Recent decisions affecting current work:
 - Phase 11 added: UI/UX Review and Refinement (Renumbered from 12)
 - Phase 12: Architecture Refactor (Renumbered from 11)
 - Phase 13 added: UI Design and Visual Language Updates
+- Phase 17 added: Fix non-UI code review findings (architecture, concurrency, data model)
+- Phase 18 added: Fix UI-related code review findings and polish
 
 **New decisions from 14-07:**
 - FeedRefreshWorker uses forceRefresh = false: respects 3-hour TTL, exits immediately if cache is fresh
@@ -239,3 +241,19 @@ Recent decisions affecting current work:
     - **Added**: `CLEANUP_FLOOR` constant in `SimilarityMatcher`
     - Matching confirmed working correctly on Pixel 9a — true positives retained, false positives filtered
     - Updated all project docs (ROADMAP, STATE, PROJECT, README) and pushed to GitHub
+
+### Session Notes (2026-03-03, Phase 17 & Crash Fix)
+- **Phase 17 Validated & Complete**:
+    - **Crash Fix**: Resolved `IllegalArgumentException` on `ArticleDetailScreen` and `ComparisonScreen` by passing `articleUrl` string through Navigation instead of the `Article` Parcelable.
+    - **Domain Cleanup**: Removed Android imports (`Parcelable`) from domain models (`Article`, `Source`, `SourceRating`).
+    - **Data Model Migration**: Migrated `Article.publishedAt` from String (ISO8601) to `Long` (Epoch Millis) throughout the entire stack (Network response, Room cache, Domain). Added Room `AutoMigration` from v10 to v11 and `MigrationTest.kt`.
+    - **Concurrency & Architecture**: Fixed `StateFlow` tests, injected `CoroutineScope` for DB operations to avoid tying background UI updates to ViewModel scope, fixed visibility on UseCases/ViewModels.
+    - **Beads**: Closed 17 code-review findings resulting from the repo-wide audit.
+### Session Notes (2026-03-05, Phase 19 Hygiene & Stability)
+- **Phase 19 Validated & Complete**:
+    - **Date Fix**: Resolved the "Dec 31" epoch-0 drift for Google News articles by adding a seconds-vs-milliseconds heuristic in `RssNewsRepository`.
+    - **Bias Dots**: Enhanced `StoryDao` SQL join to fallback to `sourceName` if `sourceId` is missing, ensuring dots appear even for unmapped RSS sources.
+    - **Image Stability**: Robustified `OgImageResolver` regex for both attribute orders and added a transient failure cache to prevent redundant scraping hits.
+    - **UI Polish**: Removed pulse shimmer in `Modifiers.kt` for a calmer, static amber placeholder.
+    - **Performance**: Verified tracking screen loads in <1s after SQL optimization.
+    - **Build Hygiene**: Achieved 0-warning build state.

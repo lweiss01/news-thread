@@ -6,8 +6,11 @@ import com.newsthread.app.data.local.dao.SourceRatingDao
 import com.newsthread.app.data.local.entity.ArticleEmbeddingEntity
 import com.newsthread.app.data.local.entity.CachedArticleEntity
 import com.newsthread.app.data.local.entity.EmbeddingStatus
+import com.newsthread.app.domain.model.Article
+import com.newsthread.app.domain.model.Story
+import com.newsthread.app.domain.model.Source
+import com.newsthread.app.domain.model.TrackedStory
 import com.newsthread.app.data.local.entity.StoryEntity
-import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.data.repository.EmbeddingRepository
 import com.newsthread.app.domain.similarity.EntityExtractor
@@ -47,6 +50,9 @@ class UpdateTrackedStoriesUseCasePerformanceTest {
             embeddingRepository,
             EntityExtractor()
         )
+        runBlocking {
+            whenever(sourceRatingDao.getAll()).thenReturn(emptyList())
+        }
     }
 
     @Test
@@ -56,7 +62,19 @@ class UpdateTrackedStoriesUseCasePerformanceTest {
             val articles = (1..10).map { articleId ->
                 createCachedArticle("url_s${storyId}_a${articleId}", "Story $storyId Article $articleId")
             }
-            createStoryWithArticles("story$storyId", "Title $storyId", articles)
+            val domainArticles = articles.map { 
+                Article(
+                    source = Source("test", "Test", null, null, null, null, null),
+                    author = null,
+                    title = it.title,
+                    description = null,
+                    url = it.url,
+                    urlToImage = null,
+                    publishedAt = 1672531200000L,
+                    content = null
+                )
+            }
+            createTrackedStory("story$storyId", "Title $storyId", domainArticles)
         }
 
         whenever(trackingRepository.getTrackedStories()).thenReturn(flowOf(stories))
@@ -88,19 +106,22 @@ class UpdateTrackedStoriesUseCasePerformanceTest {
         assertTrue("Expected NO calls to getByArticleUrl due to batch fetching, but got $invocations", invocations == 0)
     }
 
-    private fun createStoryWithArticles(
+    private fun createTrackedStory(
         storyId: String,
         title: String,
-        articles: List<CachedArticleEntity>
-    ): StoryWithArticles {
-        val story = StoryEntity(
+        articles: List<Article>
+    ): TrackedStory {
+        val story = Story(
             id = storyId,
             title = title,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis(),
-            lastViewedAt = System.currentTimeMillis() - 3600000
+            lastViewedAt = System.currentTimeMillis() - 3600000,
+            lastCheckedAt = 0L,
+            lastNotifiedAt = 0L,
+            hasUnseenUpdates = false
         )
-        return StoryWithArticles(story, articles)
+        return TrackedStory(story, articles)
     }
 
     private fun createCachedArticle(url: String, title: String): CachedArticleEntity {
@@ -112,7 +133,7 @@ class UpdateTrackedStoriesUseCasePerformanceTest {
             title = title,
             description = null,
             urlToImage = null,
-            publishedAt = "2024-01-01T00:00:00Z",
+            publishedAt = 1672531200000L,
             content = null,
             fullText = null,
             fetchedAt = System.currentTimeMillis(),

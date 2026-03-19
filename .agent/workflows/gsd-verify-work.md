@@ -110,23 +110,19 @@ Read each SUMMARY.md to extract testable deliverables.
 Parse for:
 1. **Accomplishments** - Features/functionality added
 2. **User-facing changes** - UI, workflows, interactions
-3. **Infrastructure changes** - logs, code signatures, background behavior
 
-Extract tests for:
-1. **UI Changes:** Observable behavior
-2. **Infrastructure:** Log validation commands or Code inspection steps (from Summary/Plan)
+Focus on USER-OBSERVABLE outcomes, not implementation details.
 
-For Infrastructure tests, set expectation to the specific log output or code signature.
+For each deliverable, create a test:
+- name: Brief test name
+- expected: What the user should see/experience (specific, observable)
 
 Examples:
-- Accomplishment: "Added comment threading"
+- Accomplishment: "Added comment threading with infinite nesting"
   → Test: "Reply to a Comment"
-  → Expected: "Clicking Reply opens inline composer..."
-- Accomplishment: "Implemented retry logic"
-  → Test: "Retry Logic Logs"
-  → Expected: "Trigger 404. Logcat shows `Retrying... (attempt 1/3)`"
+  → Expected: "Clicking Reply opens inline composer below comment. Submitting shows reply nested under parent with visual indentation."
 
-Skip internal items ONLY if they have no verifiable artifact (logs/code/UI).
+Skip internal/non-observable items (refactors, type changes, etc.).
 </step>
 
 <step name="create_uat_file">

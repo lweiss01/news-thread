@@ -4,18 +4,21 @@ import com.newsthread.app.data.local.dao.ArticleEmbeddingDao
 import com.newsthread.app.data.local.dao.CachedArticleDao
 import com.newsthread.app.data.local.dao.SourceRatingDao
 import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.data.repository.EmbeddingRepository
 import com.newsthread.app.domain.repository.TrackingRepository
 import com.newsthread.app.domain.similarity.EntityExtractor
 import com.newsthread.app.domain.similarity.MatchStrength
 import com.newsthread.app.domain.similarity.SimilarityMatcher
+import com.newsthread.app.util.EmbeddingUtils.toFloatArray
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.newsthread.app.util.EmbeddingUtils.toFloatArray
-import com.newsthread.app.data.repository.EmbeddingRepository
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /**
  * Match result with classification for UI display.
@@ -54,40 +57,89 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
 ) {
     companion object {
         private const val NOVELTY_THRESHOLD = 0.85f
-        private const val MATCHING_WINDOW_MS = 24 * 60 * 60 * 1000L // 24 hours
+        private const val FULL_MATCHING_WINDOW_MS = 24 * 60 * 60 * 1000L // 24 hours
+        private const val FAST_MATCHING_WINDOW_MS = 6 * 60 * 60 * 1000L // 6 hours
+        private const val FAST_CANDIDATE_LIMIT = 120
+        private const val TAG = "StoryMatching"
     }
 
-    suspend operator fun invoke(): List<StoryMatchResult> = withContext(Dispatchers.Default) {
+    suspend operator fun invoke(
+        mode: StoryRefreshMode = StoryRefreshMode.FULL
+    ): List<StoryMatchResult> = withContext(Dispatchers.Default) {
         val stories = trackingRepository.getTrackedStories().first()
         if (stories.isEmpty()) return@withContext emptyList()
 
-        val since = System.currentTimeMillis() - MATCHING_WINDOW_MS
-        
-        val candidateArticles = cachedArticleDao.getRecentCandidateArticles(since)
+        val since = System.currentTimeMillis() - when (mode) {
+            StoryRefreshMode.FULL -> FULL_MATCHING_WINDOW_MS
+            StoryRefreshMode.FAST -> FAST_MATCHING_WINDOW_MS
+        }
+
+        val candidateArticles = when (mode) {
+            StoryRefreshMode.FULL -> cachedArticleDao.getRecentCandidateArticles(since)
+            StoryRefreshMode.FAST -> cachedArticleDao.getRecentCandidateArticles(
+                since = since,
+                limit = FAST_CANDIDATE_LIMIT
+            )
+        }
         if (candidateArticles.isEmpty()) return@withContext emptyList()
 
-        // Step 2: Ensure embeddings exist for all candidates
-        val candidateUrls = candidateArticles.map { it.url }
-        val candidateEmbeddingsMap = embeddingDao.getByArticleUrls(candidateUrls)
-            .associate { it.articleUrl to it.embedding.toFloatArray() }
-        
-        if (candidateEmbeddingsMap.size < candidateUrls.size) {
-            candidateArticles.forEach { article ->
-                if (candidateEmbeddingsMap[article.url] == null) {
-                    try {
-                        embeddingRepository.getOrGenerateEmbedding(article.url)
-                    } catch (e: Exception) {
-                        android.util.Log.e("StoryMatching", "Failed to generate embedding for ${article.url}", e)
-                    }
-                }
+        // Build canonical source lookup maps once, then use them for all matching logic.
+        val allRatings = sourceRatingDao.getAll()
+        val canonicalById = allRatings.associate { it.sourceId to it.sourceId }
+        val canonicalByName = mutableMapOf<String, String>()
+        val canonicalByDomain = mutableMapOf<String, String>()
+        val sourceBiasById = allRatings.associate { it.sourceId to it.finalBiasScore }
+
+        allRatings.forEach { rating ->
+            normalizeSourceKey(rating.displayName)?.let { key -> canonicalByName.putIfAbsent(key, rating.sourceId) }
+            normalizeSourceKey(rating.domain)?.let { key -> canonicalByDomain.putIfAbsent(key, rating.sourceId) }
+        }
+
+        val canonicalizedCandidates = candidateArticles.map { article ->
+            val canonical = canonicalSourceId(
+                sourceId = article.sourceId,
+                sourceName = article.sourceName,
+                articleUrl = article.url,
+                canonicalById = canonicalById,
+                canonicalByName = canonicalByName,
+                canonicalByDomain = canonicalByDomain
+            )
+
+            if (canonical != null && canonical != article.sourceId) {
+                persistCanonicalSourceId(article.url, canonical)
+                article.copy(sourceId = canonical)
+            } else {
+                article
             }
         }
 
-        // Step 3: Refresh candidate embeddings map and PRE-CALCULATE entities
+        // Step 2: Ensure embeddings exist for all candidates.
+        val candidateUrls = canonicalizedCandidates.map { it.url }
+        val candidateEmbeddingsMap = embeddingDao.getByArticleUrls(candidateUrls)
+            .associate { it.articleUrl to it.embedding.toFloatArray() }
+
+        if (mode == StoryRefreshMode.FULL && candidateEmbeddingsMap.size < candidateUrls.size) {
+            val missing = canonicalizedCandidates.filter { candidateEmbeddingsMap[it.url] == null }
+            if (missing.isNotEmpty()) {
+                android.util.Log.d(TAG, "Parallel generating ${missing.size} embeddings...")
+                missing.map { article ->
+                    async {
+                        try {
+                            embeddingRepository.getOrGenerateEmbedding(article.url)
+                        } catch (e: Exception) {
+                            android.util.Log.e(TAG, "Failed embedding for ${article.url}", e)
+                            null
+                        }
+                    }
+                }.awaitAll()
+            }
+        }
+
+        // Step 3: Refresh candidate embeddings map and pre-calculate entities.
         val freshCandidateEmbeddingsMap = embeddingDao.getByArticleUrls(candidateUrls)
             .associate { it.articleUrl to it.embedding.toFloatArray() }
 
-        val candidatePrecalcs = candidateArticles.mapNotNull { article ->
+        val candidatePrecalcs = canonicalizedCandidates.mapNotNull { article ->
             val embedding = freshCandidateEmbeddingsMap[article.url] ?: return@mapNotNull null
             CandidatePrecalc(
                 article = article,
@@ -96,91 +148,92 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
             )
         }
 
-        // Pre-fetch all story embeddings in one big batch
-        val allStoryArticleUrls = stories.flatMap { it.articles.map { article -> article.url } }.distinct()
+        // Pre-fetch all story embeddings in one batch.
+        val allStoryArticleUrls = stories.flatMap { ts -> ts.articles.map { a -> a.url } }.distinct()
         val allStoryEmbeddingsMap = embeddingDao.getByArticleUrls(allStoryArticleUrls)
             .associate { it.articleUrl to it.embedding.toFloatArray() }
 
-        // Pre-fetch source ratings
-        val allSourceIds = (candidateArticles.mapNotNull { it.sourceId } +
-            stories.flatMap { it.articles.mapNotNull { article -> article.sourceId } }).distinct()
-        val sourceRatings = sourceRatingDao.getAll()
-            .filter { it.sourceId in allSourceIds }
-            .associate { it.sourceId to it.finalBiasScore }
+        // Step 4: Parallelize matching across stories.
+        val matchResults = coroutineScope {
+            stories.map { trackedStory ->
+                async {
+                    val storyId = trackedStory.story.id
+                    val existingStoryUrls = trackedStory.articles.map { it.url }.toSet()
+                    val storyResults = mutableListOf<StoryMatchResult>()
 
-        val results = mutableListOf<StoryMatchResult>()
-
-        stories.forEach { trackedStory ->
-            val storyId = trackedStory.story.id
-            val existingStoryUrls = trackedStory.articles.map { it.url }.toSet()
-            
-            // Get embeddings for THIS story's articles from our pre-fetched map
-            val storyEmbeddings = trackedStory.articles.mapNotNull { allStoryEmbeddingsMap[it.url] }
-            
-            if (storyEmbeddings.isEmpty() && trackedStory.articles.isNotEmpty()) {
-                // Heal missing embeddings (rare but possible if DB was cleared)
-                trackedStory.articles.forEach { article ->
-                    try {
-                        embeddingRepository.getOrGenerateEmbedding(article.url)
-                    } catch (e: Exception) { /* ignore */ }
-                }
-                return@forEach 
-            }
-
-            // --- OPTIMIZED SELF-CLEANING PHASE ---
-            val sortedArticles = trackedStory.articles.sortedBy { it.publishedAt }
-            val firstArticle = sortedArticles.firstOrNull() ?: return@forEach
-            val anchorEmbedding = allStoryEmbeddingsMap[firstArticle.url] ?: return@forEach
-            val anchorTitle = firstArticle.title
-            val anchorEntities = entityExtractor.extractEntitiesSet(anchorTitle)
-
-            val existingBiasCategories = trackedStory.articles
-                .mapNotNull { article -> article.sourceId?.let { sourceRatings[it] } }
-                .toSet()
-
-            // Match candidates
-            candidatePrecalcs.forEach { precalc ->
-                if (precalc.article.url in existingStoryUrls) return@forEach
-
-                val similarity = similarityMatcher.cosineSimilarity(precalc.embedding, anchorEmbedding)
-                val entityOverlap = entityExtractor.calculateOverlap(anchorEntities, precalc.entities)
-                
-                val hybridStrength = when {
-                    similarity >= SimilarityMatcher.STRONG_THRESHOLD -> MatchStrength.STRONG
-                    similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1 -> MatchStrength.WEAK
-                    else -> MatchStrength.NONE
-                }
-                
-                if (hybridStrength != MatchStrength.NONE) {
-                    val isNovel = isNovelContent(precalc.embedding, storyEmbeddings)
-                    val hasNewPerspective = hasNewPerspective(precalc.article, existingBiasCategories, sourceRatings)
-
-                    try {
-                        trackingRepository.addArticleToStory(
-                            articleUrl = precalc.article.url, 
-                            storyId = storyId,
-                            isNovel = isNovel,
-                            hasNewPerspective = hasNewPerspective
-                        )
-                        
-                        results.add(StoryMatchResult(
-                            articleUrl = precalc.article.url,
-                            articleTitle = precalc.article.title,
-                            storyId = storyId,
-                            similarity = similarity,
-                            strength = hybridStrength,
-                            isNovel = isNovel,
-                            hasNewPerspective = hasNewPerspective
-                        ))
-                    } catch (e: Exception) {
-                        android.util.Log.e("StoryMatching", "Race condition adding matched article: ${precalc.article.url}", e)
+                    val storyEmbeddings = trackedStory.articles.mapNotNull { allStoryEmbeddingsMap[it.url] }
+                    if (storyEmbeddings.isEmpty() && trackedStory.articles.isNotEmpty()) {
+                        return@async emptyList<StoryMatchResult>()
                     }
-                } 
-            }
+
+                    // Anchor to earliest article in the story.
+                    val sortedArticles = trackedStory.articles.sortedBy { it.publishedAt }
+                    val firstArticle = sortedArticles.firstOrNull() ?: return@async emptyList<StoryMatchResult>()
+                    val anchorEmbedding = allStoryEmbeddingsMap[firstArticle.url] ?: return@async emptyList<StoryMatchResult>()
+                    val anchorEntities = entityExtractor.extractEntitiesSet(firstArticle.title)
+
+                    val existingBiasCategories = trackedStory.articles
+                        .mapNotNull { article ->
+                            val canonical = canonicalSourceId(
+                                sourceId = article.source.id,
+                                sourceName = article.source.name,
+                                articleUrl = article.url,
+                                canonicalById = canonicalById,
+                                canonicalByName = canonicalByName,
+                                canonicalByDomain = canonicalByDomain
+                            )
+                            canonical?.let { sourceBiasById[it] }
+                        }.toSet()
+
+                    // Match candidates.
+                    for (precalc in candidatePrecalcs) {
+                        if (precalc.article.url in existingStoryUrls) continue
+
+                        val similarity = similarityMatcher.cosineSimilarity(precalc.embedding, anchorEmbedding)
+                        val entityOverlap = entityExtractor.calculateOverlap(anchorEntities, precalc.entities)
+
+                        val hybridStrength = when {
+                            similarity >= SimilarityMatcher.STRONG_THRESHOLD -> MatchStrength.STRONG
+                            similarity >= SimilarityMatcher.WEAK_THRESHOLD && entityOverlap >= 1 -> MatchStrength.WEAK
+                            else -> MatchStrength.NONE
+                        }
+
+                        if (hybridStrength != MatchStrength.NONE) {
+                            val isNovel = isNovelContent(precalc.embedding, storyEmbeddings)
+                            val hasNewPerspective = hasNewPerspective(precalc.article, existingBiasCategories, sourceBiasById)
+
+                            try {
+                                // Add to DB (Room handles concurrency)
+                                trackingRepository.addArticleToStory(
+                                    articleUrl = precalc.article.url,
+                                    storyId = storyId,
+                                    isNovel = isNovel,
+                                    hasNewPerspective = hasNewPerspective
+                                )
+
+                                storyResults.add(
+                                    StoryMatchResult(
+                                        articleUrl = precalc.article.url,
+                                        articleTitle = precalc.article.title,
+                                        storyId = storyId,
+                                        similarity = similarity,
+                                        strength = hybridStrength,
+                                        isNovel = isNovel,
+                                        hasNewPerspective = hasNewPerspective
+                                    )
+                                )
+                            } catch (e: Exception) {
+                                android.util.Log.e(TAG, "Parallel matching error: ${precalc.article.url}", e)
+                            }
+                        }
+                    }
+                    storyResults
+                }
+            }.awaitAll().flatten()
         }
 
         markAllChecked(System.currentTimeMillis())
-        results
+        matchResults
     }
 
     private fun computeCentroid(embeddings: List<FloatArray>): FloatArray {
@@ -211,6 +264,58 @@ class UpdateTrackedStoriesUseCase @Inject constructor(
     ): Boolean {
         val newBiasCategory = article.sourceId?.let { sourceRatings[it] } ?: return false
         return newBiasCategory !in existingBiasCategories
+    }
+
+    private suspend fun persistCanonicalSourceId(articleUrl: String, canonicalSourceId: String) {
+        try {
+            trackingRepository.updateArticleSourceId(articleUrl, canonicalSourceId)
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "Failed to persist canonical sourceId for $articleUrl", e)
+        }
+    }
+
+    private fun canonicalSourceId(
+        sourceId: String?,
+        sourceName: String?,
+        articleUrl: String,
+        canonicalById: Map<String, String>,
+        canonicalByName: Map<String, String>,
+        canonicalByDomain: Map<String, String>
+    ): String? {
+        if (!sourceId.isNullOrBlank()) {
+            canonicalById[sourceId]?.let { return it }
+        }
+
+        normalizeSourceKey(sourceName)?.let { key ->
+            canonicalByName[key]?.let { return it }
+        }
+
+        extractDomain(articleUrl)?.let { domain ->
+            normalizeSourceKey(domain)?.let { key ->
+                canonicalByDomain[key]?.let { return it }
+            }
+        }
+
+        return null
+    }
+
+    private fun normalizeSourceKey(value: String?): String? {
+        if (value.isNullOrBlank()) return null
+        return value.lowercase()
+            .removePrefix("the ")
+            .removePrefix("www.")
+            .removeSuffix(".com")
+            .replace(Regex("[^a-z0-9]"), "")
+            .trim()
+            .ifBlank { null }
+    }
+
+    private fun extractDomain(url: String): String? {
+        return try {
+            URI(url).host?.removePrefix("www.")
+        } catch (_: Exception) {
+            null
+        }
     }
 
     suspend fun markAllChecked(timestamp: Long) {

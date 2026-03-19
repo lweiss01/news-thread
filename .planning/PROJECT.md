@@ -60,9 +60,11 @@ When a user reads an article, they can instantly see how the same story is cover
 - ✓ Update app icon to match Amber Brand and spectrum visual language — Phase 13.1
 - ✓ Achieve visual parity with Amber Brand mockups (ArticleCard footer, typography, metrics styling, deep-linking) — Phase 13.1.1 & 13.1.2
 - ✓ Replaced NewsAPI with on-device dual-layer RSS feed parsing and Google News URL decoding — Phase 14
-
 - ✓ Move RSS feed fetching and XML parsing to edge worker — Phase 15
 - ✓ Increase feed volume to 70+ stories via background category discovery loop — Phase 15.1
+- ✓ Fixed domain boundary data leakage (Parcelable domain models) — Phase 17
+- ✓ Fixed concurrency anti-patterns (SharedFlow without delays, Combine errors) — Phase 17
+- ✓ Normalized ISO 8601 string dates directly to primitives (Epoch Millis Long) across all architectures — Phase 17
 - [ ] Prepare app store assets
 
 
@@ -108,6 +110,7 @@ When a user reads an article, they can instantly see how the same story is cover
 | User-controlled article text fetching | Respects data usage preferences, WiFi-only option for bandwidth savings | — Validated |
 | Authenticated Quality strategy | Strictly filter Unknown (Gray) quality sources while allowing rated (Green/Amber/Orange) content | — Validated |
 | Continuous Discovery loop | Background category-based expansion to boost feed volume with reputable news | — Validated |
+| Primitive types over Strings | Normalizing string dates (ISO8601) to Long Epoch Millis at the edge avoids memory bloat and cross-layer parsing issues | — Validated |
 
 ## Beads Issues
 
@@ -124,5 +127,4 @@ When a user reads an article, they can instantly see how the same story is cover
 | newsthread-a37 | UI: Source rating badges missing | Closed | Fixed by strict filtering in SourceRatingRepository |
 
 ---
-*Last updated: 2026-02-26 after Phase 15.1 (Feed Enhancement)*
-
+*Last updated: 2026-03-03 after Phase 17 (Non-UI Code Audit Fixes)*

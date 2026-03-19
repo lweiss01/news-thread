@@ -1,7 +1,7 @@
 package com.newsthread.app.presentation.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -11,9 +11,10 @@ sealed class Screen(
     val title: String,
     val icon: ImageVector
 ) {
-    data object Feed : Screen("feed", "Feed", Icons.Filled.Article)
+    data object Feed : Screen("feed", "Feed", Icons.AutoMirrored.Filled.Article)
     data object Tracking : Screen("tracking", "Tracking", Icons.Filled.TrackChanges)
     data object Settings : Screen("settings", "Settings", Icons.Filled.Settings)
+    data object Onboarding : Screen("onboarding", "Onboarding", Icons.AutoMirrored.Filled.Article) // Icon doesn't matter much here
 
     companion object {
         val items = listOf(Feed, Tracking, Settings)
@@ -32,7 +33,10 @@ object ArticleDetailRoute {
 
 // Comparison screen route
 object ComparisonRoute {
-    const val route = "comparison"
+    const val route = "comparison/{articleUrl}"
 
-    fun createRoute(): String = route
+    fun createRoute(articleUrl: String): String {
+        val encodedUrl = java.net.URLEncoder.encode(articleUrl, "UTF-8")
+        return "comparison/$encodedUrl"
+    }
 }

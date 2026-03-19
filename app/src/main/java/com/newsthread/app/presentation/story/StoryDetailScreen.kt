@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.clickable // New
-import androidx.compose.runtime.remember // New
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,32 +38,26 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.newsthread.app.domain.model.TrackedStory
 import com.newsthread.app.domain.model.Article
-import com.newsthread.app.domain.model.Source
-
-import com.newsthread.app.presentation.common.ArticleCard
+import com.newsthread.app.presentation.comparison.MatchedArticleCard
 import com.newsthread.app.presentation.components.BiasHeatmap
 import com.newsthread.app.presentation.components.NewsTopAppBar
 import com.newsthread.app.presentation.theme.ProjectTheme
-import com.newsthread.app.presentation.tracking.TrackingViewModel
 
 @Composable
 fun StoryDetailScreen(
-    storyId: String,
-    viewModel: TrackingViewModel = hiltViewModel(),
+    viewModel: StoryDetailViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onArticleClick: (String) -> Unit
 ) {
-    val trackedStories by viewModel.trackedStories.collectAsStateWithLifecycle()
-    val trackedStory = trackedStories?.find { it.story.id == storyId }
+    val trackedStory by viewModel.trackedStory.collectAsStateWithLifecycle()
 
-    LaunchedEffect(storyId) {
-        viewModel.markStoryViewed(storyId)
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.markStoryViewed()
+        }
     }
 
     // Hoist scroll state for Scaffold FAB access
@@ -80,7 +74,10 @@ fun StoryDetailScreen(
             NewsTopAppBar(
                 title = "Story Analysis",
                 actions = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = {
+                        viewModel.markStoryViewed()
+                        onBackClick()
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -119,21 +116,13 @@ fun StoryDetailScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            if (trackedStory == null) {
-                 // Show loading spinner while data is still being fetched (null),
-                 // or when list is empty (no stories tracked yet)
-                 if (trackedStories == null || trackedStories?.isEmpty() == true) {
-                      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                 } else {
-                     // Data has loaded (non-null, non-empty list) but this story isn't in it
-                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "Story not found", color = MaterialTheme.colorScheme.error)
-                    }
-                 }
+            val currentStory = trackedStory
+            if (currentStory == null) {
+                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             } else {
-                val articles = trackedStory.articles.sortedByDescending { it.publishedAt }
+                val articles = currentStory.articles.sortedByDescending { it.publishedAt }
 
                 // Group articles by bias category (using pre-attached ratings)
                 val leftArticles = articles.filter { (it.sourceRating?.finalBiasScore ?: 0) < 0 }
@@ -189,22 +178,27 @@ fun StoryDetailScreen(
                                 .padding(ProjectTheme.spacing.m)
                         ) {
                             Text(
-                                text = trackedStory.story.title,
+                                text = currentStory.story.title,
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
-                             Text(
-                                text = "Read original story ➤",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable {
+                             TextButton(
+                                onClick = {
                                     // Use the first article's URL as proxy for "original"
                                     val originalUrl = articles.minByOrNull { it.publishedAt }?.url
                                     if (originalUrl != null) onArticleClick(originalUrl)
-                                }
-                             )
+                                },
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.padding(vertical = ProjectTheme.spacing.xs)
+                             ) {
+                                 Text(
+                                     text = "Read original story".uppercase(),
+                                     style = ProjectTheme.typography.labelSmallProminent,
+                                     color = if (androidx.compose.foundation.isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600
+                                 )
+                             }
 
                             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
 
@@ -240,10 +234,10 @@ fun StoryDetailScreen(
                             )
 
                              Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
-                             Text(
-                                text = "Coverage Updates",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                              Text(
+                                text = "Coverage Updates".uppercase(),
+                                style = ProjectTheme.typography.labelSmallProminent,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
@@ -258,23 +252,24 @@ fun StoryDetailScreen(
                         if (sectionArticles.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = "$title (${sectionArticles.size})",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
+                                    text = "$title (${sectionArticles.size})".uppercase(),
+                                    style = ProjectTheme.typography.labelSmallProminent,
                                     color = color,
                                     modifier = Modifier.padding(
                                         horizontal = ProjectTheme.spacing.m,
-                                        vertical = ProjectTheme.spacing.xs
+                                        vertical = ProjectTheme.spacing.s
                                     )
                                 )
                             }
                             items(sectionArticles) { article ->
-                                ArticleCard(
+                                val refTime = viewModel.referenceViewTime.collectAsStateWithLifecycle().value ?: currentStory.story.lastViewedAt
+                                val isNew = article.publishedAt > refTime
+                                MatchedArticleCard(
                                     article = article,
-                                    sourceRatings = emptyMap(),
-                                    isTracked = true,
-                                    onBookmarkClick = { viewModel.unfollowStory(storyId) },
-                                    onClick = { onArticleClick(article.url) }
+                                    rating = article.sourceRating,
+                                    accentColor = color,
+                                    isNew = isNew,
+                                    onReadMoreClick = { onArticleClick(article.url) }
                                 )
                             }
                         }

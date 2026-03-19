@@ -8,11 +8,10 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.newsthread.app.data.repository.UserPreferencesRepository
+import com.newsthread.app.di.AppScope
 import com.newsthread.app.domain.model.SyncStrategy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -23,10 +22,10 @@ import javax.inject.Singleton
 @Singleton
 class BackgroundWorkScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    @AppScope private val scope: CoroutineScope
 ) {
     private val workManager = WorkManager.getInstance(context)
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     fun startObserving() {
         scope.launch {
@@ -91,11 +90,14 @@ class BackgroundWorkScheduler @Inject constructor(
     }
 
     /**
-     * Phase 9: Schedule periodic story update worker
-     * Runs every 2 hours to match new articles to tracked stories.
+     * Phase 9 / S21 fix: Schedule periodic story update worker.
+     * Runs every 2 hours to refresh the feed cache and match new articles to tracked stories.
+     * Requires network (the worker pre-warms the feed before matching).
+     * Uses UPDATE policy so constraint changes apply on re-registration.
      */
     private fun scheduleStoryUpdates() {
         val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
             .setRequiresBatteryNotLow(true)
             .build()
 
@@ -107,7 +109,7 @@ class BackgroundWorkScheduler @Inject constructor(
 
         workManager.enqueueUniquePeriodicWork(
             StoryUpdateWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             request
         )
     }

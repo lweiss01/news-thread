@@ -7,7 +7,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.newsthread.app.R
+
+// NewsThread Extension Typography
+data class NewsTypography(
+    val labelSmallProminent: TextStyle
+)
+
+val LocalNewsTypography = staticCompositionLocalOf<NewsTypography> { error("No NewsTypography provided") }
 
 // Typography Configuration
 val provider = GoogleFont.Provider(

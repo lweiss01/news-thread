@@ -10,11 +10,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +34,8 @@ import com.newsthread.app.presentation.theme.Amber600
 import com.newsthread.app.presentation.theme.NewsLinkDark
 import com.newsthread.app.presentation.theme.ProjectTheme
 import com.newsthread.app.util.TimeUtils
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -38,6 +44,9 @@ fun ArticleCard(
     sourceRatings: Map<String, SourceRating>,
     isTracked: Boolean = false,
     ogImageResolver: OgImageResolver? = null,
+    showSourceFallbackLogo: Boolean = true,
+    isTracked: Boolean = false,
+    isNew: Boolean = false,
     onBookmarkClick: () -> Unit = {},
     onClick: () -> Unit
 ) {
@@ -81,12 +90,42 @@ fun ArticleCard(
                     val timeAgo = TimeUtils.getRelativeTimeFromString(article.publishedAt)
                     if (timeAgo != null) {
                         Spacer(modifier = Modifier.width(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = article.source.name.uppercase(),
+                            style = ProjectTheme.typography.labelSmallProminent,
+                            color = sourceColor
+                        )
+
+                        if (isNew) {
+                            Spacer(modifier = Modifier.width(ProjectTheme.spacing.s))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape
+                            ) {
+                                Text(
+                                    text = "NEW",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 9.sp
+                                )
+                            }
+                        }
+                    }
+
+                    // Time ago
+                    val timeAgo = getRelativeTime(article.publishedAt)
+                    if (timeAgo != null) {
+                        Spacer(modifier = Modifier.width(ProjectTheme.spacing.xs))
                         Text(
                             text = "·",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
                         Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(ProjectTheme.spacing.xs))
                         Text(
                             text = timeAgo,
                             style = MaterialTheme.typography.labelSmall,
@@ -105,12 +144,31 @@ fun ArticleCard(
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                 onBookmarkClick()
                             }
+                        horizontalArrangement = Arrangement.spacedBy(ProjectTheme.spacing.s)
+                    ) {
+                        ReliabilityBadge(rating = article.sourceRating, size = ProjectTheme.icon.small)
+
+                        Box(
+                            modifier = Modifier
+                                .minimumInteractiveComponentSize()
+                                .size(48.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = androidx.compose.material.ripple.rememberRipple(bounded = false),
+                                    role = Role.Button,
+                                    onClick = {
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                        onBookmarkClick()
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = if (isTracked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = if (isTracked) "Unfollow" else "Follow",
                                 tint = if (isTracked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(ProjectTheme.icon.small)
                             )
                         }
                     }
@@ -164,6 +222,68 @@ fun ArticleCard(
                             .clip(MaterialTheme.shapes.small),
                         contentScale = ContentScale.Crop
                     )
+                // Image display — OG resolution is handled by FeedViewModel's
+                // prefetchMissingImages which batches updates into _uiState.
+                // The card just renders whatever image the article currently has.
+                val heroImageUrl = remember(article.url, article.urlToImage) {
+                    article.urlToImage?.takeUnless { isFaviconImageUrl(it) }
+                }
+                val fallbackImageUrl = remember(article.url, article.sourceRating?.domain, article.source.name, showSourceFallbackLogo) {
+                    if (!showSourceFallbackLogo) return@remember null
+                    sourceFallbackImageUrl(article)
+                }
+                val logoImageUrl = if (heroImageUrl.isNullOrEmpty()) fallbackImageUrl else null
+
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+                when {
+                    !heroImageUrl.isNullOrEmpty() -> {
+                        AsyncImage(
+                            model = heroImageUrl,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .radialPulseShimmer(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    !logoImageUrl.isNullOrEmpty() -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .radialPulseShimmer(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = logoImageUrl,
+                                contentDescription = null,
+                                modifier = Modifier.size(56.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+                    else -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .radialPulseShimmer(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = null,
+                                tint = Amber600.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -182,6 +302,7 @@ fun ArticleCard(
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = 16.dp)
+                            .padding(end = ProjectTheme.spacing.m)
                             .semantics(mergeDescendants = true) {
                                 contentDescription = "Bias rating: ${article.sourceRating?.getBiasDescription() ?: "Unknown"}"
                             }
@@ -201,6 +322,15 @@ fun ArticleCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(12.dp),
+                            style = ProjectTheme.typography.labelSmallProminent,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+
+                        // Spectrum Bar with Breathing Glow
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(24.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
                             // Thin bar
@@ -213,6 +343,7 @@ fun ArticleCard(
                             )
 
                             // Dot Indicator
+                            // Breathing Dot Indicator
                             val biasScore = article.sourceRating?.finalBiasScore
                             if (biasScore != null) {
                                 val dotColor = when {
@@ -234,6 +365,9 @@ fun ArticleCard(
                                                 .clip(CircleShape)
                                                 .background(dotColor)
                                                 .align(Alignment.CenterEnd)
+                                        BreathingGlow(
+                                            color = dotColor,
+                                            modifier = Modifier.align(Alignment.CenterEnd)
                                         )
                                     }
                                 }
@@ -247,6 +381,9 @@ fun ArticleCard(
                             onBookmarkClick()
                         },
                         modifier = Modifier.widthIn(min = 80.dp),
+                        modifier = Modifier
+                            .minimumInteractiveComponentSize()
+                            .widthIn(min = 80.dp),
                         contentPadding = PaddingValues(
                             horizontal = ProjectTheme.spacing.s,
                             vertical = ProjectTheme.spacing.xs
@@ -261,5 +398,46 @@ fun ArticleCard(
                 }
             }
         }
+    }
+}
+                            style = ProjectTheme.typography.labelSmallProminent,
+                            color = if (isTracked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+private fun isFaviconImageUrl(url: String?): Boolean {
+    if (url.isNullOrBlank()) return false
+    return url.contains("google.com/s2/favicons", ignoreCase = true)
+}
+private fun sourceFallbackImageUrl(article: Article): String? {
+    val domain = article.sourceRating?.domain
+        ?: try {
+            java.net.URI(article.url).host?.removePrefix("www.")
+        } catch (_: Exception) {
+            null
+        }
+
+    if (domain.isNullOrBlank()) return null
+    if (domain.contains("news.google.com", ignoreCase = true)) return null
+
+    return "https://www.google.com/s2/favicons?domain=$domain&sz=256"
+}
+private fun getRelativeTime(epochMillis: Long): String? {
+    if (epochMillis <= 0L) return null
+    val now = System.currentTimeMillis()
+    val diff = now - epochMillis
+    return when {
+        diff < 0 -> "Just now"
+        diff < 60_000 -> "Just now"
+        diff < 3_600_000 -> "${diff / 60_000}m ago"
+        diff < 86_400_000 -> "${diff / 3_600_000}h ago"
+        diff < 172_800_000 -> "Yesterday"
+        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(epochMillis))
     }
 }
