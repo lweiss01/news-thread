@@ -122,16 +122,24 @@ function isStrictGoogleNewsUrl(url: string): boolean {
         const lastSlash = url.lastIndexOf('/');
         if (lastSlash === -1) return null;
 
-        let encoded = url.substring(lastSlash + 1);
-        const questionMark = encoded.indexOf('?');
-        if (questionMark !== -1) {
-            encoded = encoded.substring(0, questionMark);
-        }
+function extractIdFromUrl(url: string): string | undefined {
+    let end = url.indexOf('?');
+    if (end === -1) end = url.length;
+    const start = url.lastIndexOf('/', end - 1);
+    if (start === -1) return undefined;
+    return url.substring(start + 1, end);
+}
 
-        if (!encoded) return null;
+function tryBase64Decode(url: string): ResolveAttemptResult {
+    try {
+        const encoded = extractIdFromUrl(url);
+        if (!encoded) return { resolved: null, failureReason: 'base64_fail' };
 
-        // Optimization: Native base64url parsing avoids multi-step string replacements
-        const buffer = Buffer.from(encoded, 'base64url');
+        // Base64url decode (native)
+        // Note: Buffer.from(..., 'base64url') might not be supported in some older versions of
+        // the environment, but it's supported in Node >= 14 and modern Cloudflare Workers.
+        // The original code manually replaces '-' and '_' before using 'base64'.
+        const buffer = Buffer.from(encoded.replace(DASH_REGEX, '+').replace(UNDERSCORE_REGEX, '/'), 'base64');
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
@@ -268,7 +276,7 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
 
 async function tryBatchExecute(url: string): Promise<ResolveAttemptResult> {
     try {
-        const id = url.split('/').pop()?.split('?')[0];
+        const id = extractIdFromUrl(url);
         if (!id) return { resolved: null, failureReason: 'rpc_fail' };
 
         // Fetch the main page to get ts and sg (though the RPC might work without it if we use the right format)
