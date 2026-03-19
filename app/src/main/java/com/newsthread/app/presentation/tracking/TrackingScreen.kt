@@ -244,7 +244,6 @@ fun EnhancedStoryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = !isUnfollowPending, role = Role.Button) { onStoryClick(summary.storyId) }
-            .semantics(mergeDescendants = true) {}
     ) {
         val hasNew = summary.unreadArticles > 0
 
