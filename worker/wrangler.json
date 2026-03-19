@@ -8,6 +8,9 @@
 	"observability": {
 		"enabled": true
 	},
+	"placement": {
+		"mode": "smart"
+	},
 	"kv_namespaces": [
 		{
 			"binding": "FEED_CACHE",
@@ -16,6 +19,28 @@
 		{
 			"binding": "URL_CACHE",
 			"id": "7f84042704f84ba8bd8b65d79a28951c"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "FEED_COORDINATOR",
+				"class_name": "FeedCoordinator",
+				"script_name": "newsthread-api"
+			}
+		]
+	},
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	},
+	"migrations": [
+		{
+			"tag": "v2",
+			"deleted_classes": ["RssManager"]
+		},
+		{
+			"tag": "v3",
+			"new_classes": ["FeedCoordinator"]
 		}
 	]
 }

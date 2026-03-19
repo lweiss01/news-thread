@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.newsthread.app.presentation.theme.ProjectTheme
@@ -54,6 +55,7 @@ fun Modifier.pulseEffect(
         .clickable(
             interactionSource = interactionSource,
             indication = null,
+            role = Role.Button,
             onClick = onClick
         )
 }

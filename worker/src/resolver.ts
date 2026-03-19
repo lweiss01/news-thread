@@ -119,23 +119,19 @@ export async function resolveUrl(
 
 function isStrictGoogleNewsUrl(url: string): boolean {
     try {
-        const parsed = new URL(url);
-        const protocol = parsed.protocol.toLowerCase();
-        if (protocol !== 'https:' && protocol !== 'http:') return false;
-        return parsed.hostname.toLowerCase() === 'news.google.com';
-    } catch {
-        return false;
-    }
-}
+        const lastSlash = url.lastIndexOf('/');
+        if (lastSlash === -1) return null;
 
-function tryBase64Decode(url: string): ResolveAttemptResult {
-    try {
-        const parts = url.split('/');
-        const encoded = parts[parts.length - 1].split('?')[0];
-        if (!encoded) return { resolved: null, failureReason: 'base64_fail' };
+        let encoded = url.substring(lastSlash + 1);
+        const questionMark = encoded.indexOf('?');
+        if (questionMark !== -1) {
+            encoded = encoded.substring(0, questionMark);
+        }
 
-        // Base64url decode
-        const buffer = Buffer.from(encoded.replace(DASH_REGEX, '+').replace(UNDERSCORE_REGEX, '/'), 'base64');
+        if (!encoded) return null;
+
+        // Optimization: Native base64url parsing avoids multi-step string replacements
+        const buffer = Buffer.from(encoded, 'base64url');
         let decodedStr = buffer.toString('latin1');
 
         // Prefix stripping (\x08\x13\x22)
@@ -218,6 +214,9 @@ async function tryHttpRedirect(url: string): Promise<ResolveAttemptResult> {
         // Case 2: Redirect Notice Page (200 OK with a link)
         if (response.status === 200) {
             const html = await response.text();
+
+            const HTTP_REDIRECT_LINKS_REGEX = /<a[^>]+href="([^"]+)"/g;
+            const URL_FALLBACK_MATCH_REGEX = /https?:\/\/[^\x00-\x1F\x7F-\x9F"'<>\s]+/g;
 
             // Find all links and pick the first one that isn't Google
             const allLinks = Array.from(html.matchAll(HTTP_REDIRECT_LINKS_REGEX))

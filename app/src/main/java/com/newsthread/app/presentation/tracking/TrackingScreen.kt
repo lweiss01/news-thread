@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -83,17 +85,19 @@ fun TrackingScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
-    if (pullToRefreshState.isRefreshing) {
-        LaunchedEffect(Unit) {
-            viewModel.refresh()
-        }
-    }
-
+    // Sync ViewModel refreshing state → pull indicator FIRST
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
             pullToRefreshState.startRefresh()
         } else {
             pullToRefreshState.endRefresh()
+        }
+    }
+
+    // When user pulls past threshold, trigger refresh exactly once.
+    LaunchedEffect(pullToRefreshState.isRefreshing) {
+        if (pullToRefreshState.isRefreshing) {
+            viewModel.refresh()
         }
     }
 
@@ -239,7 +243,8 @@ fun EnhancedStoryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !isUnfollowPending) { onStoryClick(summary.storyId) }
+            .clickable(enabled = !isUnfollowPending, role = Role.Button) { onStoryClick(summary.storyId) }
+            .semantics(mergeDescendants = true) {}
     ) {
         val hasNew = summary.unreadArticles > 0
 
@@ -277,16 +282,35 @@ fun EnhancedStoryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (hasNew) {
-                        "${summary.unreadArticles} NEW · ${summary.totalArticles} total"
-                    } else {
-                        "${summary.totalArticles} articles"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (hasNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (hasNew) FontWeight.Bold else FontWeight.Normal
-                )
+                Column {
+                    Text(
+                        text = if (hasNew) {
+                            "${summary.unreadArticles} NEW · ${summary.totalArticles} total"
+                        } else {
+                            "${summary.totalArticles} articles"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (hasNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (hasNew) FontWeight.Bold else FontWeight.Normal
+                    )
+                    
+                    // Show when new articles were last matched
+                    val lastUpdateText = remember(summary.lastUpdate) {
+                        val now = System.currentTimeMillis()
+                        val diffMs = now - summary.lastUpdate
+                        when {
+                            diffMs < 60_000 -> "New articles just now"
+                            diffMs < 3600_000 -> "New articles ${diffMs / 60_000}m ago"
+                            diffMs < 86400_000 -> "New articles ${diffMs / 3600_000}h ago"
+                            else -> "New articles ${diffMs / 86400_000}d ago"
+                        }
+                    }
+                    Text(
+                        text = lastUpdateText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
 
                 IconButton(
                     enabled = !isUnfollowPending,
