@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NewsThread Privacy Policy</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <main>
+    <section class="card">
+      <div class="eyebrow">Privacy Policy</div>
+      <h1>NewsThread Privacy Policy</h1>
+      <p><strong>Effective date:</strong> March 22, 2026</p>
+      <p>
+        NewsThread is an Android news reader that helps you compare how different outlets cover the
+        same story. This release is designed to keep the core reading and matching experience on your
+        device whenever possible.
+      </p>
+
+      <h2>What the app does</h2>
+      <ul>
+        <li>Fetches news feeds through a Cloudflare Worker used by NewsThread.</li>
+        <li>Downloads article content and images when needed to power the reading experience.</li>
+        <li>Runs semantic matching, clustering, and bias visualization logic on-device.</li>
+        <li>Can send tracked-story notifications when you allow notification permission.</li>
+      </ul>
+
+      <h2>What data NewsThread does not collect for this release</h2>
+      <ul>
+        <li>No account registration or sign-in is exposed in the shipped app.</li>
+        <li>No advertising identifiers are used.</li>
+        <li>No third-party analytics SDKs or crash-reporting SDKs are bundled for release telemetry.</li>
+        <li>No cloud backup of app preferences is enabled in this release.</li>
+      </ul>
+
+      <h2>Network requests and third-party services</h2>
+      <p>
+        NewsThread makes network requests to retrieve news feeds, resolve article links, load article
+        pages, and download images. Those requests may pass through NewsThread's Cloudflare Worker or
+        directly to third-party publishers whose content you choose to view.
+      </p>
+      <p>
+        Standard web infrastructure may process technical request data such as IP address, user-agent,
+        and request timing to deliver content and operate the service. NewsThread does not use this
+        release to build advertising profiles or sell personal data.
+      </p>
+
+      <h2>Permissions used by the shipped app</h2>
+      <ul>
+        <li><strong>Internet / network state:</strong> Required to load feeds, images, and articles.</li>
+        <li><strong>Post notifications:</strong> Required only if you allow tracked-story alerts.</li>
+        <li><strong>Boot completed / foreground service:</strong> Required for background refresh workers.</li>
+      </ul>
+
+      <h2>Future enhancements</h2>
+      <p>
+        The codebase may contain dormant dependencies related to future account or backup features,
+        such as optional Google Drive backup. Those features are not active or exposed in this release.
+      </p>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>You can control article text fetching and background analysis behavior from Settings.</li>
+        <li>You can decline notification permission and still use the rest of the app.</li>
+      </ul>
+
+      <h2>Contact</h2>
+      <p>
+        For questions about this policy, open an issue at
+        <a href="https://github.com/lweiss01/news-thread/issues">github.com/lweiss01/news-thread/issues</a>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

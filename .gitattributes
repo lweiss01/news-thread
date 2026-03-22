@@ -1,3 +1,17 @@
 
 # Use bd merge for beads JSONL files
 .beads/issues.jsonl merge=beads
+
+# BEGIN HOLISTIC MANAGED ATTRIBUTES
+HOLISTIC.md text eol=lf
+AGENTS.md text eol=lf
+HISTORY.md text eol=lf
+CLAUDE.md text eol=lf
+GEMINI.md text eol=lf
+.holistic/**/*.md text eol=lf
+.holistic/**/*.json text eol=lf
+.holistic/**/*.sh text eol=lf
+.holistic/**/*.ps1 text eol=crlf
+.holistic/**/*.cmd text eol=crlf
+# END HOLISTIC MANAGED ATTRIBUTES
+

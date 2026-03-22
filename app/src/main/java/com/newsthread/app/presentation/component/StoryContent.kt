@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.newsthread.app.data.local.dao.StoryWithArticles
 import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.presentation.theme.ProjectTheme
 import com.newsthread.app.util.TimeUtils
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.TrackedStory
@@ -49,7 +50,7 @@ fun StoryContent(
     val originalArticle = sortedArticles.firstOrNull()
     val updates = sortedArticles.drop(1).sortedByDescending { it.publishedAt }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(ProjectTheme.spacing.m)) {
         // Header row
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -67,7 +68,7 @@ fun StoryContent(
                     TextButton(
                         onClick = { onArticleClick(article.url) },
                         contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = ProjectTheme.spacing.xs)
                     ) {
                         Text(
                             text = "Original: ${article.source.name}",
@@ -81,7 +82,7 @@ fun StoryContent(
                     if (rating != null) {
                         com.newsthread.app.presentation.comparison.ReliabilityBadge(
                             rating = rating,
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier = Modifier.padding(start = ProjectTheme.spacing.s),
                             size = 16.dp
                         )
                     }
@@ -99,7 +100,7 @@ fun StoryContent(
                 if (trackedStory.story.hasUnseenUpdates) {
                      Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = ProjectTheme.spacing.s)
                     ) {
                         Icon(
                             imageVector = Icons.Default.NewReleases,
@@ -107,7 +108,7 @@ fun StoryContent(
                             tint = MaterialTheme.colorScheme.error, // Red for major updates
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(ProjectTheme.spacing.xs))
                         Text(
                             text = "New Major Update",
                             style = MaterialTheme.typography.labelMedium,
@@ -118,7 +119,7 @@ fun StoryContent(
                 } else if (unreadCount > 0) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = ProjectTheme.spacing.s)
                     ) {
                         Icon(
                             imageVector = Icons.Default.NewReleases,
@@ -126,7 +127,7 @@ fun StoryContent(
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(ProjectTheme.spacing.xs))
                         Text(
                             text = "$unreadCount new update${if (unreadCount > 1) "s" else ""}",
                             style = MaterialTheme.typography.labelMedium,
@@ -138,7 +139,7 @@ fun StoryContent(
                         text = "${updates.size} update${if (updates.size != 1) "s" else ""}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = ProjectTheme.spacing.xs)
                     )
                 }
             }
@@ -162,16 +163,16 @@ fun StoryContent(
 
         // Expandable timeline
         AnimatedVisibility(visible = isExpanded) {
-            Column(modifier = Modifier.padding(top = 12.dp)) {
+            Column(modifier = Modifier.padding(top = ProjectTheme.spacing.sm)) {
                 HorizontalDivider()
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
 
                 if (updates.isEmpty()) {
                     Text(
                         text = "No updates yet. Check back later.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = ProjectTheme.spacing.s)
                     )
                 } else {
                         updates.forEach { article ->
@@ -205,8 +206,7 @@ fun ArticleTimelineItem(
             .fillMaxWidth()
             .background(backgroundColor)
             .clickable(onClick = onClick, role = Role.Button)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 8.dp), // Increased padding for touch target
+            .padding(vertical = ProjectTheme.spacing.sm, horizontal = ProjectTheme.spacing.s), // Increased padding for touch target
         verticalAlignment = Alignment.Top
     ) {
         // Source indicator dot
@@ -234,7 +234,7 @@ fun ArticleTimelineItem(
                     )
 
                     if (isNew) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(ProjectTheme.spacing.s))
                         Surface(
                             color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape, // Use pill shape
@@ -262,7 +262,7 @@ fun ArticleTimelineItem(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isNew) FontWeight.Bold else FontWeight.Normal,
                 color = if (isNew) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = ProjectTheme.spacing.xs)
             )
         }
 
@@ -270,7 +270,7 @@ fun ArticleTimelineItem(
         if (onReject != null) {
             IconButton(
                 onClick = onReject,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.minimumInteractiveComponentSize()
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -294,4 +294,3 @@ private fun getRelativeTime(timestamp: Long): String {
         else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }
-

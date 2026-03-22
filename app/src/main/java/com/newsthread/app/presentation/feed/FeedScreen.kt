@@ -49,6 +49,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import com.newsthread.app.presentation.theme.ProjectTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -168,7 +169,7 @@ fun FeedScreen(
                         ) {
                             item {
                                 Text("No stories found matching your quality settings.", style = MaterialTheme.typography.bodyLarge)
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
                                 Text("Pull to refresh for the latest stories", style = MaterialTheme.typography.bodySmall)
                             }
                         }
@@ -230,7 +231,7 @@ fun FeedScreen(
                                 text = state.message,
                                 color = MaterialTheme.colorScheme.error
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(ProjectTheme.spacing.s))
                             Button(onClick = { viewModel.loadHeadlines(true) }) {
                                 Text("Retry")
                             }

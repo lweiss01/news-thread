@@ -1,5 +1,8 @@
 package com.newsthread.app.presentation.settings
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +39,7 @@ import com.newsthread.app.BuildConfig
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val fetchPreference by viewModel.articleFetchPreference.collectAsStateWithLifecycle()
     val backgroundSyncEnabled by viewModel.backgroundSyncEnabled.collectAsStateWithLifecycle()
     val syncStrategy by viewModel.syncStrategy.collectAsStateWithLifecycle()
@@ -85,6 +90,16 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             HorizontalDivider()
 
+            // Legal Section
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+            LegalSection(
+                onOpenPrivacyPolicy = { openExternalUrl(context, BuildConfig.PRIVACY_POLICY_URL) },
+                onOpenTerms = { openExternalUrl(context, BuildConfig.TERMS_URL) }
+            )
+
+            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+            HorizontalDivider()
+
             // Debug Section
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             DebugSection(
@@ -103,6 +118,13 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.l))
         }
     }
+}
+
+private fun openExternalUrl(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    context.startActivity(intent)
 }
 
 @Composable
@@ -205,6 +227,69 @@ private fun DebugSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = ProjectTheme.spacing.sm)
         )
+    }
+}
+
+@Composable
+private fun LegalSection(
+    onOpenPrivacyPolicy: () -> Unit,
+    onOpenTerms: () -> Unit
+) {
+    Column {
+        Text(
+            text = "Legal",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.xs))
+
+        Text(
+            text = "NewsThread analyzes stories on-device and links to hosted legal documents for release transparency.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
+
+        SettingsLinkRow(
+            title = "Privacy Policy",
+            description = "How NewsThread handles network requests, notifications, and on-device analysis.",
+            onClick = onOpenPrivacyPolicy
+        )
+
+        SettingsLinkRow(
+            title = "Terms of Use",
+            description = "Important terms for using NewsThread as a news aggregation tool.",
+            onClick = onOpenTerms
+        )
+    }
+}
+
+@Composable
+private fun SettingsLinkRow(
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = ProjectTheme.spacing.sm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

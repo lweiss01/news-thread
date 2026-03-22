@@ -48,6 +48,13 @@ data class NewsBiasColors(
 
 val LocalBias = staticCompositionLocalOf<NewsBiasColors> { error("No Bias provided") }
 
+// ---------------------------------------------------------------------------
+// Link Color Extension
+// Provides a single source-of-truth for link/source-name tinting,
+// eliminating scattered isSystemInDarkTheme() checks across screens.
+// ---------------------------------------------------------------------------
+val LocalLinkColor = staticCompositionLocalOf { Amber600 }
+
 
 // ---------------------------------------------------------------------------
 // Material Color Schemes
@@ -172,7 +179,8 @@ fun NewsThreadTheme(
             )
         ),
         LocalGlow    provides glow,
-        LocalBias    provides bias
+        LocalBias    provides bias,
+        LocalLinkColor provides if (darkTheme) NewsLinkDark else Amber600
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -203,4 +211,7 @@ object ProjectTheme {
 
     val bias: NewsBiasColors
         @Composable get() = LocalBias.current
+
+    val linkColor: Color
+        @Composable get() = LocalLinkColor.current
 }

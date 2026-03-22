@@ -1,29 +1,42 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.kts.
+# Preserve runtime metadata used by Room, Hilt, and generated code.
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
-# Keep data classes for Gson serialization
--keepclassmembers class com.newsthread.app.domain.model.** { *; }
--keepclassmembers class com.newsthread.app.data.remote.** { *; }
-
-# Retrofit
--keepattributes Signature
--keepattributes Exceptions
--keepclassmembers,allowshrinking,allowobfuscation interface * {
-    @retrofit2.http.* <methods>;
+# Room database, entities, and DAO contracts.
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Database class * { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao class * { *; }
+-keepclassmembers class * {
+    @androidx.room.* <methods>;
+    @androidx.room.* <fields>;
 }
--dontwarn retrofit2.**
--keep class retrofit2.** { *; }
 
-# OkHttp
+# Hilt application/modules and WorkManager workers injected through Hilt.
+-keep @dagger.hilt.android.HiltAndroidApp class * { *; }
+-keep @dagger.Module class * { *; }
+-keep @dagger.hilt.InstallIn class * { *; }
+-keep @androidx.hilt.work.HiltWorker class * { *; }
+-keep class * extends androidx.work.ListenableWorker {
+    <init>(...);
+}
+
+# OkHttp and Google client stack warnings that are safe to suppress in release.
 -dontwarn okhttp3.**
 -dontwarn okio.**
--keep class okhttp3.** { *; }
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn com.google.re2j.Matcher
+-dontwarn com.google.re2j.Pattern
+-dontwarn org.slf4j.impl.StaticLoggerBinder
 
-# Gson
--keepattributes *Annotation*
+# Gson is used by Google API client internals.
 -keep class com.google.gson.** { *; }
 
-# Coroutines
+# TensorFlow Lite runtime/JNI entry points must survive shrinking.
+-keep class org.tensorflow.lite.** { *; }
+-keep class org.tensorflow.lite.support.** { *; }
+-dontwarn org.tensorflow.lite.**
+
+# Coroutines service lookups.
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}

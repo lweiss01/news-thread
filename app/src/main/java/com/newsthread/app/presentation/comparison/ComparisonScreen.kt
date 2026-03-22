@@ -303,7 +303,7 @@ private fun ComparisonContent(
                             Text(
                                 text = "+ ${comparison.unratedPerspective.size} additional source${if (comparison.unratedPerspective.size != 1) "s" else ""}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (isSystemInDarkTheme()) NewsLinkDark else Amber600,
+                                color = ProjectTheme.linkColor,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -342,7 +342,7 @@ private fun ComparisonContent(
                     Text(
                         text = "Read original story ▶",
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600,
+                        color = ProjectTheme.linkColor,
                         fontWeight = FontWeight.Bold
                     )
                 }

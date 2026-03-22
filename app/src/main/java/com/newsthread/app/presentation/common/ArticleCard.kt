@@ -46,8 +46,8 @@ fun ArticleCard(
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val darkTheme = isSystemInDarkTheme()
 
-    // Source name color: Amber300 (dark) / Amber600 (light) for high contrast
-    val sourceColor = if (darkTheme) NewsLinkDark else Amber600
+    // Source name color: theme-aware link tint
+    val sourceColor = ProjectTheme.linkColor
 
     Surface(
         modifier = Modifier

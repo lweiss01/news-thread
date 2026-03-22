@@ -196,7 +196,7 @@ fun StoryDetailScreen(
                                  Text(
                                      text = "Read original story".uppercase(),
                                      style = ProjectTheme.typography.labelSmallProminent,
-                                     color = if (androidx.compose.foundation.isSystemInDarkTheme()) com.newsthread.app.presentation.theme.NewsLinkDark else com.newsthread.app.presentation.theme.Amber600
+                                     color = ProjectTheme.linkColor
                                  )
                              }
 

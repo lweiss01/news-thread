@@ -5,8 +5,8 @@
 2. Read `AGENTS.md` — find the section for your agent and follow its setup steps.
 3. Summarise to the user: what was last worked on, what's planned next, and any known fixes to protect.
 4. Ask: "Continue as planned, tweak the plan, or do something different?"
-5. Run `holistic resume --agent claude` to register the session.
-6. If `holistic` is not on PATH, use `./.holistic/system/holistic resume --agent claude` on macOS/Linux or `.\.holistic\system\holistic.cmd resume --agent claude` on Windows.
+5. Run `holistic resume --agent antigravity` to register the session.
+6. If `holistic` is not on PATH, use `./.holistic/system/holistic resume --agent antigravity` on macOS/Linux or `.\.holistic\system\holistic.cmd resume --agent antigravity` on Windows.
 
 **After significant work or on any git commit (hook fires automatically):**
 - Run `holistic checkpoint --reason '<what you just did>'`

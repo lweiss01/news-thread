@@ -1,10 +1,75 @@
+import java.io.File
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
-    id("com.google.gms.google-services")
     id("kotlin-parcelize")
+}
+
+val pagesBaseUrl = "https://lweiss01.github.io/news-thread"
+val privacyPolicyUrl = "$pagesBaseUrl/privacy/"
+val termsUrl = "$pagesBaseUrl/terms/"
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+val releaseTasksRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("release", ignoreCase = true)
+}
+val hasKeystoreProperties = keystorePropertiesFile.exists().also { exists ->
+    if (exists) {
+        FileInputStream(keystorePropertiesFile).use(keystoreProperties::load)
+    }
+}
+
+data class ReleaseKeystoreConfig(
+    val storeFile: File,
+    val storePassword: String,
+    val keyAlias: String,
+    val keyPassword: String
+)
+
+fun loadReleaseKeystoreConfig(): ReleaseKeystoreConfig? {
+    if (!hasKeystoreProperties) return null
+
+    val requiredKeys = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    val missingKeys = requiredKeys.filter { key ->
+        keystoreProperties.getProperty(key)?.trim().isNullOrEmpty()
+    }
+
+    if (missingKeys.isNotEmpty()) {
+        throw GradleException(
+            "Release signing is misconfigured. Missing ${missingKeys.joinToString()} in ${keystorePropertiesFile.name}. " +
+                "See keystore.properties.example."
+        )
+    }
+
+    val storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+    if (!storeFile.exists()) {
+        throw GradleException(
+            "Release signing is misconfigured. Keystore file not found at ${storeFile.path}. " +
+                "Update ${keystorePropertiesFile.name} or regenerate the local keystore."
+        )
+    }
+
+    return ReleaseKeystoreConfig(
+        storeFile = storeFile,
+        storePassword = keystoreProperties.getProperty("storePassword"),
+        keyAlias = keystoreProperties.getProperty("keyAlias"),
+        keyPassword = keystoreProperties.getProperty("keyPassword")
+    )
+}
+
+val releaseKeystoreConfig = loadReleaseKeystoreConfig()
+
+if (releaseTasksRequested && releaseKeystoreConfig == null) {
+    throw GradleException(
+        "Release signing requires ${keystorePropertiesFile.name}. " +
+            "Copy keystore.properties.example, point storeFile at a local .jks, and rerun bundleRelease."
+    )
 }
 
 android {
@@ -21,6 +86,8 @@ android {
         )
         buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
         buildConfigField("String", "WORKER_API_KEY", "\"$workerApiKey\"")
+        buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
+        buildConfigField("String", "TERMS_URL", "\"$termsUrl\"")
 
         applicationId = "com.newsthread.app"
         minSdk = 26
@@ -43,6 +110,17 @@ android {
         // Do NOT hardcode them here — the key would be committed to source control.
     }
 
+    signingConfigs {
+        releaseKeystoreConfig?.let { config ->
+            create("release") {
+                storeFile = config.storeFile
+                storePassword = config.storePassword
+                keyAlias = config.keyAlias
+                keyPassword = config.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -51,6 +129,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            releaseKeystoreConfig?.let {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isMinifyEnabled = false
@@ -149,14 +230,10 @@ dependencies {
     // Accompanist (Phase 9: SwipeRefresh)
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
 
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-
-    // Google Drive API
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
-    implementation("com.google.api-client:google-api-client-android:2.2.0")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20231128-2.0.0")
+    // Future enhancement note:
+    // Optional account-based backup/sign-in dependencies are intentionally excluded from the
+    // shipped release surface for v1.2 Play submission. Reintroduce them only when the feature
+    // is actively implemented and the manifest/legal surface is updated to match.
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")

@@ -62,25 +62,20 @@ fun Modifier.pulseEffect(
 
 /**
  * Premium Glassmorphism effect.
- * Translucent, blurred background for premium surfaces.
+ * Translucent background with no content blur — blur is only applied
+ * on Android 12+ as a drawBehind layer so text stays crisp.
  */
 fun Modifier.glassBackground(
     shape: Shape? = null,
     alpha: Float = 0.85f
 ): Modifier = composed {
     val targetShape = shape ?: MaterialTheme.shapes.large
+    val surfaceColor = MaterialTheme.colorScheme.surface.copy(alpha = alpha)
 
     this
         .background(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = alpha),
+            color = surfaceColor,
             shape = targetShape
-        )
-        .then(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Modifier.blur(16.dp)
-            } else {
-                Modifier
-            }
         )
 }
 

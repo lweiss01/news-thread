@@ -76,6 +76,7 @@ Thumbs.db
 
 # Secrets and API keys
 secrets.properties
+keystore.properties
 *.secret
 
 # Jules bot files (auto-generated, case-insensitive on Windows)
@@ -171,5 +172,6 @@ coverage/
 tmp/
 .bg-shell/
 *.html
+!docs/**/*.html
 init_todos.json
 cloudflare-worker/
