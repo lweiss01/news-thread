@@ -11,32 +11,32 @@ The protocol below is the current operating model, not the final ideal. When imp
 1. Read `HOLISTIC.md`.
 2. Review `project-history.md`, `regression-watch.md`, and `zero-touch.md` for durable project memory and automation expectations.
 3. If the Holistic daemon is installed, let it capture repo activity in the background.
-4. Run `holistic resume --agent <app>` only when you need an explicit recap or recovery flow.
+4. Use the repo-local Holistic helper for explicit recap or recovery flows in this repo.
 5. Recap the work state to the user.
 6. Ask whether to continue as planned, tweak the plan, or start something new.
 
-If `holistic` is not on PATH, use the repo-local helper instead: Windows `.\.holistic\system\holistic.cmd resume --agent <app>`; macOS/Linux `./.holistic/system/holistic resume --agent <app>`.
+Use the repo-local Holistic helper in this repo: Windows `.\.holistic\system\holistic.cmd resume --agent <app>`; macOS/Linux `./.holistic/system/holistic resume --agent <app>`.
 
 ## During The Session
 
-Run `holistic checkpoint`:
+Use the repo-local Holistic helper for checkpoints in this repo:
 
 - when the task focus changes
 - before likely context compaction
 - after meaningful progress
 - when you fix something another agent might accidentally re-break later
 
-Use `holistic watch` if you want foreground background checkpoints while working manually.
+Use the repo-local Holistic helper with `watch` if you want foreground background checkpoints while working manually.
 
-If `holistic` is not on PATH, use the repo-local helper instead: Windows `.\.holistic\system\holistic.cmd checkpoint --reason "<what changed>"`; macOS/Linux `./.holistic/system/holistic checkpoint --reason "<what changed>"`.
+Use the repo-local Holistic helper in this repo: Windows `.\.holistic\system\holistic.cmd checkpoint --reason "<what changed>"`; macOS/Linux `./.holistic/system/holistic checkpoint --reason "<what changed>"`.
 
 ## Handoff
 
-1. Run `holistic handoff`.
+1. Use the repo-local Holistic helper to run `handoff`.
 2. Confirm or edit the drafted summary.
 3. Make sure the next step, impact, and regression risks are accurate.
 4. Let Holistic write the docs and create the handoff commit.
 5. Holistic sync helpers should push the current branch and mirror portable state to the dedicated portable state ref.
 6. If you continue on another device, pull or restore the latest portable state before starting work.
 
-If `holistic` is not on PATH, use the repo-local helper instead: Windows `.\.holistic\system\holistic.cmd handoff`; macOS/Linux `./.holistic/system/holistic handoff`.
+Use the repo-local Holistic helper in this repo: Windows `.\.holistic\system\holistic.cmd handoff`; macOS/Linux `./.holistic/system/holistic handoff`.

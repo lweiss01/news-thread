@@ -6,7 +6,7 @@ Capture work and prepare a clean handoff.
 
 ## Latest Status
 
-Committed: docs: expand regression watch with all 10 items from codebase review
+Committed: feat(release): implement S23 release infrastructure
 
 ## Planned Next Steps
 
