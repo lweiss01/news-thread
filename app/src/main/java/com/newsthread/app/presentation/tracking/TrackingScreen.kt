@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,12 +45,27 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.newsthread.app.domain.model.TrackedStory
+import com.newsthread.app.domain.model.Article
+import com.newsthread.app.util.TimeUtils
+import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.newsthread.app.domain.model.TrackedStorySummary
 import com.newsthread.app.presentation.components.NewsTopAppBar
@@ -241,7 +257,11 @@ fun EnhancedStoryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !isUnfollowPending) { onStoryClick(summary.storyId) }
+            .clickable(
+                enabled = !isUnfollowPending,
+                role = Role.Button
+            ) { onStoryClick(summary.storyId) }
+            .clickable(enabled = !isUnfollowPending, role = Role.Button) { onStoryClick(summary.storyId) }
     ) {
         val hasNew = summary.unreadArticles > 0
 

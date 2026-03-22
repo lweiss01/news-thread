@@ -17,9 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.newsthread.app.data.local.dao.StoryWithArticles
+import com.newsthread.app.data.local.entity.CachedArticleEntity
+import com.newsthread.app.util.TimeUtils
 import com.newsthread.app.domain.model.Article
 import com.newsthread.app.domain.model.TrackedStory
 import java.text.SimpleDateFormat
@@ -85,6 +89,7 @@ fun StoryContent(
 
                 // Explicit Last Updated (Phase 9.5 Fix)
                 Text(
+                    text = "Checked: ${TimeUtils.getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
                     text = "Checked: ${getRelativeTime(trackedStory.story.lastCheckedAt)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -200,7 +205,8 @@ fun ArticleTimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp), // Increased padding for touch target
         verticalAlignment = Alignment.Top
     ) {
@@ -247,6 +253,7 @@ fun ArticleTimelineItem(
                 }
 
                 Text(
+                    text = TimeUtils.getRelativeTime(article.fetchedAt),
                     text = getRelativeTime(article.publishedAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
