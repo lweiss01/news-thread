@@ -119,8 +119,14 @@ export async function resolveUrl(
 
 function isStrictGoogleNewsUrl(url: string): boolean {
     try {
-        const lastSlash = url.lastIndexOf('/');
-        if (lastSlash === -1) return null;
+        const parsed = new URL(url);
+        const protocol = parsed.protocol.toLowerCase();
+        if (protocol !== 'https:' && protocol !== 'http:') return false;
+        return parsed.hostname.toLowerCase() === 'news.google.com';
+    } catch {
+        return false;
+    }
+}
 
 function extractIdFromUrl(url: string): string | undefined {
     let end = url.indexOf('?');

@@ -363,8 +363,7 @@ private fun ComparisonContent(
                     MatchedArticleCard(
                         article = article,
                         rating = article.sourceRating,
-                        accentColor = color, // Use the perspective color for the side accent
-                        onReadMoreClick = { onArticleClick(article) },
+                        accentColor = color,
                         modifier = Modifier
                     )
                 }

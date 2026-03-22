@@ -268,8 +268,7 @@ fun StoryDetailScreen(
                                     article = article,
                                     rating = article.sourceRating,
                                     accentColor = color,
-                                    isNew = isNew,
-                                    onReadMoreClick = { onArticleClick(article.url) }
+                                    isNew = isNew
                                 )
                             }
                         }

@@ -39,8 +39,8 @@ android {
             arg("room.schemaLocation", "$projectDir/schemas")
         }
 
-        buildConfigField("String", "WORKER_URL", "\"https://newsthread-api.newsthread.workers.dev\"")
-        buildConfigField("String", "WORKER_API_KEY", "\"newsthread-v1-key\"")
+        // WORKER_URL and WORKER_API_KEY are set from local.properties above.
+        // Do NOT hardcode them here — the key would be committed to source control.
     }
 
     buildTypes {

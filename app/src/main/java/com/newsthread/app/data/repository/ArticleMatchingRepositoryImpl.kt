@@ -64,7 +64,8 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
     private val embeddingDao: ArticleEmbeddingDao,
     private val similarityMatcher: SimilarityMatcher,
     private val timeWindowCalculator: TimeWindowCalculator,
-    private val entityExtractor: EntityExtractor
+    private val entityExtractor: EntityExtractor,
+    @com.newsthread.app.di.AppScope private val appScope: CoroutineScope
 ) : ArticleMatchingRepository {
 
     // In-memory deduplication: if a search is already in progress, reuse it
@@ -84,7 +85,7 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
         }
 
         // Start a new search and register it
-        val searchDeferred = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).async {
+        val searchDeferred = appScope.async(kotlinx.coroutines.Dispatchers.IO) {
             performSearch(article)
         }
 
@@ -109,12 +110,13 @@ class ArticleMatchingRepositoryImpl @Inject constructor(
             val cachedResult = matchResultDao.getValidByArticleUrl(article.url, now)
 
             if (cachedResult != null) {
-                // Parse simple JSON array string: "['url1', 'url2']"
-                val urls = cachedResult.matchedArticleUrlsJson
-                    .removeSurrounding("[", "]")
-                    .split(",")
-                    .map { it.trim().removeSurrounding("\"").removeSurrounding("'") }
-                    .filter { it.isNotEmpty() }
+                // Parse JSON array of matched article URLs
+                val urls = try {
+                    val jsonArray = org.json.JSONArray(cachedResult.matchedArticleUrlsJson)
+                    (0 until jsonArray.length()).map { jsonArray.getString(it) }
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
                 if (urls.isNotEmpty()) {
                     val cachedArticles = cachedArticleDao.getByUrls(urls).map { it.toDomain() }

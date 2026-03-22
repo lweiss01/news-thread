@@ -89,8 +89,7 @@ fun StoryContent(
 
                 // Explicit Last Updated (Phase 9.5 Fix)
                 Text(
-                    text = "Checked: ${TimeUtils.getRelativeTime(storyWithArticles.story.lastCheckedAt)}",
-                    text = "Checked: ${getRelativeTime(trackedStory.story.lastCheckedAt)}",
+                    text = "Checked: ${TimeUtils.getRelativeTime(trackedStory.story.lastCheckedAt)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp)
@@ -253,8 +252,7 @@ fun ArticleTimelineItem(
                 }
 
                 Text(
-                    text = TimeUtils.getRelativeTime(article.fetchedAt),
-                    text = getRelativeTime(article.publishedAt),
+                    text = TimeUtils.getRelativeTime(article.publishedAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )

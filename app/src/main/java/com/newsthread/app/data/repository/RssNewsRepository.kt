@@ -49,7 +49,6 @@ class RssNewsRepository @Inject constructor(
     companion object {
         private const val TAG = "RssNewsRepository"
         private const val FEED_KEY_TOP = "top_headlines_rss"
-        private const val MAX_ARTICLES = 100
         private const val MAX_ARTICLES = 150
         private const val HOME_FEED_TARGET = 120
     }
@@ -233,7 +232,8 @@ class RssNewsRepository @Inject constructor(
         if (!shouldRefresh) return@flow
 
         val result = runCatching {
-            val json = fetchWorker("/v1/feeds/search?q=$query", forceRefresh = forceRefresh)
+            val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
+            val json = fetchWorker("/v1/feeds/search?q=$encodedQuery", forceRefresh = forceRefresh)
                 ?: throw IOException("Failed to fetch search results from Worker")
             
             val articles = parseWorkerJson(json)
@@ -317,9 +317,6 @@ class RssNewsRepository @Inject constructor(
 
     private fun fetchWorker(endpoint: String, forceRefresh: Boolean): String? {
         return try {
-            val request = Request.Builder()
-                .url(BuildConfig.WORKER_URL + endpoint)
-                // Use the shared key. In a real app, this would be in BuildConfig or encrypted.
             val requestBuilder = Request.Builder()
                 .url(BuildConfig.WORKER_URL + endpoint)
                 .header("X-API-Key", BuildConfig.WORKER_API_KEY)

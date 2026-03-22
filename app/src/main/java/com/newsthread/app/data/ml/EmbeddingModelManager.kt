@@ -56,8 +56,13 @@ open class EmbeddingModelManager @Inject constructor(
 
                 interpreter = Interpreter(modelBuffer, options)
                 
-                // Log input/output tensor details for debugging
+                // Resize input tensors once at load time (model exports with dynamic shapes frozen at [1,1])
                 val interp = interpreter!!
+                interp.resizeInput(0, intArrayOf(1, MAX_SEQUENCE_LENGTH))
+                interp.resizeInput(1, intArrayOf(1, MAX_SEQUENCE_LENGTH))
+                interp.allocateTensors()
+                
+                // Log input/output tensor details for debugging
                 val inputCount = interp.inputTensorCount
                 val outputCount = interp.outputTensorCount
                 Log.d(TAG, "Model has $inputCount inputs, $outputCount outputs")
@@ -106,13 +111,7 @@ open class EmbeddingModelManager @Inject constructor(
                 val interpreter = this.interpreter
                     ?: return Result.failure(IllegalStateException("Interpreter not initialized"))
 
-                // Resize input tensors from frozen [1, 1] to actual [1, MAX_SEQUENCE_LENGTH]
-                // This is required because the model was exported with dynamic shapes frozen
-                interpreter.resizeInput(0, intArrayOf(1, MAX_SEQUENCE_LENGTH))
-                interpreter.resizeInput(1, intArrayOf(1, MAX_SEQUENCE_LENGTH))
-                interpreter.allocateTensors()
-                
-                Log.d(TAG, "Resized input tensors to [1, $MAX_SEQUENCE_LENGTH]")
+                // Input tensors already resized during initialize()
 
                 // Prepare input tensors as 2D arrays [1, MAX_SEQUENCE_LENGTH]
                 val inputIdsBuffer = ByteBuffer.allocateDirect(MAX_SEQUENCE_LENGTH * 4).apply {
