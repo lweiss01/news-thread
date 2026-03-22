@@ -97,10 +97,8 @@ class NotificationHelper @Inject constructor(
         }
 
         if (isForeground) {
-            // App is open, show non-intrusive Toast
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(context, "$title: $body", android.widget.Toast.LENGTH_LONG).show()
-            }
+            // App is open — stay silent (toasts were too noisy / confusing)
+            return
         } else {
             // App is background, show system notification
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {

@@ -74,11 +74,21 @@ class StoryUpdateWorker @AssistedInject constructor(
                 - New perspectives: $perspectiveMatches
             """.trimIndent())
 
-            // Phase 10: Mark stories as notified (disabled toast notifications - too noisy)
+            // Phase 10: Notify for interesting updates (background only — foreground is silent)
             val interestingMatches = results.filter { it.isNovel || it.hasNewPerspective }
             val matchesByStory = interestingMatches.groupBy { it.storyId }
 
-            matchesByStory.forEach { (storyId, _) ->
+            matchesByStory.forEach { (storyId, matches) ->
+                val trackedStory = trackingRepository.getTrackedStory(storyId).firstOrNull()
+                val storyTitle = trackedStory?.story?.title ?: "Tracked Story"
+
+                val body = if (matches.size == 1) {
+                    "1 new update available"
+                } else {
+                    "${matches.size} new updates available"
+                }
+
+                notificationHelper.showNotification(storyTitle, body, storyId)
                 trackingRepository.markStoryNotified(storyId)
             }
 
