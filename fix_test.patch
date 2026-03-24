@@ -1,5 +1,0 @@
-<<<<<<< SEARCH
-        domain.removePrefix("www.").lowercase()
-=======
-        domain.lowercase().removePrefix("www.")
->>>>>>> REPLACE

@@ -11,6 +11,7 @@ plugins {
 }
 
 val pagesBaseUrl = "https://lweiss01.github.io/news-thread"
+val legalUrl = "$pagesBaseUrl/"
 val privacyPolicyUrl = "$pagesBaseUrl/privacy/"
 val termsUrl = "$pagesBaseUrl/terms/"
 
@@ -88,12 +89,13 @@ android {
         buildConfigField("String", "WORKER_API_KEY", "\"$workerApiKey\"")
         buildConfigField("String", "PRIVACY_POLICY_URL", "\"$privacyPolicyUrl\"")
         buildConfigField("String", "TERMS_URL", "\"$termsUrl\"")
+        buildConfigField("String", "LEGAL_URL", "\"$legalUrl\"")
 
         applicationId = "com.newsthread.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.2.0-RC"
+        versionCode = 2
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -176,6 +178,14 @@ android {
     testOptions {
         unitTests {
             isReturnDefaultValues = true
+        }
+    }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "newsthread-${variant.versionName}-${variant.baseName}.apk"
         }
     }
 

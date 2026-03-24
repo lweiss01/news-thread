@@ -93,18 +93,21 @@ fun SettingsScreen(
             // Legal Section
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
             LegalSection(
+                onOpenLegalPolicy = { openExternalUrl(context, BuildConfig.LEGAL_URL) },
                 onOpenPrivacyPolicy = { openExternalUrl(context, BuildConfig.PRIVACY_POLICY_URL) },
                 onOpenTerms = { openExternalUrl(context, BuildConfig.TERMS_URL) }
             )
 
-            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
-            HorizontalDivider()
+            // Debug Section (only in debug builds)
+            if (BuildConfig.DEBUG) {
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+                HorizontalDivider()
 
-            // Debug Section
-            Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
-            DebugSection(
-                onForceSync = viewModel::forceStorySync
-            )
+                Spacer(modifier = Modifier.height(ProjectTheme.spacing.m))
+                DebugSection(
+                    onForceSync = viewModel::forceStorySync
+                )
+            }
 
             Spacer(modifier = Modifier.height(ProjectTheme.spacing.xl))
 
@@ -232,6 +235,7 @@ private fun DebugSection(
 
 @Composable
 private fun LegalSection(
+    onOpenLegalPolicy: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenTerms: () -> Unit
 ) {
@@ -250,6 +254,12 @@ private fun LegalSection(
         )
 
         Spacer(modifier = Modifier.height(ProjectTheme.spacing.sm))
+
+        SettingsLinkRow(
+            title = "Legal Policy",
+            description = "Overview of all legal policies for NewsThread.",
+            onClick = onOpenLegalPolicy
+        )
 
         SettingsLinkRow(
             title = "Privacy Policy",

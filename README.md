@@ -74,9 +74,9 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 
 ## Current Status 🚀
 
-**Version**: 1.2.0-RC  
+**Version**: 1.2.0  
 **Milestone**: v1.2 Google Play Release  
-**Progress**: 22 of 24 slices complete — finalizing release infrastructure and onboarding
+**Progress**: 23 of 24 slices complete — finalizing quality and onboarding
 
 ### What's Built
 
@@ -94,14 +94,14 @@ The matching engine uses TensorFlow Lite sentence embeddings running entirely on
 | 🌐 | **Cloudflare Edge Backend** — Stateless RSS proxy, no user data, no API keys | ✅ |
 | 🖼️ | **Store Assets** — App icon, feature graphic, 6 framed screenshots, listing copy | ✅ |
 | 🧹 | **Code Review Fixes** — FeedViewModel UseCase refactor, 10 UI bugs closed | ✅ |
-| 🔧 | **Release Infrastructure** — Signing, ProGuard, privacy policy | 🔜 Next |
-| 🎓 | **Quality & Onboarding** — First-launch UX, final regression | 🔜 After |
+| 🔧 | **Release Infrastructure** — Signing, ProGuard, privacy policy, legal links | ✅ |
+| 🎓 | **Quality & Onboarding** — First-launch UX, final regression | 🔜 Next |
 
 ### What's Next
 
 | Slice | Focus | Status |
 |-------|-------|--------|
-| S23 | **Release Infrastructure** — signing config, R8/ProGuard rules, privacy policy | Planning |
+| S23 | **Release Infrastructure** — signing config, R8/ProGuard rules, privacy policy, legal links | ✅ Complete |
 | S24 | **Quality & Onboarding** — first-launch experience, regression testing, release verification | Planned |
 
 ### Future Milestones (Post-Launch)
@@ -299,7 +299,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 ---
 
 <details>
-<summary><b>📋 Development History (22 slices completed)</b></summary>
+<summary><b>📋 Development History (23 slices completed)</b></summary>
 
 | Slice | Name | Highlights |
 |-------|------|------------|
@@ -325,6 +325,7 @@ NewsThread uses a **consensus approach** combining three respected media bias or
 | S20 | Non-UI Code Fixes | Architecture audit, concurrency fixes, data model normalization |
 | S21 | UI Code Fixes & Polish | FeedViewModel UseCase refactor, 10 UI bugs closed, build cleanup |
 | S22 | Hygiene & Stability | Performance and stability hardening |
+| S23 | Release Infrastructure | Signing config, R8/ProGuard, legal policy links, Play submission prep |
 
 </details>
 
@@ -348,6 +349,7 @@ Built by a senior information security data analyst who believes we need better 
 
 **Links:**
 - **Website**: [newsthread.io](https://newsthread.io)
+- **Legal**: [Legal Policy](https://lweiss01.github.io/news-thread/) · [Privacy Policy](https://lweiss01.github.io/news-thread/privacy/) · [Terms of Use](https://lweiss01.github.io/news-thread/terms/)
 - **Repository**: [github.com/lweiss01/news-thread](https://github.com/lweiss01/news-thread)
 - **Issues**: [github.com/lweiss01/news-thread/issues](https://github.com/lweiss01/news-thread/issues)
 

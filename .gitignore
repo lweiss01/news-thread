@@ -152,6 +152,18 @@ google_news.html
 .gsd/auto.lock
 .gsd/metrics.json
 .gsd/STATE.md
+
+# ── Dev scaffolding (local only, not needed on GitHub) ──
+CLAUDE.md
+CLAUDE_MEMORY.md
+GEMINI.md
+HISTORY.md
+DESIGN_SYSTEM_AUDIT.md
+generate_store_assets.py
+.planning/
+.beads/
+skills/
+.holistic/
 *.swp
 *.swo
 *~

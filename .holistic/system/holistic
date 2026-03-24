@@ -1,2 +1,0 @@
-#!/usr/bin/env sh
-exec 'C:\Program Files\nodejs\node.exe' 'C:\Users\lweis\Documents\holistic\dist\cli.js' "$@"
