@@ -45,7 +45,7 @@ Capture work and prepare a clean handoff.
 
 ## Latest Work Status
 
-Committed: feat(release): implement S23 release infrastructure
+Committed: feat(release): v1.2.0 — legal links, hide debug in release, APK naming, repo cleanup
 
 ## What Was Tried
 
@@ -78,36 +78,16 @@ Committed: feat(release): implement S23 release infrastructure
 
 ## Changed Files In Current Session
 
-- .beads/beads.db
+- .beads/bd.sock
+- .beads/beads.db-shm
+- .beads/beads.db-wal
+- .beads/beads.left.jsonl
+- .beads/beads.left.meta.json
+- .beads/daemon.lock
+- .beads/daemon.log
+- .beads/daemon.pid
 - .beads/issues.jsonl
 - .bg-shell/manifest.json
-- .gitignore
-- .gradle/8.13/checksums/checksums.lock
-- .gradle/8.13/executionHistory/executionHistory.bin
-- .gradle/8.13/executionHistory/executionHistory.lock
-- .gradle/8.13/fileChanges/last-build.bin
-- .gradle/8.13/fileHashes/fileHashes.bin
-- .gradle/8.13/fileHashes/fileHashes.lock
-- .gradle/8.13/fileHashes/resourceHashesCache.bin
-- .gradle/8.13/gc.properties
-- .gradle/buildOutputCleanup/buildOutputCleanup.lock
-- .gradle/buildOutputCleanup/outputFiles.bin
-- .gradle/file-system.probe
-- .gradle/vcs-1/gc.properties
-- .idea/misc.xml
-- .idea/workspace.xml
-- README.md
-- app/build.gradle.kts
-- app/release/app-release.apk
-- app/release/baselineProfiles/0/app-release.dm
-- app/release/baselineProfiles/1/app-release.dm
-- app/release/output-metadata.json
-- app/src/main/java/com/newsthread/app/presentation/settings/SettingsScreen.kt
-- fix_test.patch
-- gradle.properties
-- hs_err_pid1848.log
-- replay_pid1848.log
-- test_url.kt
 
 ## Pending Work Queue
 
@@ -138,6 +118,6 @@ Committed: feat(release): implement S23 release infrastructure
 
 ## Historical Memory
 
-- Last updated: 2026-03-22T23:34:42.405Z
+- Last updated: 2026-03-24T00:03:18.342Z
 - Last handoff: None yet.
 - Pending sessions remembered: 0

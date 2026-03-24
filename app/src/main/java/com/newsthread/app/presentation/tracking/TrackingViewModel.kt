@@ -71,10 +71,14 @@ class TrackingViewModel @Inject constructor(
     // Lightweight list used by UI, filtered for optimistic removals.
     val trackedStorySummaries: StateFlow<List<TrackedStorySummary>?> = combine(
         rawTrackedStorySummaries,
-        _pendingUnfollowStoryIds
-    ) { summaries, pendingUnfollow ->
+        _pendingUnfollowStoryIds,
+        _optimisticallyViewedStoryIds
+    ) { summaries, pendingUnfollow, viewedIds ->
         summaries
             ?.filterNot { it.storyId in pendingUnfollow }
+            ?.map { summary ->
+                if (summary.storyId in viewedIds) summary.copy(unreadArticles = 0) else summary
+            }
             ?.sortedWith(
                 compareByDescending<TrackedStorySummary> { it.unreadArticles > 0 }
                     .thenByDescending { it.lastUpdate }

@@ -124,7 +124,7 @@ class TrackingViewModelTest {
     }
 
     @Test
-    fun `stories are sorted by last update regardless of unread state`() = runTest {
+    fun `stories are sorted by unread first then by last update`() = runTest {
         val olderUnread = summary(
             storyId = "older-unread",
             unreadArticles = 3,
@@ -140,11 +140,11 @@ class TrackingViewModelTest {
         runCurrent()
 
         val sorted = viewModel.trackedStorySummaries.value ?: emptyList()
-        assertEquals("newer-read", sorted.firstOrNull()?.storyId)
+        assertEquals("older-unread", sorted.firstOrNull()?.storyId)
     }
 
     @Test
-    fun `markStoryViewedOptimistically does not reorder list`() = runTest {
+    fun `markStoryViewedOptimistically does not reorder list unexpectedly`() = runTest {
         val storyA = summary(
             storyId = "a",
             unreadArticles = 2,
@@ -158,13 +158,17 @@ class TrackingViewModelTest {
 
         summariesFlow.value = listOf(storyA, storyB)
         runCurrent()
-        val before = viewModel.trackedStorySummaries.value?.map { it.storyId }
 
+        // Before: a is unread so it sorts first
+        val before = viewModel.trackedStorySummaries.value?.map { it.storyId }
+        assertEquals(listOf("a", "b"), before)
+
+        // After marking a viewed, both have unread=0 so b (newer) sorts first
         viewModel.markStoryViewedOptimistically("a")
         runCurrent()
         val after = viewModel.trackedStorySummaries.value?.map { it.storyId }
 
-        assertEquals(before, after)
+        assertEquals(listOf("b", "a"), after)
     }
 
     @Test

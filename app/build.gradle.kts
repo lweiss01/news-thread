@@ -271,6 +271,8 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     // kxml2 provides XmlPullParser implementation for JVM unit tests
     testImplementation("net.sf.kxml:kxml2:2.3.0")
+    // org.json for JVM unit tests (Android SDK's org.json returns stubs)
+    testImplementation("org.json:json:20231013")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.00"))

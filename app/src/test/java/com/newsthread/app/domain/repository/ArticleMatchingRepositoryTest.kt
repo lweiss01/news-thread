@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestScope
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -66,7 +67,8 @@ class ArticleMatchingRepositoryTest {
             fakeEmbeddingDao,
             similarityMatcher,
             timeWindowCalculator,
-            entityExtractor
+            entityExtractor,
+            TestScope()
         )
     }
 
@@ -103,7 +105,7 @@ class ArticleMatchingRepositoryTest {
         // Setup Cache
         val cachedMatch = MatchResultEntity(
             sourceArticleUrl = article.url,
-            matchedArticleUrlsJson = "['http://match.com/1', 'http://match.com/2']",
+            matchedArticleUrlsJson = "[\"http://match.com/1\", \"http://match.com/2\"]",
             matchCount = 2,
             matchMethod = "test",
             computedAt = now,
